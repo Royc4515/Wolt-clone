@@ -21,3 +21,18 @@ MockData::MockData() {
 const map<int, vector<int>>& MockData::getAllData() const {
     return MockData::fakeData;
 }
+
+// Functions to check existence of a user.
+bool MockData::isUserExists(int userId) const {
+    return MockData::fakeData.find(userId) != MockData::fakeData.end();
+}
+
+// Function to check existence of a product in a given user's list.
+bool MockData::isProdInUser(int userId, int productId) const {
+    if (!isUserExists(userId)) {
+        return false;
+    }
+
+    const auto& userProds = MockData::fakeData.at(userId);
+    return find(userProds.begin(), userProds.end(), productId) != userProds.end();
+}

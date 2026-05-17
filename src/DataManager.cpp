@@ -3,6 +3,10 @@
 #include <sstream>
 #include <iostream>
 
+#ifndef DATABASE_PATH
+#define DATABASE_PATH "data/database.txt" // Default file for the one created in CMakeLists.
+#endif
+
 using namespace std;
 
 /**
@@ -59,4 +63,19 @@ void DataManager::writeInteraction(int userId, const vector<int>& productIds) {
 
 const map<int, vector<int>>& DataManager::getAllData() const {
     return memoryMap;
+}
+
+// Function to check existence of a user.
+bool DataManager::isUserExists(int userId) const {
+    return DataManager::memoryMap.find(userId) != DataManager::memoryMap.end();
+}
+
+// Function to check existence of a product in a given user's list.
+bool DataManager::isProdInUser(int userId, int productId) const {
+    if (!isUserExists(userId)) {
+        return false;
+    }
+
+    const auto& userProds = DataManager::memoryMap.at(userId);
+    return find(userProds.begin(), userProds.end(), productId) != userProds.end();
 }

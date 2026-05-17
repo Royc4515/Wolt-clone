@@ -32,6 +32,10 @@ public:
     // --- IDataReadable implementation ---
     // Returns a table of the entire dataset.
     const std::map<int, std::vector<int>>& getAllData() const override;
+
+    // Functions to check existence of a user/product.
+    virtual bool isUserExists(int userId) const override;
+    virtual bool isProdInUser(int userId, int productId) const override;
 };
 
 #endif // DATAMANAGER_H
