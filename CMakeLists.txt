@@ -14,6 +14,7 @@ add_library(woltlib STATIC
     src/MockData.cpp
     src/GetCommand.cpp
     src/PostCommand.cpp
+    src/PatchCommand.cpp
 )
 target_include_directories(woltlib PUBLIC src)
 target_compile_features(woltlib PUBLIC cxx_std_17)
