@@ -15,6 +15,10 @@ class MockData : public IDataReadable {
             MockData(); // Constructor.
             ~MockData() override = default; // Default destructor.
             const std::map<int, std::vector<int>>& getAllData() const override; // Override the original function from IDataReadable.
+
+            // Functions to check existence of a user/product.
+            virtual bool isUserExists(int userId) const override;
+            virtual bool isProdInUser(int userId, int productId) const override;
 };
 
 #endif
