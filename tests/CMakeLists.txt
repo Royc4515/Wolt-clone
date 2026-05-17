@@ -9,6 +9,7 @@ add_executable(run_tests
     GetCommandTest.cpp
     PostCommandTest.cpp
     PatchCommandTest.cpp
+    DeleteCommandTest.cpp
 )
 
 target_link_libraries(run_tests PUBLIC GTest::gtest GTest::gtest_main pthread woltlib)
