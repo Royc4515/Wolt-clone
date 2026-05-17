@@ -11,6 +11,10 @@ class IDataReadable {
 
         // Getter of the entire dataset.
         virtual const std::map<int, std::vector<int>>& getAllData() const = 0;
+
+        // Funtions to check existence of a user/product.
+        virtual bool isUserExists(int userId) const = 0;
+        virtual bool isProdInUser(int userId, int productId) const = 0;
 };
 
 #endif
