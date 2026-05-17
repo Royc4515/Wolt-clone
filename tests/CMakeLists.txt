@@ -7,6 +7,7 @@ add_executable(run_tests
     CliTest.cpp
     HelpCommandTest.cpp
     GetCommandTest.cpp
+    PostCommandTest.cpp
 )
 
 target_link_libraries(run_tests PUBLIC GTest::gtest GTest::gtest_main pthread woltlib)
