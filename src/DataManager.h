@@ -41,6 +41,10 @@ public:
     // --- IDataReadable implementation ---
     // Returns a table of the entire dataset.
     const std::map<int, std::vector<int>>& getAllData() const override;
+    
+    // Functions to check existence of a user/product.
+    virtual bool isUserExists(int userId) const override;
+    virtual bool isProdInUser(int userId, int productId) const override;
 
     // --- IDataDeletable implementation ---
     // Removes the given product ids from the user's record.
@@ -48,9 +52,6 @@ public:
     // in their list. The user key remains in the map even if its
     // product vector becomes empty.
     void deleteProducts(int userId, const std::vector<int>& productIds) override;
-    // Functions to check existence of a user/product.
-    virtual bool isUserExists(int userId) const override;
-    virtual bool isProdInUser(int userId, int productId) const override;
 };
 
 #endif // DATAMANAGER_H

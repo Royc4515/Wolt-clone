@@ -9,24 +9,24 @@ class GetCommandTest : public ::testing::Test {
     protected:
         MockData mock;
         Recommender recommender;
-        GetCommand getCmd;
 
-        GetCommandTest() : recommender(&mock), getCmd(recommender) {}
+        GetCommandTest() : recommender(&mock) {}
 };
 
+// Test to check the output of a valid and logical request.
 TEST_F(GetCommandTest, ValidInput) {
-    string output = getCmd.execute("1", "104");
+    GetCommand get(recommender, &mock, "1", "104");
+
+    string output = get.execute();
     string expected = "200 Ok\n\n105 106 111 110 112 113 107 108 109 114\n";
 
     EXPECT_EQ(output, expected);
 }
 
+// Test to disqualify a non-existing user request.
 TEST_F(GetCommandTest, UserNotFound) {
-    string output = getCmd.execute("999", "104");
-    EXPECT_EQ(output, "404 Not Found\n");
-}
+    GetCommand get(recommender, &mock, "999", "104");
 
-TEST_F(GetCommandTest, productNotFound) {
-    string output = getCmd.execute("1", "999");
+    string output = get.execute();
     EXPECT_EQ(output, "404 Not Found\n");
 }
