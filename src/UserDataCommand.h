@@ -26,11 +26,11 @@ public:
     UserDataCommand& operator=(UserDataCommand&&)      = delete;
 
 protected:
-    IDataReadable&   reader_;
+    const IDataReadable&   reader_;
     int              userId_;
     std::vector<int> productIds_;
 
-    UserDataCommand(IDataReadable& reader,
+    UserDataCommand(const IDataReadable& reader,
                     int userId,
                     std::vector<int> productIds)
         : reader_(reader),

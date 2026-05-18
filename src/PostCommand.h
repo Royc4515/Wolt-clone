@@ -22,7 +22,7 @@
 
 class PostCommand : public UserDataCommand {
 public:
-    PostCommand(IDataReadable& reader,
+    PostCommand(const IDataReadable& reader,
                 IDataWriteable& writer,
                 int userId,
                 std::vector<int> productIds);

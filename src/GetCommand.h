@@ -9,11 +9,11 @@ class GetCommand : public ICommand {
     private:
         Recommender& recommender;
         const IDataReadable* data;
-        std::string userIdStr;
-        std::string productIdStr;
+        int userId;
+        int productId;
     
     public:
-        GetCommand(Recommender& rec, const IDataReadable* data, const std::string& userId, const std::string& productId);
+        GetCommand(Recommender& rec, const IDataReadable* data, int userId, int productId);
         [[nodiscard]]std::string execute() const override;
 };
 

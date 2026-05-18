@@ -9,7 +9,7 @@ namespace {
     constexpr const char* kNotFoundResponse  = "404 Not Found\n";
 }
 
-PatchCommand::PatchCommand(IDataReadable& reader,
+PatchCommand::PatchCommand(const IDataReadable& reader,
                            IDataWriteable& writer,
                            int userId,
                            std::vector<int> productIds)

@@ -25,7 +25,7 @@
 
 class DeleteCommand : public UserDataCommand {
 public:
-    DeleteCommand(IDataReadable& reader,
+    DeleteCommand(const IDataReadable& reader,
                   IDataDeletable& deleter,
                   int userId,
                   std::vector<int> productIds);

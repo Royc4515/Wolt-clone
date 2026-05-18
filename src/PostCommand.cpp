@@ -9,7 +9,7 @@ namespace {
     constexpr const char* kNotFoundResponse = "404 Not Found\n";
 }
 
-PostCommand::PostCommand(IDataReadable& reader,
+PostCommand::PostCommand(const IDataReadable& reader,
                          IDataWriteable& writer,
                          int userId,
                          std::vector<int> productIds)
