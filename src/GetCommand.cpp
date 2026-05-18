@@ -1,5 +1,8 @@
 #include "GetCommand.h"
 
+#include <stdexcept>
+#include <vector>
+
 using namespace std;
 
 GetCommand::GetCommand(Recommender& rec, const IDataReadable* dataPtr, const string& userId, const string& productId) 

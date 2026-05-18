@@ -1,6 +1,7 @@
 // A class that will hold the mock data for the recommendations tests.
 
 #include "MockData.h"
+#include <algorithm>
 using namespace std;
 
 MockData::MockData() {

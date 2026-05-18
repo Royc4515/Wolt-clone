@@ -6,13 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Define the library
-add_library(woltlib STATIC 
-    src/Recommender.cpp 
-    src/Cli.cpp 
-    src/DataManager.cpp 
-    src/HelpCommand.cpp 
-    src/MockData.cpp 
+add_library(woltlib STATIC
+    src/Recommender.cpp
+    src/Cli.cpp
+    src/DataManager.cpp
+    src/HelpCommand.cpp
+    src/MockData.cpp
     src/GetCommand.cpp
+    src/PostCommand.cpp
 )
 target_include_directories(woltlib PUBLIC src)
 target_compile_features(woltlib PUBLIC cxx_std_17)
