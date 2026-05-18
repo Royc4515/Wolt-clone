@@ -26,7 +26,7 @@
 
 class PatchCommand : public UserDataCommand {
 public:
-    PatchCommand(IDataReadable& reader,
+    PatchCommand(const IDataReadable& reader,
                  IDataWriteable& writer,
                  int userId,
                  std::vector<int> productIds);

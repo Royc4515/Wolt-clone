@@ -9,7 +9,7 @@ namespace {
     constexpr const char* kNotFoundResponse  = "404 Not Found\n";
 }
 
-DeleteCommand::DeleteCommand(IDataReadable& reader,
+DeleteCommand::DeleteCommand(const IDataReadable& reader,
                              IDataDeletable& deleter,
                              int userId,
                              std::vector<int> productIds)
