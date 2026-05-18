@@ -12,8 +12,11 @@
 #include <vector>
 #include "../src/IDataReadable.h"
 #include "../src/IDataWriteable.h"
+#include "../src/IDataDeletable.h"
 
-class MockDatabase : public IDataReadable, public IDataWriteable {
+class MockDatabase : public IDataReadable,
+                     public IDataWriteable,
+                     public IDataDeletable {
 public:
     // --- IDataReadable implementation ---
 
@@ -42,6 +45,25 @@ public:
                           const std::vector<int>& productIds) override {
         for (int productId : productIds) {
             data_[userId].push_back(productId);
+        }
+    }
+
+    // --- IDataDeletable implementation ---
+    // Matches DataManager's semantics: no-op if the user is unknown
+    // or none of the requested products are present; the user key is
+    // preserved even if their product vector becomes empty.
+    void deleteProducts(int userId,
+                        const std::vector<int>& productIds) override {
+        auto it = data_.find(userId);
+        if (it == data_.end()) {
+            return;
+        }
+        auto& userProducts = it->second;
+        for (int productId : productIds) {
+            userProducts.erase(
+                std::remove(userProducts.begin(), userProducts.end(), productId),
+                userProducts.end()
+            );
         }
     }
 
