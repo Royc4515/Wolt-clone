@@ -18,26 +18,29 @@ def main():
         sys.exit(1) # if the connection fails, exit with a non-zero status code
 
     # process does not terminate until the user inputs EOF (Ctrl+D) in the console
-    while True:
-        try:
-            #wait for user input from the console
-            command = input()
-        except EOFError:
-            break # if the user inputs EOF, break out of the loop and close the connection
-        
-        # Dummy Client: Don't send anything to the server, just print the command to the console
-        message = command + "\n"
-        client_socket.sendall(message.encode('utf-8')) 
+    try:
+        while True:
+            try:
+                #wait for user input from the console
+                command = input()
+            except EOFError:
+                break # if the user inputs EOF, break out of the loop and close the connection
 
-        # block until we receive a response from the server
-        response = client_socket.recv(4096)
-        
-        # if the server closes the connection, recv will return an empty bytes object
-        if not response:
-            break
-            
-        # Print the response from the server to the console
-        print(response.decode('utf-8'), end="")
+            # Dummy Client: Don't send anything to the server, just print the command to the console
+            message = command + "\n"
+            client_socket.sendall(message.encode('utf-8'))
+
+            # block until we receive a response from the server
+            response = client_socket.recv(4096)
+
+            # if the server closes the connection, recv will return an empty bytes object
+            if not response:
+                break
+
+            # Print the response from the server to the console
+            print(response.decode('utf-8'), end="")
+    finally:
+        client_socket.close()
 
 if __name__ == "__main__":
     main()
