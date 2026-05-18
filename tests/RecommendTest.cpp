@@ -1,7 +1,7 @@
 // This will contain all tests regarding the implementation of "recommend" command, using gtest.
 
 #include <gtest/gtest.h>
-#include "MockData.h"
+#include "MockDatabase.h"
 #include "../src/Recommender.h"
 
 using namespace std;
@@ -29,7 +29,7 @@ class RecommendTest : public Recommender {
 
 };
 
-MockData mock;
+MockDatabase mock;
 RecommendTest testable(&mock);
 
 // Test to check only the similarityCalc function. According to base example.
@@ -138,8 +138,9 @@ TEST(sort__Test, tieBreaker) {
 
 // A test based on the example in the instructions file. Testing the entire recommend function.
 TEST(recomAlgo, baseExample) {
-    MockData mock;
-    Recommender recommender(&mock);
+    MockDatabase localMock;
+    localMock.loadFakeData();
+    Recommender recommender(&localMock);
 
     int testUser = 1;
     int testProduct = 104;
@@ -152,6 +153,8 @@ TEST(recomAlgo, baseExample) {
 }
 
 int main(int argc, char **argv) {
+    mock.loadFakeData();
+    
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

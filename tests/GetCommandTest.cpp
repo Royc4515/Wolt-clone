@@ -1,16 +1,18 @@
 #include <gtest/gtest.h>
-#include "../src/MockData.h"
 #include "../src/Recommender.h"
 #include "../src/GetCommand.h"
+#include "MockDatabase.h"
 
 using namespace std;
 
 class GetCommandTest : public ::testing::Test {
     protected:
-        MockData mock;
+        MockDatabase mock;
         Recommender recommender;
 
-        GetCommandTest() : recommender(&mock) {}
+        GetCommandTest() : recommender(&mock) {
+            mock.loadFakeData();
+        }
 };
 
 // Test to check the output of a valid and logical request.
