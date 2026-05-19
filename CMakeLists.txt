@@ -16,6 +16,7 @@ add_library(woltlib STATIC
     src/PatchCommand.cpp
     src/DeleteCommand.cpp
     src/RouterCommand.cpp
+    src/Server/Server.cpp
 )
 target_include_directories(woltlib PUBLIC src)
 target_compile_features(woltlib PUBLIC cxx_std_17)
