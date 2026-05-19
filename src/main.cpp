@@ -1,16 +1,38 @@
 #include <iostream>
-#include "Cli.h"
+#include <string>
+#include <cstdlib>
+#include <stdexcept>
+
 #include "DataManager.h"
+#include "Recommender.h"
+#include "RouterCommand.h"
+#include "Server/Server.h"
 
-int main() {
-    // Create an instance of the data manager
-    DataManager db;
+using namespace std;
 
-    // Create an instance of the CLI, passing the data writer and reader to it.
-    Cli cli(std::cin, std::cout, &db, &db);
+int main(int argc, char* argv[]) {
+    // Validate command-line arguments: expects program name and port.
+    if (argc != 2) {
+        return 1;
+    }
 
-    // Run the CLI
-    cli.run();
+    // Convert the provided port argument from string to integer.
+    int port = atoi(argv[1]);
+
+    try {
+        // Initialize Database Manager, Recommender, Router.
+        DataManager dataManager("data/database.txt");
+        Recommender recommender(&dataManager);
+        RouterCommand router(recommender, &dataManager, &dataManager, &dataManager);
+
+        // Start the TCP server.
+        Server server(port, router);
+        server.start();
+
+    } catch (const exception& e) {
+        // Catch initialization errors, and exit silently.
+        return 1;
+    }
 
     return 0;
 }
