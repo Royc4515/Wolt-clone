@@ -8,7 +8,7 @@
 
 ## Q1: Did renaming commands (add→POST, recommend→GET) require touching "closed" code?
 
-**Yes — but only in the routing layer (Cli.cpp), which Dana owns.**
+**Yes — but only in the routing layer (Cli.cpp), which was deliberately refactored to be more "Open/Closed" going forward.**
 
 The command classes themselves never reference their own verb names; they
 just expose `execute()`. The string `"POST"` lives only in the place that
@@ -16,16 +16,13 @@ parses the incoming request line, so any future renaming would be a
 one-line change in the routing table — not a touch of `PostCommand`,
 `PatchCommand`, or `DeleteCommand`.
 
-In Ex1 the Cli was a chain of `if (command == "add")` blocks — that is the
-exact code that should have been closed. The migration replaces those
-branches with a dispatch table keyed by command name (Dana's routing
-refactor), so adding/renaming a verb in the future is data, not code.
+The only modification occurred in the routing layer (`RouterCommand`), which simply maps the new incoming string (e.g., "POST") to the instantiation of the correct command object. Therefore, the core command implementations remained perfectly closed for modification.
 
 ---
 
 ## Q2: Did adding new commands (PATCH, DELETE) require touching "closed" code?
 
-**No — each new command is a new class that drops into the existing
+**No. Each new command is a new class that drops into the existing
 infrastructure without modifying it.**
 
 This is the core OCP payoff of the design we put in place in SCRUM-100:
@@ -47,12 +44,13 @@ routing table that maps the verb string to a factory. That is the
 
 ## Q3: Did changing the output format (added "201 Created", "404 Not Found", etc.) require touching "closed" code?
 
-**No — the response format lives entirely inside each command's
+**No. The response format lives entirely inside each command's
 `execute()` and is owned by that command.**
 
-`Cli` calls `execute()` and forwards the resulting `std::string` to the
-socket. It never inspects, parses, or constructs the response. If
-tomorrow the spec switches `"201 Created\n"` to `"201 OK\n"`, only
+The `Server` and `RouterCommand` classes are entirely agnostic to the content of the responses. The Router calls `execute()`, and the Server takes the returned `std::string` and sends it directly over the TCP socket, appending the required newline.
+If the specification changes a response from "201 Created" to "201 OK", only the specific command's `.cpp` file changes. The networking layer, the routing layer, and all other commands compile and run unchanged.
+
+If tomorrow the spec switches `"201 Created\n"` to `"201 OK\n"`, only
 `PostCommand.cpp` changes; every other file in the project compiles and
 runs unchanged.
 
@@ -68,25 +66,22 @@ trivial and would not require touching call sites' logic.
 
 ## Q4: Did switching input/output from console to TCP sockets require touching "closed" code?
 
-**No, by design — the command classes are completely I/O-agnostic.**
+**No, by design. Our architecture completely decouples the transport layer from the business logic.**
 
+Our command classes (PostCommand, GetCommand, etc.) are completely I/O-agnostic.
 A command receives **already-parsed** primitive arguments (`int userId`,
-`std::vector<int> productIds`) and returns a `std::string`. It has no
+`std::vector<int> productIds`) from the Router and returns a `std::string`. It has no
 knowledge of where those values came from or where the response is
 going. The same `PostCommand` object would behave identically whether
 the request came from `stdin`, a TCP socket, an HTTP server, or a unit
 test holding a `MockDatabase`.
-
-The transport-specific code (socket accept, recv loop, send) lives
-entirely in Dana's server layer. Swapping from `cin`/`cout` to a socket
-required changes only there. The data layer (`DataManager`, the three
-`IData*` interfaces) is equally transport-agnostic.
 
 This is also what makes the tests fast and deterministic: `MockDatabase`
 is an in-memory implementation of the same `IDataReadable` /
 `IDataWriteable` / `IDataDeletable` interfaces that `DataManager` uses,
 so the commands run with zero filesystem or network I/O during testing.
 
+To support TCP sockets, we introduced the `Server` class, which handles the raw byte transmission and the `accept`/`recv`/`send` loop. The `Server` passes raw strings to the `RouterCommand`, which parses the arguments and invokes the commands. Because the business logic never relied on console I/O, transitioning to a Client-Server architecture over TCP  required zero changes to the data layer or the command implementations.
 ---
 
 ## Data Layer Design Decisions
