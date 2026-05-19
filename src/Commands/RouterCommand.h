@@ -2,10 +2,10 @@
 #define ROUTER_COMMAND_H
 
 #include <string>
-#include "Recommender.h"
-#include "IDataReadable.h"
-#include "IDataDeletable.h"
-#include "IDataWriteable.h"
+#include "../Logic/Recommender.h"
+#include "../Data/IDataReadable.h"
+#include "../Data/IDataDeletable.h"
+#include "../Data/IDataWriteable.h"
 
 class RouterCommand {
     private:

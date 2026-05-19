@@ -3,7 +3,7 @@
 #ifndef RECOMMENDER_H
 #define RECOMMENDER_H
 
-#include "IDataReadable.h"
+#include "../Data/IDataReadable.h"
 #include <vector>
 #include <map>
 #include <algorithm>

@@ -2,7 +2,7 @@
 #define GETCOMMAND_H
 
 #include <string>
-#include "Recommender.h"
+#include "../Logic/Recommender.h"
 #include "ICommand.h"
 
 class GetCommand : public ICommand {

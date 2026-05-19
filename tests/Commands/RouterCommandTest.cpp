@@ -1,9 +1,9 @@
 // This tests class will check only the *validity* of the input, not its logic.
 
 #include <gtest/gtest.h>
-#include "../src/Recommender.h"
-#include "../src/RouterCommand.h"
-#include "MockDatabase.h"
+#include "../src/Logic/Recommender.h"
+#include "../src/Commands/RouterCommand.h"
+#include "../Data/MockDatabase.h"
 
 using namespace std;
 

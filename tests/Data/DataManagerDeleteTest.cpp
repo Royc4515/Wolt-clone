@@ -5,7 +5,7 @@
 #include <cstdio>     // for std::remove
 #include <string>
 #include <vector>
-#include "../src/DataManager.h"
+#include "../src/Data/DataManager.h"
 
 using namespace std;
 

@@ -1,8 +1,8 @@
 // This will contain all tests regarding the implementation of "recommend" command, using gtest.
 
 #include <gtest/gtest.h>
-#include "MockDatabase.h"
-#include "../src/Recommender.h"
+#include "../Data/MockDatabase.h"
+#include "../src/Logic/Recommender.h"
 
 using namespace std;
 

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../src/HelpCommand.h"
+#include "../src/Commands/HelpCommand.h"
 
 using namespace std;
 

@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 #include "UserDataCommand.h"
-#include "IDataReadable.h"
-#include "IDataDeletable.h"
+#include "../Data/IDataReadable.h"
+#include "../Data/IDataDeletable.h"
 
 class DeleteCommand : public UserDataCommand {
 public:

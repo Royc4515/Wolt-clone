@@ -52,7 +52,7 @@ string RouterCommand::route(const string& request) const {
     }
 
     // Creating a "command factory" to navigate through the commands using enums.
-    static const unordered_map<string, function<string(const vector<int>&) >> cmdFactory = {
+    const unordered_map<string, function<string(const vector<int>&) >> cmdFactory = {
         {"POST", [this](const vector<int>& a) {
             if (a.size() < 2) return string(kBadRequest);
 

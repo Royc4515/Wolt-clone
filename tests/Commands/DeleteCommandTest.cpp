@@ -15,8 +15,8 @@
 // Syntactic validation is the CLI's responsibility upstream.
 
 #include <gtest/gtest.h>
-#include "MockDatabase.h"
-#include "../src/DeleteCommand.h"
+#include "../Data/MockDatabase.h"
+#include "../src/Commands/DeleteCommand.h"
 
 
 // Happy path: a single product is removed from an existing user.

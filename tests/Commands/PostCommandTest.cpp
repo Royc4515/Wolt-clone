@@ -7,8 +7,8 @@
 // responsibility upstream and is NOT covered here.
 
 #include <gtest/gtest.h>
-#include "MockDatabase.h"
-#include "../src/PostCommand.h"
+#include "../Data/MockDatabase.h"
+#include "../src/Commands/PostCommand.h"
 
 
 // Happy path: an empty database accepts a new user and replies 201.

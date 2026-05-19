@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 #include "ICommand.h"
-#include "IDataReadable.h"
+#include "../Data/IDataReadable.h"
 
 class UserDataCommand : public ICommand {
 public:
