@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../src/Recommender.h"
-#include "../src/GetCommand.h"
-#include "MockDatabase.h"
+#include "../src/Logic/Recommender.h"
+#include "../src/Commands/GetCommand.h"
+#include "../Data/MockDatabase.h"
 
 using namespace std;
 

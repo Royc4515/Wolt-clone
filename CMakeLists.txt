@@ -5,20 +5,30 @@ project(WoltClone CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Using AddressSanitizer for debugging.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+
 # Define the library
 add_library(woltlib STATIC
-    src/Recommender.cpp
-    src/Cli.cpp
-    src/DataManager.cpp
-    src/HelpCommand.cpp
-    src/GetCommand.cpp
-    src/PostCommand.cpp
-    src/PatchCommand.cpp
-    src/DeleteCommand.cpp
-    src/RouterCommand.cpp
+    src/Logic/Recommender.cpp
+    src/Data/DataManager.cpp
+    src/Commands/HelpCommand.cpp
+    src/Commands/GetCommand.cpp
+    src/Commands/PostCommand.cpp
+    src/Commands/PatchCommand.cpp
+    src/Commands/DeleteCommand.cpp
+    src/Commands/RouterCommand.cpp
     src/Server/Server.cpp
 )
-target_include_directories(woltlib PUBLIC src)
+
+target_include_directories(woltlib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Commands
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Data
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Logic
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Server
+)
+
 target_compile_features(woltlib PUBLIC cxx_std_17)
 
 # Testing setup

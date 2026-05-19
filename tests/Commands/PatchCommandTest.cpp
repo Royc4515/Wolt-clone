@@ -8,8 +8,8 @@
 // PatchCommand assumes its inputs were already parsed and validated.
 
 #include <gtest/gtest.h>
-#include "MockDatabase.h"
-#include "../src/PatchCommand.h"
+#include "../Data/MockDatabase.h"
+#include "../src/Commands/PatchCommand.h"
 
 
 // Happy path: an existing user receives new products and we get 204.

@@ -1,16 +1,15 @@
 find_package(GTest REQUIRED)
 
 add_executable(run_tests
-    RecommendTest.cpp
-    DataManagerTest.cpp
-    DataManagerDeleteTest.cpp
-    CliTest.cpp
-    HelpCommandTest.cpp
-    GetCommandTest.cpp
-    PostCommandTest.cpp
-    PatchCommandTest.cpp
-    DeleteCommandTest.cpp
-    RouterCommandTest.cpp
+    Logic/RecommendTest.cpp
+    Data/DataManagerTest.cpp
+    Data/DataManagerDeleteTest.cpp
+    Commands/HelpCommandTest.cpp
+    Commands/GetCommandTest.cpp
+    Commands/PostCommandTest.cpp
+    Commands/PatchCommandTest.cpp
+    Commands/DeleteCommandTest.cpp
+    Commands/RouterCommandTest.cpp
 )
 
 target_link_libraries(run_tests PUBLIC GTest::gtest GTest::gtest_main pthread woltlib)

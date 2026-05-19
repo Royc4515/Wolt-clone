@@ -10,9 +10,9 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include "../src/IDataReadable.h"
-#include "../src/IDataWriteable.h"
-#include "../src/IDataDeletable.h"
+#include "../src/Data/IDataReadable.h"
+#include "../src/Data/IDataWriteable.h"
+#include "../src/Data/IDataDeletable.h"
 
 class MockDatabase : public IDataReadable,
                      public IDataWriteable,

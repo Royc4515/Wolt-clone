@@ -17,8 +17,8 @@
 #include <string>
 #include <vector>
 #include "UserDataCommand.h"
-#include "IDataReadable.h"
-#include "IDataWriteable.h"
+#include "../Data/IDataReadable.h"
+#include "../Data/IDataWriteable.h"
 
 class PostCommand : public UserDataCommand {
 public:
