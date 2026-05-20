@@ -1,6 +1,9 @@
 # Use a Ubuntu environment to compile C++ (base image).
 FROM ubuntu:22.04
 
+# Avoid interactive prompts during apt installations
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Set the working directory in the container.
 WORKDIR /app
 
@@ -18,5 +21,8 @@ COPY ./data ./data
 # Create a build directory, run CMake, and compile the project (app + tests).
 RUN mkdir build && cd build && cmake .. && make
 
-# Run the main CLI app.
-CMD ["./build/WoltClone"]
+# Set the working directory to the build folder so we can easily run the executables
+WORKDIR /app/build
+
+# Run the server on port 8080 by default.
+CMD ["./WoltClone", "8080"]

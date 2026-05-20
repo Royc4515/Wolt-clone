@@ -5,7 +5,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # copy the client script into the container
-COPY client.py .
+COPY ./src/Client/client.py .
 
 # install any necessary dependencies (if needed)
 ENTRYPOINT ["python","-u", "client.py"]
