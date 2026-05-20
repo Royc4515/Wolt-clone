@@ -314,31 +314,50 @@ Notes on the example:
 
 ## Screenshots
 
-<!-- TODO(Roy): capture fresh Ex2 screenshots and drop them into screenshots/.
-     The existing screenshots/ images are from Ex1 (add / recommend / help) and
-     do NOT match Ex2 (POST/PATCH/DELETE/GET over TCP, the new HELP output).
-     Suggested captures:
-       1. A client/server TCP session: POST -> PATCH -> GET -> DELETE          -> screenshots/ex2_session.png
-       2. The HELP command output                                             -> screenshots/ex2_help.png
-       3. 404 Not Found and 400 Bad Request cases                             -> screenshots/ex2_errors.png
-       4. The GoogleTest suite passing (run_tests)                            -> screenshots/ex2_tests.png
-     Then replace the placeholder links below with the real image paths. -->
+<!-- TODO(Roy): save Dana's Ex2 screenshots into screenshots/ under the exact
+     filenames referenced below. Do NOT overwrite the Ex1 images already in
+     screenshots/ (add&reccomend.png, help.png, precistance_data.png,
+     tests_1.png, tests_2.png) — Ex1_README.md still uses them.
+       ex2_connection.png   - server running + client just connected (no output)
+       ex2_help.png         - the HELP command output
+       ex2_post_delete.png  - POST -> 201 Created, DELETE -> 404 Not Found
+       ex2_bad_request.png  - an invalid command -> 400 Bad Request
+       ex2_tests_1.png      - cmake + make + start of the GoogleTest run
+       ex2_tests_2.png      - more of the GoogleTest run
+       ex2_tests_3.png      - end of the run: "51 tests ... PASSED"
+     Once the files are committed the images below will render. -->
 
-### TCP session (client and server)
+### Server and client connected
 
-_Placeholder — add `screenshots/ex2_session.png`._
+The client opens a TCP connection to the server and waits for input — nothing is
+printed until the user enters a command.
+
+![Server and client connected](screenshots/ex2_connection.png)
 
 ### HELP command
 
-_Placeholder — add `screenshots/ex2_help.png`._
+![HELP command output](screenshots/ex2_help.png)
 
-### Error responses (404 / 400)
+### POST and DELETE — 201 Created / 404 Not Found
 
-_Placeholder — add `screenshots/ex2_errors.png`._
+`POST` on a new user succeeds with `201 Created`; a `DELETE` that is inconsistent
+with the stored data is rejected with `404 Not Found`.
+
+![POST and DELETE responses](screenshots/ex2_post_delete.png)
+
+### Invalid command — 400 Bad Request
+
+An unrecognized command is answered with `400 Bad Request`.
+
+![400 Bad Request](screenshots/ex2_bad_request.png)
 
 ### GoogleTest suite
 
-_Placeholder — add `screenshots/ex2_tests.png`._
+All 51 tests across 14 test suites pass.
+
+![GoogleTest run, part 1](screenshots/ex2_tests_1.png)
+![GoogleTest run, part 2](screenshots/ex2_tests_2.png)
+![GoogleTest run, part 3](screenshots/ex2_tests_3.png)
 
 ---
 
@@ -351,16 +370,17 @@ but open for extension**. The four answers below are also tracked in
 
 ### Q1 — Renaming commands (`add`→`POST`, `recommend`→`GET`)
 
-**It did not require modifying the command classes.** Each command class exposes
-only `execute()` and never references its own verb name. The verb strings live
-in exactly one place: the dispatch table inside `RouterCommand.cpp`, which maps a
-verb to the command it creates. Renaming a verb is a one-line change to that
-data table.
+Renaming the commands did **not** require modifying the command classes. This is
+the result of a deliberate **separation of concerns**: each command class knows
+only how to *execute* its own logic — it exposes a single `execute()` method and
+never references its own verb name. Deciding which verb maps to which command is
+solely the routing layer's responsibility, so every verb string lives in exactly
+one place: the dispatch table inside `RouterCommand`.
 
-In Ex1 the CLI was a chain of `if (command == "add")` branches — that was the
-code that should have been closed. Ex2 replaces those branches with the
-verb→command dispatch table, so adding or renaming a verb is now *data*, not
-*code*.
+The only modification occurred in the routing layer (`RouterCommand`), which
+simply maps the new incoming string (e.g., "POST") to the instantiation of the
+correct command object. Therefore, the core command implementations remained
+perfectly closed for modification.
 
 ### Q2 — Adding new commands (`PATCH`, `DELETE`)
 
