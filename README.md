@@ -125,13 +125,14 @@ Wolt-clone-Ex2/
 │   ├── Logic/
 │   │   └── Recommender.{h,cpp}  # Similarity-based recommendation algorithm
 │   ├── Client/
-│   │   ├── client.py            # Python 3 TCP client
-│   │   └── Dockerfile           # Client container image
+│   │   └── client.py            # Python 3 TCP client
 │   └── Archive/                 # Ex1 CLI sources, kept for reference only
 ├── tests/                       # GoogleTest unit + integration tests
 ├── data/                        # Persistent storage (database.txt is created at runtime)
 ├── screenshots/                 # Images used by this README
-├── Dockerfile                   # Server container image
+├── Dockerfile.server            # Server container image
+├── Dockerfile.client            # Client container image
+├── docker-compose.yml           # Builds & runs server, client, and tests together
 ├── CMakeLists.txt               # Build configuration
 ├── SOLID_TRACKING.md            # OCP design tracking notes
 └── README.md
@@ -209,46 +210,54 @@ python3 src/Client/client.py 127.0.0.1 8080
 
 ### Option 2 — Docker
 
-**Server image:**
+The repository ships a `docker-compose.yml` that builds and runs the server, the
+client, and the test suite from `Dockerfile.server` and `Dockerfile.client`.
+Compose is the easiest way to run the project — it wires up the networking so
+the client reaches the server automatically.
 
-<!-- TODO(SCRUM-160 / README): the server Dockerfile's CMD currently has no
-     port argument, so the container exits immediately. Dana is fixing the
-     server Dockerfile. Once her fix is merged, fill in the exact build + run
-     commands below (image name, `-p <port>:<port>` mapping, and how the port
-     is passed). Until then this block is a placeholder. -->
-
-```bash
-# Build the server image:
-docker build -t wolt_server .
-
-# Run the server — PLACEHOLDER, pending Dana's Dockerfile fix.
-# After the fix lands, replace this line with the real command, e.g.:
-#   docker run -p 8080:8080 wolt_server <how the port is passed>
-```
-
-**Client image:**
+**Run the server** (builds the images on first use; listens on port `8080`):
 
 ```bash
-# Build the client image:
-docker build -t wolt_client src/Client
-
-# Run the client (point it at the server's IP and port):
-docker run -it --network host wolt_client 127.0.0.1 8080
+docker compose up --build server
 ```
 
-> Note: `--network host` lets the client reach a server on the host machine. It
-> works on Linux; on Docker Desktop (macOS/Windows) host networking behaves
-> differently — there, put both containers on a shared user-defined network
-> (`docker network create ...`) or use the manual build instead.
-
-**Tests image** (built into the server image):
+**Run the client** (in another terminal — interactive):
 
 ```bash
-docker run --rm wolt_server ./build/tests/run_tests
+docker compose run --rm client
 ```
 
-> Note: data is persisted to a text file under `data/`. To keep it between
-> server runs, mount the directory: `-v "$(pwd)/data:/app/data"`.
+The client connects to the server container by its hostname (`server`) on port
+`8080`, so no IP configuration is needed.
+
+**Run the automated tests:**
+
+```bash
+docker compose run --rm tests
+```
+
+#### Without Compose
+
+The server image and the tests can also be built and run directly:
+
+```bash
+# Server (the image defaults to running on port 8080):
+docker build -f Dockerfile.server -t wolt_server .
+docker run -p 8080:8080 wolt_server
+
+# Tests (reuse the server image — tests are compiled into it):
+docker run --rm wolt_server ./tests/run_tests
+```
+
+The client image is built with
+`docker build -f Dockerfile.client -t wolt_client .` and takes the server IP and
+port as arguments. Because a container's own `127.0.0.1` is not the server,
+running the client standalone needs an explicit route to the server (e.g.
+`--network host` on Linux, or `host.docker.internal` on Docker Desktop). Compose
+avoids this entirely, so it is the recommended way to run the client.
+
+> Note: the Compose setup does not mount a host volume, so data created during a
+> run lives only inside the container and is not kept after it is removed.
 
 ### Run Example
 
