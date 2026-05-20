@@ -8,7 +8,7 @@
 
 ## Q1: Did renaming commands (add→POST, recommend→GET) require touching "closed" code?
 
-**Yes — but only in the routing layer (Cli.cpp), which was deliberately refactored to be more "Open/Closed" going forward.**
+**Yes — but only in the routing layer (RouterCommand), which was deliberately refactored to be more "Open/Closed" going forward.**
 
 The command classes themselves never reference their own verb names; they
 just expose `execute()`. The string `"POST"` lives only in the place that

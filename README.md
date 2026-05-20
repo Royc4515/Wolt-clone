@@ -428,7 +428,9 @@ synchronization. Making the server concurrent is therefore an *extension* of the
 Developed with **Agile Scrum**, tracked in **JIRA**:
 
 - Work is broken into epics, user stories, and tasks; each task is assigned
-  before work starts and is linked to its `feature/SCRUM-###` branch.
+  before work starts and is developed on a feature branch whose name contains
+  the JIRA issue key (e.g. `feat/scrum-160-...`), which links the branch to the
+  issue automatically.
 - **Feature-branch workflow:** every change is merged into `main` only through a
   **pull request** reviewed and approved by another team member.
 - **Server developed with TDD** (Red → Green → Refactor) using **GoogleTest**;
