@@ -1,0 +1,27 @@
+services:
+  # C++ Server Service
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "8080:8080"     # Maps port 8080 from the container to the host machine.
+    command: ["./WoltClone", "8080"]    # Starts the server executable listening on port 8080.
+
+  # Python Client Service
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server    # Ensures the server container starts up before the client runs.
+    command: ["server", "8080"]     # Passes the server's container hostname and port to the script.
+    stdin_open: true    # Keep stdin open.
+    tty: true           # Interactive mode.
+  
+  # C++ Unit Tests Service
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.server   # Reuses the server's build environment where tests are compiled.
+    command: ["./tests/run_tests"]      # Overrides the default server command to execute the tests independently.
