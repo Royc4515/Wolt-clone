@@ -314,50 +314,37 @@ Notes on the example:
 
 ## Screenshots
 
-<!-- TODO(Roy): save Dana's Ex2 screenshots into screenshots/ under the exact
-     filenames referenced below. Do NOT overwrite the Ex1 images already in
-     screenshots/ (add&reccomend.png, help.png, precistance_data.png,
-     tests_1.png, tests_2.png) — Ex1_README.md still uses them.
-       ex2_connection.png   - server running + client just connected (no output)
-       ex2_help.png         - the HELP command output
-       ex2_post_delete.png  - POST -> 201 Created, DELETE -> 404 Not Found
-       ex2_bad_request.png  - an invalid command -> 400 Bad Request
-       ex2_tests_1.png      - cmake + make + start of the GoogleTest run
-       ex2_tests_2.png      - more of the GoogleTest run
-       ex2_tests_3.png      - end of the run: "51 tests ... PASSED"
-     Once the files are committed the images below will render. -->
-
 ### Server and client connected
 
 The client opens a TCP connection to the server and waits for input — nothing is
 printed until the user enters a command.
 
-![Server and client connected](screenshots/ex2_connection.png)
+![Server and client connected](screenshots/ex2_connection.jpg)
 
 ### HELP command
 
-![HELP command output](screenshots/ex2_help.png)
+![HELP command output](screenshots/ex2_help.jpg)
 
 ### POST and DELETE — 201 Created / 404 Not Found
 
 `POST` on a new user succeeds with `201 Created`; a `DELETE` that is inconsistent
 with the stored data is rejected with `404 Not Found`.
 
-![POST and DELETE responses](screenshots/ex2_post_delete.png)
+![POST and DELETE responses](screenshots/ex2_post_delete.jpg)
 
 ### Invalid command — 400 Bad Request
 
 An unrecognized command is answered with `400 Bad Request`.
 
-![400 Bad Request](screenshots/ex2_bad_request.png)
+![400 Bad Request](screenshots/ex2_bad_request.jpg)
 
 ### GoogleTest suite
 
 All 51 tests across 14 test suites pass.
 
-![GoogleTest run, part 1](screenshots/ex2_tests_1.png)
-![GoogleTest run, part 2](screenshots/ex2_tests_2.png)
-![GoogleTest run, part 3](screenshots/ex2_tests_3.png)
+![GoogleTest run — build and first suites](screenshots/ex2_tests_1.jpg)
+![GoogleTest run — data-layer suites](screenshots/ex2_tests_2.jpg)
+![GoogleTest run — router/server suites and final result](screenshots/ex2_tests_3.jpg)
 
 ---
 
