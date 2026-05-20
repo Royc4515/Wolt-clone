@@ -31,7 +31,8 @@ The system tracks which products users have interacted with and recommends
 related products using a cross-user "similar taste" algorithm.
 
 - The **server** listens on a TCP port (passed as a command-line argument) and
-  handles **one client at a time**, sequentially.
+  handles **one client at a time**, sequentially. Neither program terminates on
+  its own — both run until the process is killed.
 - The **client** receives the server IP and port as command-line arguments,
   opens **one** TCP connection at startup, and reuses that single connection for
   every command throughout its run.
@@ -40,19 +41,16 @@ related products using a cross-user "similar taste" algorithm.
 - Every command sent and every response returned is terminated by a newline
   (`\n`).
 
-### Request / Response protocol
+### Status-code rules
 
-| Outcome | Server response |
+The success code for each individual command is listed in the
+[Command Reference](#command-reference) below. Two rules apply across *all*
+commands:
+
+| Situation | Server response |
 | :--- | :--- |
-| `POST` accepted | `201 Created` |
-| `PATCH` accepted | `204 No Content` |
-| `DELETE` accepted | `204 No Content` |
-| `GET` accepted | `200 Ok`, then a blank line, then the recommendations |
-| `HELP` | the command list |
-| Structurally valid but logically inconsistent (e.g. `PATCH` on a user that was never `POST`ed) | `404 Not Found` |
-| Unknown or malformed command | `400 Bad Request` |
-
-The programs never terminate on their own.
+| A command is structurally valid but logically inconsistent with stored data (e.g. `PATCH` on a user that was never `POST`ed) | `404 Not Found` |
+| A command is unknown or malformed | `400 Bad Request` |
 
 ---
 
@@ -63,14 +61,21 @@ commands, new response formats, and the move from console to sockets all plug in
 as *extensions* rather than *modifications* (see the
 [SOLID / OCP Design](#solid--ocp-design) section below).
 
-```
-        TCP socket
-Client  ─────────►  Server  ──►  RouterCommand  ──►  ICommand (POST/PATCH/DELETE/GET/HELP)
-(Python)            (accept,     (parses the          │
-                     recv loop)   request line,       ├──► Recommender ──┐
-                                  dispatches)         │                  ├──► IDataReadable /
-                                                      └──► DataManager ◄──┘    IDataWriteable /
-                                                           (file-backed)       IDataDeletable
+```text
+Client (Python)  — one persistent TCP connection; sends a command, prints the reply
+      │
+      ▼
+Server           — accepts one client, reads newline-terminated requests
+      │
+      ▼
+RouterCommand    — parses verb + integer args, dispatches (unknown/malformed → 400)
+      │
+      ▼
+ICommand         — PostCommand · PatchCommand · DeleteCommand · GetCommand · HelpCommand
+      │
+      ├──► Recommender  — computes recommendations (used by GET)
+      └──► DataManager  — implements IDataReadable / IDataWriteable / IDataDeletable,
+                          persists to data/database.txt
 ```
 
 - **`Server`** — owns the TCP socket: binds, listens, accepts one client, and
@@ -88,7 +93,10 @@ Client  ─────────►  Server  ──►  RouterCommand  ──
   `IDataWriteable`, `IDataDeletable`), all implemented by `DataManager`, which
   persists state to a text file under `data/`.
 - **`Recommender`** — the recommendation algorithm; depends only on
-  `IDataReadable`.
+  `IDataReadable`. Given a user and a product, it scores candidate products by
+  how many "similar" users (users who viewed the same items) also viewed them,
+  and returns a ranked list of up to 10 product ids — highest score first, ties
+  broken by the smaller product id.
 
 ---
 
@@ -228,6 +236,11 @@ docker build -t wolt_client src/Client
 docker run -it --network host wolt_client 127.0.0.1 8080
 ```
 
+> Note: `--network host` lets the client reach a server on the host machine. It
+> works on Linux; on Docker Desktop (macOS/Windows) host networking behaves
+> differently — there, put both containers on a shared user-defined network
+> (`docker network create ...`) or use the manual build instead.
+
 **Tests image** (built into the server image):
 
 ```bash
@@ -239,44 +252,54 @@ docker run --rm wolt_server ./build/tests/run_tests
 
 ### Run Example
 
-A sample session. Server in terminal 1, client in terminal 2; lines without a
-prefix are what the user types into the client, indented lines are the server's
-reply.
+A sample session, with the server in one terminal and the client in another.
+The client itself prints no prompt; in the transcript below, lines beginning
+with `>` are what the user types into the client, and the lines under them are
+the server's reply.
 
 **Terminal 1 — server:**
 
-```bash
+```text
 $ ./build/WoltClone 8080
 ```
 
 **Terminal 2 — client:**
 
-```bash
+```text
 $ python3 src/Client/client.py 127.0.0.1 8080
-POST 1 100 200
-    201 Created
-PATCH 1 300
-    204 No Content
-GET 1 100
-    200 Ok
+> POST 1 100 200
+201 Created
+> POST 2 100 300
+201 Created
+> PATCH 1 300
+204 No Content
+> GET 1 100
+200 Ok
 
-    <recommended product ids for user 1 / product 100>
-DELETE 1 300
-    204 No Content
-PATCH 7 500
-    404 Not Found        # user 7 was never POSTed
-banana
-    400 Bad Request      # unknown command
-HELP
-    DELETE, arguments: [userid] [productid1] [productid2] ...
-    GET, arguments: [userid] [productid]
-    PATCH, arguments: [userid] [productid1] [productid2] ...
-    POST, arguments: [userid] [productid1] [productid2] ...
-    help
+(recommended product ids — depends on the data stored on the server)
+> DELETE 1 300
+204 No Content
+> POST 1 400
+404 Not Found
+> ADD 1 100
+400 Bad Request
+> HELP
+DELETE, arguments: [userid] [productid1] [productid2] ...
+GET, arguments: [userid] [productid]
+PATCH, arguments: [userid] [productid1] [productid2] ...
+POST, arguments: [userid] [productid1] [productid2] ...
+help
 ```
 
-The `GET` reply body (the recommended ids) depends on the data currently stored
-on the server.
+Notes on the example:
+
+- `POST 1 400` returns `404 Not Found` — user `1` already exists, and `POST`
+  only creates *new* users, so the request is logically invalid.
+- `ADD 1 100` returns `400 Bad Request` — `ADD` was the Ex1 verb; it is no
+  longer a recognized command.
+- The `GET` reply body lists recommended product ids. It depends on the data
+  currently stored on the server, and is empty when there is too little data
+  to recommend anything.
 
 ---
 
