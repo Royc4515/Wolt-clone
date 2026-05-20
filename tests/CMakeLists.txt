@@ -10,6 +10,7 @@ add_executable(run_tests
     Commands/PatchCommandTest.cpp
     Commands/DeleteCommandTest.cpp
     Commands/RouterCommandTest.cpp
+    Server/ServerTest.cpp
 )
 
 target_link_libraries(run_tests PUBLIC GTest::gtest GTest::gtest_main pthread woltlib)
