@@ -1,0 +1,17 @@
+{
+  "name": "wolt-clone-web",
+  "version": "0.1.0",
+  "description": "Ex3 — Wolt-clone Node.js + Express web server (MVC)",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
