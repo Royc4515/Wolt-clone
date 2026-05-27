@@ -15,4 +15,8 @@ router.use('/users', usersRouter);
 const tokensRouter = require('./tokens.routes');
 router.use('/tokens', tokensRouter);
 
+// Import and mount the restaurants router
+const restaurantsRouter = require('./restaurants.routes');
+router.use('/restaurants', restaurantsRouter);
+
 module.exports = router;
