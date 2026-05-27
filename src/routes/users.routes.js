@@ -7,4 +7,7 @@ const usersController = require('../Controllers/users.controller');
 // Route incoming POST requests (to /api/users/) to the createUser function.
 router.post('/', usersController.createUser);
 
+// Route incoming GET requests with an ID parameter.
+router.get('/:id', usersController.getUser);
+
 module.exports = router;
