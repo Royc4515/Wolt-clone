@@ -49,8 +49,31 @@ const loginUser = (req, res) => {
     res.status(200).json({ id: mockUserId });
 };
 
+const getUser = (req, res) => {
+    // Extract the user ID.
+    const { id } = req.params;
+
+    // 2. Mock DB check - verify if the requested ID exists (We only "know" about user-12345 right now).
+    if (id !== "user-12345") {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    // Create a mock user object to return.
+    const mockUser = {
+        id: "user-12345",
+        name: "Israel Israeli",
+        phone: "050-1234567",
+        address: "Tel Aviv",
+        email: "test@example.com"
+    };
+
+    // Return the user details with 200 OK.
+    res.status(200).json(mockUser);
+};
+
 // Export the function so the router can use it.
 module.exports = {
     createUser,
-    loginUser
+    loginUser,
+    getUser
 };
