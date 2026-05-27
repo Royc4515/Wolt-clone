@@ -25,7 +25,32 @@ const createUser = (req, res) => {
     res.status(201).json({ id: mockUserId });
 };
 
+const loginUser = (req, res) => {
+    // Extract only email and password for login.
+    const { email, password } = req.body;
+
+    // Validate missing fields.
+    const missingFields = [];
+    if (!email) missingFields.push("Email");
+    if (!password) missingFields.push("Password");
+
+    if (missingFields.length > 0) {
+        const errMsg = `${missingFields.join(', ')} is required`;
+        return res.status(400).json({ error: errMsg });
+    }
+
+    // Mock verification. We simulate checking if the credentials match a known user.
+    if (email !== "test@example.com" || password !== "mySecretPassword") {
+        return res.status(401).json({ error: "Incorrect email or password" });
+    }
+
+    // Return 200 OK with the mock user ID. Will be modified after implementing DB.
+    const mockUserId = "user-12345";
+    res.status(200).json({ id: mockUserId });
+};
+
 // Export the function so the router can use it.
 module.exports = {
-    createUser
+    createUser,
+    loginUser
 };
