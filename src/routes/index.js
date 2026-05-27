@@ -7,10 +7,12 @@ router.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Import the users router.
+// Import and mount the users router.
 const usersRouter = require('./users.routes');
-
-// Mount the users router under the '/users' path.
 router.use('/users', usersRouter);
+
+// Import and mount the tokens router.
+const tokensRouter = require('./tokens.routes');
+router.use('/tokens', tokensRouter);
 
 module.exports = router;
