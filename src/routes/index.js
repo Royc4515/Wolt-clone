@@ -19,4 +19,17 @@ router.use('/tokens', tokensRouter);
 const restaurantsRouter = require('./restaurants.routes');
 router.use('/restaurants', restaurantsRouter);
 
+// SCRUM-183 — scaffold mounts for not-yet-implemented entities.
+// These routers point at controllers/genericController.notImplemented and
+// return 501. Each entity will replace the handler in its own ticket
+// without changing the file name or the mount path.
+const productsRouter = require('./products.routes');
+router.use('/products', productsRouter);
+
+const ordersRouter = require('./orders.routes');
+router.use('/orders', ordersRouter);
+
+const searchRouter = require('./search.routes');
+router.use('/search', searchRouter);
+
 module.exports = router;
