@@ -1,5 +1,6 @@
 const productsRepo = require('../services/repositories/products.repository');
-const reastRepo = require('../services/repositories/restaurants.repository');
+const restRepo = require('../services/repositories/restaurants.repository');
+const { recordView } = require('../services/tcpClient');
 
 // Retrieve all products belonging to a specific restaurant.
 const getAllProducts = (req, res) => {
@@ -13,21 +14,37 @@ const getAllProducts = (req, res) => {
 // Add a new product to a specific restaurant's menu.
 const createProduct = (req,res) => {
     const { id } = req.params;      // Restaurant ID.
-    const { name } = req.body;
+    const { name, description, price, isAvailable, category } = req.body;
 
-    // Validate that the product name is provided.
-    if (!name) {
-        return res.status(400).json({ error: "Name is required" });
+    // Validation for mandatory data.
+    const missingFields = [];
+    if (!name) missingFields.push("Name");
+    if (price === undefined) missingFields.push("Price");
+    if (!category) missingFields.push("Category");
+
+    if (missingFields.length > 0) {
+        return res.status(400).json({ error: `${missingFields.join(', ')} is required` });
     }
 
     // Ensure the target restaurant actually exists before adding a product.
-    const restaurant = reastRepo.findById(id);
+    const restaurant = restRepo.findById(id);
     if (!restaurant) {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    // Create the product and link it to the restaurant via restId.
-    const newProduct = productsRepo.create({ ...req.body, restId: id });
+    // Building the new object's data.
+    const newProdData = {
+        name,
+        description: description || "",
+        price,
+        category,
+        // If not mentioned otherwise, assume the product is available.
+        isAvailable: isAvailable !== undefined ? isAvailable : true,
+        restId: id // Will be used to link the product to a restaurant.
+    };
+
+    // Create the product.
+    const newProduct = productsRepo.create(newProdData);
     res.status(201).json({ id: newProduct.id });
 };
 
@@ -35,9 +52,15 @@ const createProduct = (req,res) => {
 const getProduct = (req,res) => {
     const { pid } = req.params;
     const product = productsRepo.findById(pid);
+    const userId = req.headers['x-user-id'];
 
     if (!product) {
         return res.status(404).json({ error: "Product not found" });
+    }
+
+    // Log the view to the Ex2 C++ server asynchronously if the user is logged in.
+    if (userId) {
+        recordView(userId, pid);
     }
     res.status(200).json(product);
 };
