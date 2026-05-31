@@ -8,15 +8,31 @@ const getRestaurants = (req, res) => {
 
 // Create a new restaurant.
 const createRest = (req, res) => {
-    const { name } = req.body;
+    const { name, description, address, phone, openHours, tags, rating } = req.body;
 
-    // Basic validation, ensuring name is provided.
-    if (!name) {
-        return res.status(400).json({ error: "Name is required" });
+    // Validation for mandatory data.
+    const missingFields = [];
+    if (!name) missingFields.push("Name");
+    if (!address) missingFields.push("Address");
+    if (!phone) missingFields.push("Phone number");
+
+    if (missingFields.length > 0) {
+        return res.status(400).json({ error: `${missingFields.join(', ')} is required` });
     }
 
-    // Pass the entire request body to allow optional fields (e.g., address).
-    const newRest = restRepo.create(req.body);
+    // Building the new object's data.
+    const newRestData = {
+        name,
+        description: description || "",
+        address,
+        phone,
+        openHours: openHours || "",
+        tags: tags || [],
+        rating: rating || 0
+    };
+
+    // Pass the data to create a new object.
+    const newRest = restRepo.create(newRestData);
     res.status(201).json({ id: newRest.id });
 };
 
