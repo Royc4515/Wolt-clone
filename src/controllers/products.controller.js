@@ -32,6 +32,11 @@ const createProduct = (req,res) => {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
+    // Ensure that the user trying to create a product is the restaurant's creator.
+    if (restaurant.creatorId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can add products" });
+    }
+
     // Building the new object's data.
     const newProdData = {
         name,
@@ -68,23 +73,42 @@ const getProduct = (req,res) => {
 // Update a specific product's details.
 const updateProduct = (req,res) => {
     const { pid } = req.params;
-    const updateProd = productsRepo.update(pid, req.body);
 
-    if (!updateProd) {
+    // Find the product in DB.
+    const product = productsRepo.findById(pid);
+    if (!product) {
         return res.status(404).json({ error: "Product not found" });
     }
-    // Respond with 204 No Content on successful update.
+
+    // Find the restaurant this product belongs to, and check for the creator.
+    const restaurant = restRepo.findById(product.restId);
+    if (!restaurant || restaurant.creatorId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
+    }
+
+    // Update the product.
+    productsRepo.update(pid, req.body);
     res.status(204).send();
 };
 
 // Delete a specific product from the database.
 const deleteProduct = (req, res) => {
     const { pid } = req.params;
-    const isDeleted = productsRepo.remove(pid);
-    if (!isDeleted) {
+
+    // Find the product in DB.
+    const product = productsRepo.findById(pid);
+    if (!product) {
         return res.status(404).json({ error: "Product not found" });
     }
-    // Respond with 204 No Content on successful deletion.
+
+    // Find the restaurant this product belongs to, and check for the creator.
+    const restaurant = restRepo.findById(product.restId);
+    if (!restaurant || restaurant.creatorId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
+    }
+
+    // Delete the product.
+    productsRepo.remove(pid);
     res.status(204).send();
 };
 

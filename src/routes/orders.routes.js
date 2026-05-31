@@ -2,15 +2,17 @@
 
 const express = require('express');
 const ordersController = require('../controllers/orders.controller');
-const { notImplemented } = require('../controllers/genericController');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', ordersController.createOrder);
-router.get('/', ordersController.getAllOrders);
+// Collection routes (No specific ID needed). All endpoints protected.
+router.post('/', requireAuth, ordersController.createOrder);
+router.get('/', requireAuth, ordersController.getAllOrders);
 
-router.get('/:id', ordersController.getOrder);
-router.patch('/:id', ordersController.updateOrder);
-router.delete('/:id', ordersController.deleteOrder);
+// Item-specific routes (Require a dynamic :id parameter).
+router.get('/:id', requireAuth, ordersController.getOrder);
+router.patch('/:id', requireAuth, ordersController.updateOrder);
+router.delete('/:id', requireAuth, ordersController.deleteOrder);
 
 module.exports = router;
