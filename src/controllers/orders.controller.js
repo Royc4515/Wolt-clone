@@ -100,8 +100,41 @@ const getOrder = (req, res) => {
     res.status(200).json(order);
 };
 
+// Update an existing order.
+const updateOrder = (req, res) => {
+    // Verify user is logged in.
+    const userId = req.headers['x-user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: "Unauthorized: User ID missing" });
+    }
+
+    const { id } = req.params;
+    const order = ordersRepo.findById(id);
+
+    // Check if the order exists.
+    if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Ensure the order actually belongs to the requesting user.
+    if (order.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You cannot access another user's order" });
+    }
+
+    // Update the order with the new data from the request body.
+    const updatedOrder = ordersRepo.update(id, req.body);
+    
+    if (!updateOrder) {
+        return res.status(404).json({ error: "Order not found during update" });
+    }
+
+    // Return 204 No Content on success.
+    return res.status(204).send();
+};
+
 module.exports = {
     createOrder,
     getAllOrders,
-    getOrder
+    getOrder,
+    updateOrder
 };
