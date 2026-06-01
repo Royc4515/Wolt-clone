@@ -11,6 +11,6 @@ router.get('/', ordersController.getAllOrders);
 
 router.get('/:id', ordersController.getOrder);
 router.patch('/:id', ordersController.updateOrder);
-router.delete('/:id', notImplemented);
+router.delete('/:id', ordersController.deleteOrder);
 
 module.exports = router;

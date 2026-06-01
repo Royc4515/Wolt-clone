@@ -132,9 +132,36 @@ const updateOrder = (req, res) => {
     return res.status(204).send();
 };
 
+// Delete a specific order.
+const deleteOrder = (req, res) => {
+    // Verify user is logged in.
+    const userId = req.headers['x-user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: "Unauthorized: User ID missing" });
+    }
+
+    const { id } = req.params;
+    const order = ordersRepo.findById(id);
+
+    // Check if the order exists.
+    if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Ensure the order actually belongs to the requesting user.
+    if (order.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden: You cannot access another user's order" });
+    }
+
+    // Delete the order.
+    ordersRepo.remove(id);
+    res.status(204).send();
+};
+
 module.exports = {
     createOrder,
     getAllOrders,
     getOrder,
-    updateOrder
+    updateOrder,
+    deleteOrder
 };
