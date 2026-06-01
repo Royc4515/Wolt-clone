@@ -7,8 +7,8 @@ const { notImplemented } = require('../controllers/genericController');
 const router = express.Router();
 
 router.post('/', ordersController.createOrder);
+router.get('/', ordersController.getOrders);
 
-router.get('/', notImplemented);
 router.get('/:id', notImplemented);
 router.patch('/:id', notImplemented);
 router.delete('/:id', notImplemented);

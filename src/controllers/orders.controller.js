@@ -57,6 +57,25 @@ const createOrder = (req, res) => {
     res.status(201).json({ id: newOrder.id });
 };
 
+// Fetch all orders for the logged-in user.
+const getOrders = (req, res) => {
+    // Verify user is logged in via header.
+    const userId = req.headers['x-user-id'];
+    if (!userId) {
+        return res.status(401).json({ error: "Unauthorized: User ID missing" });
+    }
+
+    // Fetch all orders from the DB.
+    const allOrders = ordersRepo.findAll();
+
+    // Filter orders to include only those belonging to the logged-in user.
+    const userOrders = allOrders.filter(order => order.userId === userId);
+
+    // Return the user's orders (or an empty array if there's none).
+    res.status(200).json(userOrders);
+};
+
 module.exports = {
-    createOrder
+    createOrder,
+    getOrders
 };
