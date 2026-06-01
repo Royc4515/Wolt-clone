@@ -28,7 +28,8 @@ const createRest = (req, res) => {
         phone,
         openHours: openHours || "",
         tags: tags || [],
-        rating: rating || 0
+        rating: rating || 0,
+        creatorId: req.userId
     };
 
     // Pass the data to create a new object.
@@ -53,14 +54,19 @@ const getRest = (req,res) => {
 const updateRest = (req, res) => {
     const { id } = req.params;
 
-    // The update function returns the updated object or null if not found.
-    const updatedRest = restRepo.update(id, req.body);
-
-    if (!updatedRest) {
+    // Check that the restaurant exists in DB.
+    const restaurant = restRepo.findById(id);
+    if (!restaurant) {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    // Respond with "204 No Content" on successful update.
+    // Ensure that the user trying to update is the creator.
+    if (restaurant.creatorId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the creator can update this restaurant" });
+    }
+
+    // Update the restaurant.
+    restRepo.update(id, req.body);
     res.status(204).send();
 };
 
@@ -68,6 +74,18 @@ const updateRest = (req, res) => {
 const deleteRest = (req, res) => {
     const { id } = req.params;
 
+    // Check that the restaurant exists in DB.
+    const restaurant = restRepo.findById(id);
+    if (!restaurant) {
+        return res.status(404).json({ error: "Restaurant not found" });
+    }
+
+    // Ensure that the user trying to delete is the creator.
+    if (restaurant.creatorId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the creator can update this restaurant" });
+    }
+
+    // Delete the restaurant.
     restRepo.remove(id);
     res.status(204).send();
 }

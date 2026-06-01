@@ -4,12 +4,7 @@ const prodRepo = require('../services/repositories/products.repository');
 
 // Create a new order.
 const createOrder = (req, res) => {
-    // Verify user is logged in via header.
-    const userId = req.headers['x-user-id'];
-    if (!userId) {
-        return res.status(401).json({ error: "Unauthorized: User ID missing" });
-    }
-
+    const userId = req.userId;
     const { restaurantId, items } = req.body;
 
     // Validate input structure.
@@ -59,11 +54,7 @@ const createOrder = (req, res) => {
 
 // Fetch all orders for the logged-in user.
 const getAllOrders = (req, res) => {
-    // Verify user is logged in via header.
-    const userId = req.headers['x-user-id'];
-    if (!userId) {
-        return res.status(401).json({ error: "Unauthorized: User ID missing" });
-    }
+    const userId = req.userId;
 
     // Fetch all orders from the DB.
     const allOrders = ordersRepo.findAll();
@@ -77,12 +68,7 @@ const getAllOrders = (req, res) => {
 
 // Retrieve a specific order by its ID.
 const getOrder = (req, res) => {
-    // Verify user is logged-in.
-    const userId = req.headers['x-user-id'];
-    if (!userId) {
-        return res.status(401).json({ error: "Unauthorized: User ID missing" });
-    }
-
+    const userId = req.userId;
     const { id } = req.params;
     const order = ordersRepo.findById(id);
 
@@ -102,12 +88,7 @@ const getOrder = (req, res) => {
 
 // Update an existing order.
 const updateOrder = (req, res) => {
-    // Verify user is logged in.
-    const userId = req.headers['x-user-id'];
-    if (!userId) {
-        return res.status(401).json({ error: "Unauthorized: User ID missing" });
-    }
-
+    const userId = req.userId;
     const { id } = req.params;
     const order = ordersRepo.findById(id);
 
@@ -124,7 +105,7 @@ const updateOrder = (req, res) => {
     // Update the order with the new data from the request body.
     const updatedOrder = ordersRepo.update(id, req.body);
     
-    if (!updateOrder) {
+    if (!updatedOrder) {
         return res.status(404).json({ error: "Order not found during update" });
     }
 
@@ -134,12 +115,7 @@ const updateOrder = (req, res) => {
 
 // Delete a specific order.
 const deleteOrder = (req, res) => {
-    // Verify user is logged in.
-    const userId = req.headers['x-user-id'];
-    if (!userId) {
-        return res.status(401).json({ error: "Unauthorized: User ID missing" });
-    }
-
+    const userId = req.userId;
     const { id } = req.params;
     const order = ordersRepo.findById(id);
 
