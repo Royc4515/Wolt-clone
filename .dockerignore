@@ -1,0 +1,18 @@
+# Shared by ALL builds in this context (Dockerfile.web AND Dockerfile.server).
+# Only exclude what neither image needs — do NOT add tests/, data/, src/Client,
+# src/Archive or CMakeLists.txt here, since Dockerfile.server copies those.
+
+node_modules
+build/
+.git
+.gitignore
+docs/
+coverage/
+*.log
+.vscode
+.claude
+
+# Build/compose files and any env files never belong inside an image.
+Dockerfile*
+docker-compose*.yml
+**/.env*
