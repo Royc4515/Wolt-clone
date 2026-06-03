@@ -1,0 +1,26 @@
+# Node.js Express web server (Ex3) — production image.
+# Kept separate from Dockerfile.server, which builds the legacy Ex2 C++ server.
+
+FROM node:20-alpine
+
+# App lives here. Hand the dir to the unprivileged `node` user (shipped with the
+# image) and drop privileges BEFORE installing, so every file — including
+# node_modules — is owned by `node` rather than root.
+WORKDIR /app
+RUN chown node:node /app
+USER node
+
+# Install dependencies first so this layer is cached unless the manifests change.
+# `npm ci` is reproducible from package-lock.json; --omit=dev keeps the image lean
+# (and future-proofs it if dev dependencies are ever added).
+COPY --chown=node:node package*.json ./
+RUN npm ci --omit=dev
+
+# Copy only the application source (no tests, node_modules, or C++ files).
+COPY --chown=node:node src ./src
+
+# The web server reads PORT from the environment (src/config/env.js).
+ENV PORT=3000
+EXPOSE 3000
+
+CMD ["node", "src/server.js"]

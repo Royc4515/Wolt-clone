@@ -1,27 +1,51 @@
+# Ex3 — runs the two servers the assignment requires, each in its own container:
+#   * ex2-server : the legacy Ex2 C++ recommendation server (TCP, :8080)
+#   * web        : the Node.js + Express web server (HTTP API, :3000)
+# The web server reaches the C++ server by the service hostname `ex2-server`
+# over the shared `wolt` network (see src/config/env.js → EX2_HOST).
+#
+# Run:  docker compose up --build      (web on http://localhost:3000)
+
 services:
-  # C++ Server Service
-  server:
+  # Legacy Ex2 C++ recommendation server.
+  ex2-server:
     build:
       context: .
       dockerfile: Dockerfile.server
+    command: ["./WoltClone", "8080"]
     ports:
-      - "8080:8080"     # Maps port 8080 from the container to the host machine.
-    command: ["./WoltClone", "8080"]    # Starts the server executable listening on port 8080.
+      # Bound to localhost only: reachable for local debugging, not exposed to the
+      # network. The web service talks to it over the internal `wolt` network and
+      # does not need this published at all.
+      - "127.0.0.1:8080:8080"
+    # Report "healthy" only once the TCP port actually accepts connections, so the
+    # web service can wait for readiness (not just container creation) below.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/8080"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - wolt
 
-  # Python Client Service
-  client:
+  # Ex3 Node.js + Express web server (the app).
+  web:
     build:
       context: .
-      dockerfile: Dockerfile.client
+      dockerfile: Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - EX2_HOST=ex2-server   # resolves to the C++ container on the wolt network
+      - EX2_PORT=8080
     depends_on:
-      - server    # Ensures the server container starts up before the client runs.
-    command: ["server", "8080"]     # Passes the server's container hostname and port to the script.
-    stdin_open: true    # Keep stdin open.
-    tty: true           # Interactive mode.
-  
-  # C++ Unit Tests Service
-  tests:
-    build:
-      context: .
-      dockerfile: Dockerfile.server   # Reuses the server's build environment where tests are compiled.
-    command: ["./tests/run_tests"]      # Overrides the default server command to execute the tests independently.
+      ex2-server:
+        condition: service_healthy   # wait until the C++ server actually accepts TCP
+    networks:
+      - wolt
+
+networks:
+  wolt:
+    driver: bridge

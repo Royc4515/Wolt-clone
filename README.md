@@ -25,6 +25,63 @@ the same recommendation logic, now split across a network boundary.
 
 ---
 
+## Ex3 — Running the Web App with Docker
+
+> **Scope note.** The rest of this README documents the **Ex2** layer (the C++
+> recommendation server and the Python CLI client). This section covers running
+> the **Ex3** system — the Node.js + Express web server together with the Ex2 C++
+> server — using Docker.
+
+The Ex3 stack runs as **two separate containers** on a shared network:
+
+| Service      | What it is                          | URL / port            |
+| :----------- | :---------------------------------- | :-------------------- |
+| `web`        | Node.js + Express web server (Ex3)  | `http://localhost:3000` |
+| `ex2-server` | Legacy Ex2 C++ recommendation server | TCP `localhost:8080`  |
+
+The web server reaches the C++ server by the hostname `ex2-server` over the
+shared Docker network (configured via `EX2_HOST` / `EX2_PORT`).
+
+### Prerequisites
+- Docker Desktop (or Docker Engine) running.
+
+### Run
+```bash
+docker compose up --build
+```
+This builds both images and starts both containers. The web API is then served
+at `http://localhost:3000`.
+
+### Example
+```bash
+# List restaurants — open endpoint, empty on a fresh start (data is in-memory).
+curl -i http://localhost:3000/api/restaurants
+
+# Create a restaurant. Write operations are protected: pass the logged-in user's
+# id as the `x-user-id` header (see the auth middleware). name/address/phone are
+# required.
+curl -i -X POST http://localhost:3000/api/restaurants \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: u1" \
+  -d '{"name": "aaa", "address": "123 Main St", "phone": "050-1234567"}'
+
+# ...and read it back.
+curl -i http://localhost:3000/api/restaurants
+```
+
+### Stop
+```bash
+docker compose down
+```
+
+### Version control / branches
+- **Ex2** is frozen on the **`submission/ex2`** branch — that branch is what the
+  Ex2 grader checks, and it is never modified by Ex3 work.
+- **Ex3** is developed on **`main`** via feature branches merged through pull
+  requests, so Ex2 and Ex3 work never mix.
+
+---
+
 ## Project Overview
 
 The system tracks which products users have interacted with and recommends
