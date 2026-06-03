@@ -7,6 +7,7 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 app.use(express.json({ limit: '1mb' }));
+app.set('json spaces', 2);
 
 app.use('/api', apiRouter);
 app.use('/api', notFound);

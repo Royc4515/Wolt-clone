@@ -34,7 +34,8 @@ const createRest = (req, res) => {
 
     // Pass the data to create a new object.
     const newRest = restRepo.create(newRestData);
-    res.status(201).json({ id: newRest.id });
+    res.setHeader('Location', `/api/restaurants/${newRest.id}`);
+    res.status(201).send();
 };
 
 // Retrieve a specific restaurant by its ID.
