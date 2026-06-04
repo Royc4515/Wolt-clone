@@ -50,7 +50,8 @@ const createProduct = (req,res) => {
 
     // Create the product.
     const newProduct = productsRepo.create(newProdData);
-    res.status(201).json({ id: newProduct.id });
+    res.setHeader('Location', `/api/restaurants/${id}/products/${newProduct.id}`);
+    res.status(201).send();
 };
 
 // Retrieve a specific product by its product ID (pid).

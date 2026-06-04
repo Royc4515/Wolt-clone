@@ -49,7 +49,8 @@ const createOrder = (req, res) => {
     };
 
     const newOrder = ordersRepo.create(newOrderdata);
-    res.status(201).json({ id: newOrder.id });
+    res.setHeader('Location', `/api/orders/${newOrder.id}`);
+    res.status(201).send();
 };
 
 // Fetch all orders for the logged-in user.
