@@ -1,18 +1,21 @@
-# Ex2: Distributed Wolt-Clone — Python Client & C++ Server over TCP
+# Wolt-Clone — Ex3: Node.js + Express Web Server (MVC)
 
-[![C++](https://img.shields.io/badge/Language-C%2B%2B17-blue.svg)](https://isocpp.org/)
-[![Python](https://img.shields.io/badge/Client-Python%203-yellow.svg)](https://www.python.org/)
-[![Testing](https://img.shields.io/badge/Tests-GoogleTest-green.svg)](https://github.com/google/googletest)
-[![Environment](https://img.shields.io/badge/Environment-Docker-blue.svg)](https://www.docker.com/)
+[![Node.js](https://img.shields.io/badge/Runtime-Node.js%20%E2%89%A518-green.svg)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Framework-Express%204-black.svg)](https://expressjs.com/)
+[![Docker](https://img.shields.io/badge/Run-Docker%20Compose-blue.svg)](https://www.docker.com/)
+[![Tests](https://img.shields.io/badge/Tests-node%3Atest-brightgreen.svg)](https://nodejs.org/api/test.html)
 
-A client–server product recommendation system. The **server** (C++17) owns all
-business logic — it manages the data and computes recommendations. The
-**client** (Python 3) is a thin terminal front-end: it forwards whatever the
-user types to the server and prints whatever the server sends back. The two
-communicate over a **TCP socket**.
+A RESTful food-delivery web server (Wolt-style) built in **Node.js + Express**
+with an **MVC** architecture. It exposes the application's core API — users,
+authentication, restaurants, menus, orders, and search — and also acts as a
+**TCP client to the legacy Ex2 C++ recommendation server**, logging product
+views so the recommender can learn from them.
 
-This is the Ex2 evolution of the Ex1 CLI recommender (see [Ex1_README.md](Ex1_README.md)):
-the same recommendation logic, now split across a network boundary.
+All `/api/*` endpoints return **JSON** (this is a web service, not an HTML app).
+Data is kept **in memory** — restarting the server clears everything.
+
+> **Project history:** [Ex2 — C++ server + Python client](Ex2_README.md) ·
+> [Ex1 — CLI recommender](Ex1_README.md).
 
 ---
 
@@ -25,458 +28,295 @@ the same recommendation logic, now split across a network boundary.
 
 ---
 
-## Ex3 — Running the Web App with Docker
-
-> **Scope note.** The rest of this README documents the **Ex2** layer (the C++
-> recommendation server and the Python CLI client). This section covers running
-> the **Ex3** system — the Node.js + Express web server together with the Ex2 C++
-> server — using Docker.
-
-The Ex3 stack runs as **two separate containers** on a shared network:
-
-| Service      | What it is                          | URL / port            |
-| :----------- | :---------------------------------- | :-------------------- |
-| `web`        | Node.js + Express web server (Ex3)  | `http://localhost:3000` |
-| `ex2-server` | Legacy Ex2 C++ recommendation server | TCP `localhost:8080`  |
-
-The web server reaches the C++ server by the hostname `ex2-server` over the
-shared Docker network (configured via `EX2_HOST` / `EX2_PORT`).
-
-### Prerequisites
-- Docker Desktop (or Docker Engine) running.
-
-### Run
-```bash
-docker compose up --build
-```
-This builds both images and starts both containers. The web API is then served
-at `http://localhost:3000`.
-
-### Example
-```bash
-# List restaurants — open endpoint, empty on a fresh start (data is in-memory).
-curl -i http://localhost:3000/api/restaurants
-
-# Create a restaurant. Write operations are protected: pass the logged-in user's
-# id as the `x-user-id` header (see the auth middleware). name/address/phone are
-# required.
-curl -i -X POST http://localhost:3000/api/restaurants \
-  -H "Content-Type: application/json" \
-  -H "x-user-id: u1" \
-  -d '{"name": "aaa", "address": "123 Main St", "phone": "050-1234567"}'
-
-# ...and read it back.
-curl -i http://localhost:3000/api/restaurants
-```
-
-### Stop
-```bash
-docker compose down
-```
-
-### Version control / branches
-- **Ex2** is frozen on the **`submission/ex2`** branch — that branch is what the
-  Ex2 grader checks, and it is never modified by Ex3 work.
-- **Ex3** is developed on **`main`** via feature branches merged through pull
-  requests, so Ex2 and Ex3 work never mix.
-
----
-
-## Project Overview
-
-The system tracks which products users have interacted with and recommends
-related products using a cross-user "similar taste" algorithm.
-
-- The **server** listens on a TCP port (passed as a command-line argument) and
-  handles **one client at a time**, sequentially. Neither program terminates on
-  its own — both run until the process is killed.
-- The **client** receives the server IP and port as command-line arguments,
-  opens **one** TCP connection at startup, and reuses that single connection for
-  every command throughout its run.
-- The client is intentionally **"dumb"**: it does not know which commands are
-  valid. It sends each line the user enters and prints the server's reply.
-- Every command sent and every response returned is terminated by a newline
-  (`\n`).
-
-### Status-code rules
-
-The success code for each individual command is listed in the
-[Command Reference](#command-reference) below. Two rules apply across *all*
-commands:
-
-| Situation | Server response |
-| :--- | :--- |
-| A command is structurally valid but logically inconsistent with stored data (e.g. `PATCH` on a user that was never `POST`ed) | `404 Not Found` |
-| A command is unknown or malformed | `400 Bad Request` |
-
----
-
 ## Architecture
 
-The design follows **loose coupling** and the **SOLID** principles so that new
-commands, new response formats, and the move from console to sockets all plug in
-as *extensions* rather than *modifications* (see the
-[SOLID / OCP Design](#solid--ocp-design) section below).
+The server follows **MVC** with **loose coupling** and **SOLID** in mind, so new
+endpoints and the future swap of the in-memory store for a database plug in as
+*extensions* rather than rewrites.
 
 ```text
-Client (Python)  — one persistent TCP connection; sends a command, prints the reply
-      │
+HTTP client (curl / Postman / browser)
+      │  JSON over HTTP  (:3000)
       ▼
-Server           — accepts one client, reads newline-terminated requests
-      │
+Express app  (src/app.js)
       ▼
-RouterCommand    — parses verb + integer args, dispatches (unknown/malformed → 400)
-      │
+Routes  (src/routes/*)            ── URL → controller mapping
       ▼
-ICommand         — PostCommand · PatchCommand · DeleteCommand · GetCommand · HelpCommand
+Middleware  (src/middleware/*)    ── auth (x-user-id), JSON errors, 404
+      ▼
+Controllers  (src/controllers/*)  ── request handling, status codes
+      ▼
+Services / Repositories           ── in-memory data (src/services/*)
       │
-      ├──► Recommender  — computes recommendations (used by GET)
-      └──► DataManager  — implements IDataReadable / IDataWriteable / IDataDeletable,
-                          persists to data/database.txt
+      └──► TCP bridge  (src/services/tcpClient.js)
+                 │  newline TCP protocol  (:8080)
+                 ▼
+           Ex2 C++ recommendation server   (separate process/container)
 ```
 
-- **`Server`** — owns the TCP socket: binds, listens, accepts one client, and
-  loops on `recv`, extracting newline-terminated requests. It knows nothing about
-  command semantics; it just forwards each request line to the router and writes
-  back the string it gets.
-- **`RouterCommand`** — parses a request line into a verb plus integer arguments,
-  then dispatches via a verb→command dispatch table. Unknown verbs and malformed
-  input return `400 Bad Request` here.
-- **`ICommand`** — the command interface: every command exposes
-  `std::string execute() const`.
-- **`UserDataCommand`** — abstract base shared by `POST`, `PATCH`, and `DELETE`;
-  holds the common state (data reader, user id, product ids).
-- **Data layer** — three segregated interfaces (`IDataReadable`,
-  `IDataWriteable`, `IDataDeletable`), all implemented by `DataManager`, which
-  persists state to a text file under `data/`.
-- **`Recommender`** — the recommendation algorithm; depends only on
-  `IDataReadable`. Given a user and a product, it scores candidate products by
-  how many "similar" users (users who viewed the same items) also viewed them,
-  and returns a ranked list of up to 10 product ids — highest score first, ties
-  broken by the smaller product id.
+**Layers**
+
+- **Routes** (`src/routes/`) — map each URL + method to a controller; attach the
+  `requireAuth` middleware to protected routes.
+- **Middleware** (`src/middleware/`) — `auth.js` enforces the `x-user-id` header
+  on protected routes; `errorHandler.js` / `notFound.js` keep every response a
+  clean JSON envelope.
+- **Controllers** (`src/controllers/`) — validate input, call the data layer,
+  return the correct HTTP status.
+- **Services / Repositories** (`src/services/`) — the in-memory store behind a
+  small repository interface (`baseRepository.js`), so the storage backend can be
+  swapped without touching controllers.
+- **Bridge** (`src/services/tcpClient.js`) — a thin, resilient `node:net` client
+  to the Ex2 C++ server. It never throws/rejects: if that server is down or slow,
+  the web request is unaffected (see [Ex2 integration](#ex2-integration)).
 
 ---
 
-## Project Structure
+## Project Structure (Ex3 web server)
 
 ```text
-Wolt-clone-Ex2/
-├── src/
-│   ├── main.cpp                 # Server entry point: parses the port, wires components
-│   ├── Server/
-│   │   └── Server.{h,cpp}       # Sequential TCP server (accept loop, per-client recv)
-│   ├── Commands/
-│   │   ├── ICommand.h           # Command interface — execute()
-│   │   ├── UserDataCommand.h    # Abstract base for POST / PATCH / DELETE
-│   │   ├── PostCommand.{h,cpp}
-│   │   ├── PatchCommand.{h,cpp}
-│   │   ├── DeleteCommand.{h,cpp}
-│   │   ├── GetCommand.{h,cpp}
-│   │   ├── HelpCommand.{h,cpp}
-│   │   └── RouterCommand.{h,cpp}# Parses the request line, dispatches to a command
-│   ├── Data/
-│   │   ├── IDataReadable.h      # Read interface
-│   │   ├── IDataWriteable.h     # Append (write) interface
-│   │   ├── IDataDeletable.h     # Delete interface
-│   │   └── DataManager.{h,cpp}  # File-backed implementation of all three
-│   ├── Logic/
-│   │   └── Recommender.{h,cpp}  # Similarity-based recommendation algorithm
-│   ├── Client/
-│   │   └── client.py            # Python 3 TCP client
-│   └── Archive/                 # Ex1 CLI sources, kept for reference only
-├── cpp-tests/                   # GoogleTest unit + integration tests
-├── data/                        # Persistent storage (database.txt is created at runtime)
-├── screenshots/                 # Images used by this README
-├── Dockerfile.server            # Server container image
-├── Dockerfile.client            # Client container image
-├── docker-compose.yml           # Builds & runs server, client, and tests together
-├── CMakeLists.txt               # Build configuration
-├── SOLID_TRACKING.md            # OCP design tracking notes
-└── README.md
+src/
+├── server.js              # Boots the HTTP server (reads PORT)
+├── app.js                 # Express app: JSON parsing, routes, error handling
+├── config/
+│   └── env.js             # PORT, EX2_HOST, EX2_PORT (from environment)
+├── routes/                # users, tokens, restaurants, products, orders, search
+├── middleware/
+│   ├── auth.js            # requireAuth — validates the x-user-id header
+│   ├── errorHandler.js
+│   └── notFound.js
+├── controllers/           # one controller per resource
+├── services/
+│   ├── repositories/      # in-memory CRUD (baseRepository + per-entity repos)
+│   ├── tcpClient.js       # TCP bridge to the Ex2 C++ server
+│   └── *.service.js       # cross-entity orchestration (e.g. cascading deletes)
+└── models/                # input validation helpers
+web-tests/                 # node:test unit tests (repositories, app, tcpClient)
+Dockerfile.web             # Node web-server image
+Dockerfile.server          # Ex2 C++ server image (see Ex2_README.md)
+docker-compose.yml         # Runs web + ex2-server together
 ```
+
+The **Ex2 C++ server** sources live in the same repo (`src/Server`, `src/Commands`,
+`src/Logic`, …, `cpp-tests/`) and are documented in **[Ex2_README.md](Ex2_README.md)**.
 
 ---
 
-## Command Reference
+## API Reference
 
-All command names are case-insensitive (the router upper-cases the verb).
+Base URL: `http://localhost:3000/api` — every response is JSON.
 
-| Command | Syntax | Valid when | Response |
-| :--- | :--- | :--- | :--- |
-| `POST` | `POST [userid] [productid1] [productid2] ...` | the user does **not** exist yet | `201 Created` |
-| `PATCH` | `PATCH [userid] [productid1] [productid2] ...` | the user **already** exists | `204 No Content` |
-| `DELETE` | `DELETE [userid] [productid1] [productid2] ...` | the user exists **and** every listed product is in their list | `204 No Content` |
-| `GET` | `GET [userid] [productid]` | the user exists | `200 Ok` + blank line + recommended product ids |
-| `HELP` | `HELP` | always | the command list (see below) |
+**Authentication:** some actions require a logged-in user. Pass the user's id as
+the **`x-user-id`** HTTP header on protected routes (marked 🔒). Missing it
+returns `401 Unauthorized`.
 
-`HELP` lists every command with parameters in alphabetical order, each followed
-by its arguments, with `help` itself last:
+### Users & authentication
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `POST` | `/api/users` | — | Register a user — `name, phone, address, email, password` (all required) → `201 {id}` |
+| `GET` | `/api/users/:id` | — | Get a user's details (password is never returned) |
+| `POST` | `/api/tokens` | — | Log in with `email` + `password` → `200 {id}` (`404` unknown email, `401` wrong password) |
 
-```
-DELETE, arguments: [userid] [productid1] [productid2] ...
-GET, arguments: [userid] [productid]
-PATCH, arguments: [userid] [productid1] [productid2] ...
-POST, arguments: [userid] [productid1] [productid2] ...
-help
-```
+### Restaurants
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `GET` | `/api/restaurants` | — | List all restaurants |
+| `POST` | `/api/restaurants` | 🔒 | Create a restaurant (`name, address, phone` required) → `201 {id}` |
+| `GET` | `/api/restaurants/:id` | — | Get one restaurant |
+| `PATCH` | `/api/restaurants/:id` | 🔒 | Update a restaurant |
+| `DELETE` | `/api/restaurants/:id` | 🔒 | Delete a restaurant (cascades its products) |
 
-`DELETE` is **all-or-nothing**: if any requested product is missing from the
-user's list, the whole request is rejected with `404 Not Found` and nothing is
-deleted.
+### Products (a restaurant's menu)
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `GET` | `/api/restaurants/:id/products` | — | List the restaurant's menu |
+| `POST` | `/api/restaurants/:id/products` | 🔒 | Add a product (`name, price, category` required) → `201 {id}` |
+| `GET` | `/api/restaurants/:id/products/:pid` | — | Get a product — **also logs a view to the Ex2 server** |
+| `PATCH` | `/api/restaurants/:id/products/:pid` | 🔒 | Update a product |
+| `DELETE` | `/api/restaurants/:id/products/:pid` | 🔒 | Remove a product |
+
+### Orders
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `POST` | `/api/orders` | 🔒 | Create an order — body `{ restaurantId, items: [{ productId, quantity }] }` → `201` + `Location` |
+| `GET` | `/api/orders` | 🔒 | List the logged-in user's orders |
+| `GET` | `/api/orders/:id` | 🔒 | Get one order (`403` if it isn't yours) |
+| `PATCH` | `/api/orders/:id` | 🔒 | Update an order |
+| `DELETE` | `/api/orders/:id` | 🔒 | Delete an order |
+
+### Search
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `GET` | `/api/search/:query` | — | Case-insensitive name/description match → `{ "Restaurants": [...], "Products": [...] }` |
+
+### Health
+| Method | Path | Auth | Description |
+| :--- | :--- | :--: | :--- |
+| `GET` | `/api/health` | — | Liveness check → `200 {"status":"ok"}` |
+
+**Status codes:** `200` OK · `201` Created (orders also return a `Location`
+header; restaurants/products return the new `{id}`) · `204` No Content · `400`
+Bad Request (missing/invalid fields) · `401` Unauthorized (missing `x-user-id`)
+· `403` Forbidden (another user's order) · `404` Not Found.
+
+---
+
+## Ex2 integration
+
+Some actions must reach the **Ex2 C++ recommendation server** (a raw-TCP,
+line-based protocol — not HTTP). The web server opens a socket to it as a client.
+
+The clearest example: **`GET /api/restaurants/:id/products/:pid`** records that
+the user viewed the product by sending `POST <userId> <productId>` to the Ex2
+server (falling back to `PATCH` if the user already exists). This is handled by
+[`src/services/tcpClient.js`](src/services/tcpClient.js) and is **fire-and-forget
+and crash-proof**: if the Ex2 server is unreachable or slow, the HTTP response is
+unaffected. The target server is configured with `EX2_HOST` / `EX2_PORT`.
 
 ---
 
 ## How to Run
 
-The exercise ships as two separate programs — run the **server** first, then the
-**client**.
+### Option 1 — Docker Compose (recommended)
 
-### Option 1 — Manual build (CMake)
+Runs the web server and the Ex2 C++ server as **two containers** on a shared
+network — exactly as the assignment requires.
 
-Requires CMake (≥ 3.15), a C++17 compiler (GCC/Clang), the GoogleTest dev
-package, and Python 3.
-
-**Build the server and tests:**
+**Prerequisite:** Docker (Desktop or Engine) running.
 
 ```bash
-mkdir build && cd build
-cmake ..
-make
+docker compose up --build
 ```
 
-This produces `build/WoltClone` (the server) and `build/cpp-tests/run_tests` (the
-test suite).
+| Service | URL / port |
+| :--- | :--- |
+| `web` (Node web server) | `http://localhost:3000` |
+| `ex2-server` (C++ server) | TCP `localhost:8080` |
 
-**Run the server** (listens on the given port — here `8080`):
+The web server reaches the C++ server by the hostname `ex2-server` over the
+internal network (no host config needed). Stop with:
 
 ```bash
-./build/WoltClone 8080
+docker compose down
 ```
 
-**Run the client** (connects to the server IP and port — in another terminal):
+### Option 2 — Standalone (no Docker)
+
+Run the two servers in two terminals.
+
+**Terminal 1 — Ex2 C++ server** (build once with CMake — details in
+[Ex2_README.md](Ex2_README.md)):
 
 ```bash
-python3 src/Client/client.py 127.0.0.1 8080
+mkdir build && cd build && cmake .. && make
+./WoltClone 8080
 ```
 
-**Run the automated tests:**
+**Terminal 2 — Node web server** (point it at the local C++ server):
 
 ```bash
-./build/cpp-tests/run_tests
+npm install
+# Linux/macOS:
+EX2_HOST=127.0.0.1 EX2_PORT=8080 PORT=3000 npm start
+# Windows PowerShell:
+#   $env:EX2_HOST='127.0.0.1'; $env:EX2_PORT=8080; $env:PORT=3000; npm start
 ```
 
-### Option 2 — Docker
+The web API is then at `http://localhost:3000`.
 
-The repository ships a `docker-compose.yml` that builds and runs the server, the
-client, and the test suite from `Dockerfile.server` and `Dockerfile.client`.
-Compose is the easiest way to run the project — it wires up the networking so
-the client reaches the server automatically.
+> **Environment variables:** `PORT` (web port, default `3000`), `EX2_HOST`
+> (default `ex2-server`, the Docker service name), `EX2_PORT` (default `8080`).
+> When running standalone, set `EX2_HOST=127.0.0.1` so the bridge finds the local
+> C++ server.
 
-**Run the server** (builds the images on first use; listens on port `8080`):
+### Run the tests
 
 ```bash
-docker compose up --build server
+npm test          # node:test — repositories, app, and the TCP bridge (web-tests/)
 ```
 
-**Run the client** (in another terminal — interactive):
+---
+
+## Example walk-through (curl)
+
+A short session against a freshly started server. Real responses shown.
 
 ```bash
-docker compose run --rm client
+# 1) List restaurants — open endpoint, empty on a fresh start.
+$ curl -s -i http://localhost:3000/api/restaurants
+HTTP/1.1 200 OK
+[]
+
+# 2) Create a restaurant WITHOUT logging in — rejected.
+$ curl -s -i -X POST http://localhost:3000/api/restaurants \
+    -H "Content-Type: application/json" -d '{"name":"aaa"}'
+HTTP/1.1 401 Unauthorized
+{"error":"Unauthorized: x-user-id header is missing"}
+
+# 3) Create it correctly — auth header + required fields.
+$ curl -s -i -X POST http://localhost:3000/api/restaurants \
+    -H "Content-Type: application/json" -H "x-user-id: u1" \
+    -d '{"name":"aaa","address":"123 Main St","phone":"050-1234567"}'
+HTTP/1.1 201 Created
+
+# 4) Read it back.
+$ curl -s http://localhost:3000/api/restaurants
+[{"name":"aaa","address":"123 Main St","phone":"050-1234567", ... ,"id":"<uuid>"}]
+
+# 5) Add a product, then view it (this also logs a view to the Ex2 server).
+$ curl -s -X POST http://localhost:3000/api/restaurants/<id>/products \
+    -H "Content-Type: application/json" -H "x-user-id: u1" \
+    -d '{"name":"prod","price":10,"category":"main"}'
+$ curl -s -i http://localhost:3000/api/restaurants/<id>/products/<pid> -H "x-user-id: u1"
+HTTP/1.1 200 OK
+
+# 6) Search by name/description.
+$ curl -s http://localhost:3000/api/search/aaa
+{"Restaurants":[ ... ],"Products":[ ... ]}
 ```
-
-The client connects to the server container by its hostname (`server`) on port
-`8080`, so no IP configuration is needed.
-
-**Run the automated tests:**
-
-```bash
-docker compose run --rm tests
-```
-
-#### Without Compose
-
-The server image and the tests can also be built and run directly:
-
-```bash
-# Server (the image defaults to running on port 8080):
-docker build -f Dockerfile.server -t wolt_server .
-docker run -p 8080:8080 wolt_server
-
-# Tests (reuse the server image — tests are compiled into it):
-docker run --rm wolt_server ./cpp-tests/run_tests
-```
-
-The client image is built with
-`docker build -f Dockerfile.client -t wolt_client .` and takes the server IP and
-port as arguments. Because a container's own `127.0.0.1` is not the server,
-running the client standalone needs an explicit route to the server (e.g.
-`--network host` on Linux, or `host.docker.internal` on Docker Desktop). Compose
-avoids this entirely, so it is the recommended way to run the client.
-
-> Note: the Compose setup does not mount a host volume, so data created during a
-> run lives only inside the container and is not kept after it is removed.
-
-### Run Example
-
-A sample session, with the server in one terminal and the client in another.
-The client itself prints no prompt; in the transcript below, lines beginning
-with `>` are what the user types into the client, and the lines under them are
-the server's reply.
-
-**Terminal 1 — server:**
-
-```text
-$ ./build/WoltClone 8080
-```
-
-**Terminal 2 — client:**
-
-```text
-$ python3 src/Client/client.py 127.0.0.1 8080
-> POST 1 100 200
-201 Created
-> POST 2 100 300
-201 Created
-> PATCH 1 300
-204 No Content
-> GET 1 100
-200 Ok
-
-(recommended product ids — depends on the data stored on the server)
-> DELETE 1 300
-204 No Content
-> POST 1 400
-404 Not Found
-> ADD 1 100
-400 Bad Request
-> HELP
-DELETE, arguments: [userid] [productid1] [productid2] ...
-GET, arguments: [userid] [productid]
-PATCH, arguments: [userid] [productid1] [productid2] ...
-POST, arguments: [userid] [productid1] [productid2] ...
-help
-```
-
-Notes on the example:
-
-- `POST 1 400` returns `404 Not Found` — user `1` already exists, and `POST`
-  only creates *new* users, so the request is logically invalid.
-- `ADD 1 100` returns `400 Bad Request` — `ADD` was the Ex1 verb; it is no
-  longer a recognized command.
-- The `GET` reply body lists recommended product ids. It depends on the data
-  currently stored on the server, and is empty when there is too little data
-  to recommend anything.
 
 ---
 
 ## Screenshots
 
-### Server and client connected
+### Restaurants flow (GET → POST → GET)
+Listing restaurants, creating one (with the `x-user-id` header + required
+fields), then reading it back.
 
-The client opens a TCP connection to the server and waits for input — nothing is
-printed until the user enters a command.
+![Restaurant create/list via curl](screenshots/ex3_restaurants_flow.png)
 
-![Server and client connected](screenshots/ex2_connection.jpg)
+### Auth enforcement (401)
+A protected `POST` without the `x-user-id` header is rejected.
 
-### HELP command
+![401 Unauthorized without x-user-id](screenshots/ex3_auth_401.png)
 
-![HELP command output](screenshots/ex2_help.jpg)
+### Search
+`GET /api/search/:query` returning matching restaurants and products.
 
-### POST and DELETE — 201 Created / 404 Not Found
+![Search results](screenshots/ex3_search.png)
 
-`POST` on a new user succeeds with `201 Created`; a `DELETE` that is inconsistent
-with the stored data is rejected with `404 Not Found`.
+### Tests passing
+`npm test` — the full `node:test` suite (repositories, app, and the TCP bridge).
 
-![POST and DELETE responses](screenshots/ex2_post_delete.jpg)
-
-### Invalid command — 400 Bad Request
-
-An unrecognized command is answered with `400 Bad Request`.
-
-![400 Bad Request](screenshots/ex2_bad_request.jpg)
-
-### GoogleTest suite
-
-All 51 tests across 14 test suites pass.
-
-![GoogleTest run — build and first suites](screenshots/ex2_tests_1.jpg)
-![GoogleTest run — data-layer suites](screenshots/ex2_tests_2.jpg)
-![GoogleTest run — router/server suites and final result](screenshots/ex2_tests_3.jpg)
+![npm test — all passing](screenshots/ex3_tests.png)
 
 ---
 
-## SOLID / OCP Design
+## Version control — Ex2 vs Ex3
 
-Ex2 changes the Ex1 system in four ways. Ex2.pdf asks, for each, whether the
-change forced edits to code that was supposed to be **closed for modification
-but open for extension**. The four answers below are also tracked in
-[SOLID_TRACKING.md](SOLID_TRACKING.md).
+- **Ex3** (this Node/Express web server) is developed on **`main`** via feature
+  branches merged through reviewed pull requests.
+- **Ex2** (the C++ server + Python client) is **frozen for grading** at tag
+  **`ex2-submission`** and branch **`submission/ex2`**, and is never modified by
+  Ex3 work — so the two submissions never mix.
 
-### Q1 — Renaming commands (`add`→`POST`, `recommend`→`GET`)
+To inspect the Ex2 submission:
 
-Renaming the commands did **not** require modifying the command classes. This is
-the result of a deliberate **separation of concerns**: each command class knows
-only how to *execute* its own logic — it exposes a single `execute()` method and
-never references its own verb name. Deciding which verb maps to which command is
-solely the routing layer's responsibility, so every verb string lives in exactly
-one place: the dispatch table inside `RouterCommand`.
+```bash
+git checkout ex2-submission      # or: git checkout submission/ex2
+```
 
-The only modification occurred in the routing layer (`RouterCommand`), which
-simply maps the new incoming string (e.g., "POST") to the instantiation of the
-correct command object. Therefore, the core command implementations remained
-perfectly closed for modification.
-
-### Q2 — Adding new commands (`PATCH`, `DELETE`)
-
-**No existing code had to change.** Each new command is a new class:
-
-- `ICommand` is the polymorphic interface — any new verb implements
-  `std::string execute() const`.
-- `UserDataCommand` is an abstract base that holds the state shared by
-  `POST`/`PATCH`/`DELETE` (the data reader, user id, product ids). `PATCH` and
-  `DELETE` were added by inheriting from it and supplying their own dependency
-  (`IDataWriteable` or `IDataDeletable`) — no member declarations were
-  duplicated, and `PostCommand` was never touched.
-
-The only addition per new command is one entry in the `RouterCommand` dispatch
-table. That table is precisely the "open for extension" surface.
-
-### Q3 — Changing the output format (`201 Created`, `404 Not Found`, ...)
-
-**No.** Each command's response format lives entirely inside its own
-`execute()`. `RouterCommand` and `Server` forward the returned string verbatim —
-they never inspect, parse, or build a response. If the spec changed
-`"201 Created\n"` to something else, only `PostCommand.cpp` would change; every
-other file compiles and runs unchanged.
-
-Inside each command file the response strings are anonymous-namespace
-`constexpr` constants, so each literal appears in exactly one place and the
-tests can assert it character-for-character.
-
-### Q4 — Switching input/output from console to TCP sockets
-
-**No — by design the command and data layers are I/O-agnostic.** A command
-receives **already-parsed** primitive arguments (`int userId`,
-`std::vector<int> productIds`) and returns a `std::string`. It has no idea
-whether those values came from `stdin`, a TCP socket, or a unit test holding a
-`MockDatabase`.
-
-All transport-specific code (socket creation, `bind`/`listen`/`accept`, the
-`recv` loop, `send`) lives in the new `Server` class. Moving from console to
-sockets meant *adding* that class, not editing the existing logic. The data
-layer is equally transport-agnostic, which is also what lets the GoogleTest
-suite run with zero network or filesystem I/O.
-
-### Looking ahead — supporting many clients at once
-
-The current `Server` handles one client at a time (a single `accept` →
-`handleClient` loop). The routing and command layers are already concurrency-
-friendly: `RouterCommand::route()` is `const`, and commands are short-lived
-stack objects created per request. The shared mutable state is `DataManager`'s
-in-memory map, which is the one place a future multi-client server would need
-synchronization. Making the server concurrent is therefore an *extension* of the
-`Server` class (e.g. a thread per accepted client) plus locking in
-`DataManager` — the command and routing code would not need to change.
+Ex2 is documented separately in **[Ex2_README.md](Ex2_README.md)**.
 
 ---
 
@@ -484,12 +324,21 @@ synchronization. Making the server concurrent is therefore an *extension* of the
 
 Developed with **Agile Scrum**, tracked in **JIRA**:
 
-- Work is broken into epics, user stories, and tasks; each task is assigned
-  before work starts and is developed on a feature branch whose name contains
-  the JIRA issue key (e.g. `feat/scrum-160-...`), which links the branch to the
-  issue automatically.
-- **Feature-branch workflow:** every change is merged into `main` only through a
-  **pull request** reviewed and approved by another team member.
-- **Server developed with TDD** (Red → Green → Refactor) using **GoogleTest**;
-  the Python client follows the same process standards but, per the spec, has no
-  test suite.
+- Work is split into epics, user stories, and subtasks; each is assigned before
+  work begins and built on a **feature branch** whose name contains the JIRA
+  issue key, which auto-links the branch to the issue.
+- **Feature-branch workflow:** every change merges into `main` only through a
+  **pull request** reviewed and approved by another team member (the approver is
+  never the author).
+- **Test-driven** where it applies — the data layer and the TCP bridge ship with
+  `node:test` suites written before the implementation.
+
+---
+
+## Notes & limitations
+
+- **In-memory only:** all data is volatile and resets when the web server
+  restarts (per the assignment).
+- **No secrets:** this is a teaching exercise; do not store or send real
+  passwords, cards, tokens, or keys.
+- **Allowed tooling:** Node.js + Express only (plus Node built-ins).
