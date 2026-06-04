@@ -279,28 +279,26 @@ $ curl -s http://localhost:3000/api/search/aaa
 
 ## Screenshots
 
-> _Capture these from a running stack (`docker compose up --build`) and drop the
-> images into `screenshots/`. Replace each placeholder below._
-
-### Server running (Docker)
-<!-- Capture: `docker compose up` showing ex2-server "Healthy" then web started. -->
-![Docker compose up — both containers running](screenshots/ex3_compose_up.png)
-
 ### Restaurants flow (GET → POST → GET)
-<!-- Capture: a terminal running the curl example above (200 [] → 401 → 201 → list). -->
+Listing restaurants, creating one (with the `x-user-id` header + required
+fields), then reading it back.
+
 ![Restaurant create/list via curl](screenshots/ex3_restaurants_flow.png)
 
 ### Auth enforcement (401)
-<!-- Capture: a protected POST without x-user-id returning 401. -->
+A protected `POST` without the `x-user-id` header is rejected.
+
 ![401 Unauthorized without x-user-id](screenshots/ex3_auth_401.png)
 
 ### Search
-<!-- Capture: GET /api/search/:query returning {Restaurants, Products}. -->
+`GET /api/search/:query` returning matching restaurants and products.
+
 ![Search results](screenshots/ex3_search.png)
 
 ### Tests passing
-<!-- Capture: `npm test` output. -->
-![npm test](screenshots/ex3_tests.png)
+`npm test` — the full `node:test` suite (repositories, app, and the TCP bridge).
+
+![npm test — all passing](screenshots/ex3_tests.png)
 
 ---
 
