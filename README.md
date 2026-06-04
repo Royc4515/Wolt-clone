@@ -184,7 +184,7 @@ Wolt-clone-Ex2/
 │   ├── Client/
 │   │   └── client.py            # Python 3 TCP client
 │   └── Archive/                 # Ex1 CLI sources, kept for reference only
-├── tests/                       # GoogleTest unit + integration tests
+├── cpp-tests/                   # GoogleTest unit + integration tests
 ├── data/                        # Persistent storage (database.txt is created at runtime)
 ├── screenshots/                 # Images used by this README
 ├── Dockerfile.server            # Server container image
@@ -244,7 +244,7 @@ cmake ..
 make
 ```
 
-This produces `build/WoltClone` (the server) and `build/tests/run_tests` (the
+This produces `build/WoltClone` (the server) and `build/cpp-tests/run_tests` (the
 test suite).
 
 **Run the server** (listens on the given port — here `8080`):
@@ -262,7 +262,7 @@ python3 src/Client/client.py 127.0.0.1 8080
 **Run the automated tests:**
 
 ```bash
-./build/tests/run_tests
+./build/cpp-tests/run_tests
 ```
 
 ### Option 2 — Docker
@@ -303,7 +303,7 @@ docker build -f Dockerfile.server -t wolt_server .
 docker run -p 8080:8080 wolt_server
 
 # Tests (reuse the server image — tests are compiled into it):
-docker run --rm wolt_server ./tests/run_tests
+docker run --rm wolt_server ./cpp-tests/run_tests
 ```
 
 The client image is built with
