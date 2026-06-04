@@ -33,7 +33,7 @@ target_compile_features(woltlib PUBLIC cxx_std_17)
 
 # Testing setup
 enable_testing()
-add_subdirectory(tests)
+add_subdirectory(cpp-tests)
 
 #Define the database path as a compile definition for the library
 target_compile_definitions(woltlib PRIVATE DATABASE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/data/database.txt")

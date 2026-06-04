@@ -15,7 +15,7 @@ COPY CMakeLists.txt ./
 
 # Copy the project's folders into the container.
 COPY ./src ./src
-COPY ./tests ./tests
+COPY ./cpp-tests ./cpp-tests
 COPY ./data ./data
 
 # Create a build directory, run CMake, and compile the project (app + tests).

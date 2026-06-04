@@ -1,5 +1,5 @@
 # Shared by ALL builds in this context (Dockerfile.web AND Dockerfile.server).
-# Only exclude what neither image needs — do NOT add tests/, data/, src/Client,
+# Only exclude what neither image needs — do NOT add cpp-tests/, data/, src/Client,
 # src/Archive or CMakeLists.txt here, since Dockerfile.server copies those.
 
 node_modules
