@@ -1,0 +1,43 @@
+import { apiFetch } from "./api";
+
+/**
+ * Login function
+ * Submits email and password. On successful authentication, saves the JWT to local storage.
+ */
+export const login = async (email, password) => {
+    // Sent a POST request to generate a JWT.
+    const data = await apiFetch('/api/tokens', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+
+    // The server should return an object containing the token. Save it locally.
+    if (data && data.token) {
+        localStorage.setItem('jwt_token', data.token);
+    }
+
+    return data;
+};
+
+/**
+ * Register function
+ * Accepts user data (including the Base64 profile picture) and sends it to the server to create a new user.
+ */
+export const register = async (userData) => {
+  // Send a POST request to create a new user
+  const data = await apiFetch('/api/users', {
+    method: 'POST',
+    // userData already matches the agreed API contract.
+    body: JSON.stringify(userData), 
+  });
+
+  return data;
+};
+
+/**
+ * Logout function
+ * Removes the JWT from local storage so the user is no longer authenticated in future requests.
+ */
+export const logout = () => {
+    localStorage.removeItem('jwt_token');
+};
