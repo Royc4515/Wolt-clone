@@ -7,6 +7,7 @@ build/
 node_modules/
 coverage/
 *.log
+.env
 
 # Local-only design/planning notes (not part of the submitted deliverable)
 docs/
