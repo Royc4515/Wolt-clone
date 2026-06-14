@@ -2,13 +2,13 @@ import { apiFetch } from "./api";
 
 /**
  * Login function
- * Submits email and password. On successful authentication, saves the JWT to local storage.
+ * Submits username and password. On successful authentication, saves the JWT to local storage.
  */
-export const login = async (email, password) => {
+export const login = async (username, password) => {
     // Sent a POST request to generate a JWT.
     const data = await apiFetch('/api/tokens', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
     });
 
     // The server should return an object containing the token. Save it locally.
