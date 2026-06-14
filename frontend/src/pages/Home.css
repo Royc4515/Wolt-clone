@@ -21,6 +21,12 @@
 }
 
 /* ── Category filter ── */
+.category-filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .category-filter {
   display: flex;
   gap: var(--space-3);
