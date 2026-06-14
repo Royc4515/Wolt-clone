@@ -6,13 +6,13 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const createUser = (req, res) => {
     // Extract user details from the incoming JSON request.
-    const { email, password, displayName, profilePicture } = req.body;
+    const { username, password, displayName, profilePicture } = req.body;
 
     // Array to collect missing fields.
     const missingFields = [];
 
     // Check each field and add to the array if it's missing.
-    if (!email) missingFields.push("Email");
+    if (!username) missingFields.push("Username");
     if (!password) missingFields.push("Password");
     if (!displayName) missingFields.push("Display Name");
     if (!profilePicture) missingFields.push("Profile Picture");
@@ -24,25 +24,25 @@ const createUser = (req, res) => {
     }
 
     // Check if the user already exists in data.
-    const existing = usersRepo.findBy(user => user.email === email);
+    const existing = usersRepo.findBy(user => user.username === username);
     if (existing.length > 0) {
-        return res.status(400).json({ error: "Email already exists" });
+        return res.status(400).json({ error: "Username already exists" });
     }
 
     // Generate a new user using the input data.
-    const newUser = usersRepo.create({ email, password, displayName, profilePicture });
+    const newUser = usersRepo.create({ username, password, displayName, profilePicture });
 
     // Return 201 Created on success with the new user's ID.
     res.status(201).json({ id: newUser.id });
 };
 
 const loginUser = (req, res) => {
-    // Extract only email and password for login.
-    const { email, password } = req.body;
+    // Extract only username and password for login.
+    const { username, password } = req.body;
 
     // Validate missing fields.
     const missingFields = [];
-    if (!email) missingFields.push("Email");
+    if (!username) missingFields.push("Username");
     if (!password) missingFields.push("Password");
 
     if (missingFields.length > 0) {
@@ -51,9 +51,9 @@ const loginUser = (req, res) => {
     }
 
     // Search for the user in DB.
-    const findUser = usersRepo.findBy(user => user.email === email);
+    const findUser = usersRepo.findBy(user => user.username === username);
 
-    // If email isn't in DB return error.
+    // If username isn't in DB return error.
     if (findUser.length === 0) {
         return res.status(404).json({ error: "User not found" });
     }
@@ -66,7 +66,7 @@ const loginUser = (req, res) => {
 
     // Create a token for the user.
     const token = jwt.sign(
-        { id: user.id, email: user.email, displayName: user.displayName },
+        { id: user.id, username: user.username, displayName: user.displayName },
         JWT_SECRET
     );
 

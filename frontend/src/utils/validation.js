@@ -1,12 +1,10 @@
 /**
- * Validates an email address using Regex.
+ * Validates a username.
  * Returns an error string if invalid, or null if valid.
  */
-export const validateEmail = (email) => {
-    if (!email || email.trim() === "") return "Email is required";
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return "Invalid email format";
+export const validateUsername = (username) => {
+    if (!username || username.trim() === "") return "Username is required";
+    if (username.length < 3) return "Username must be at least 3 characters long";
 
     return null;
 };
@@ -32,15 +30,15 @@ export const validatePassword = (password) => {
 
 /**
  * Validates the entire registration form before making an API call.
- * Checks for email, password strength, password match, name, and profile picture.
+ * Checks for username, password strength, password match, name, and profile picture.
  * Returns an object containing the visual error states for the UI.
  */
 export const validateRegistration = (userData) => {
     const errors = {};
 
-    // Email validation.
-    const emailErr = validateEmail(userData.email);
-    if (emailErr) errors.email = emailErr;
+    // Username validation.
+    const usernameErr = validateUsername(userData.username);
+    if (usernameErr) errors.username = usernameErr;
 
     // Password rules validaiton.
     const passwordErr = validatePassword(userData.password);
