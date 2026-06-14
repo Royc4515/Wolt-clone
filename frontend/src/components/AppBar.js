@@ -35,11 +35,20 @@ const ChevronDown = () => (
   </svg>
 );
 
+const PersonIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+  </svg>
+);
+
 export default function AppBar({ search, onSearch, searchRef }) {
   const authed = isAuthenticated();
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const clearBtnRef = useRef(null);
+  const avatarRef = useRef(null);
 
   useEffect(() => {
     function onScroll() { setScrolled(window.scrollY > 8); }
@@ -47,9 +56,18 @@ export default function AppBar({ search, onSearch, searchRef }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  function handleFocus() {
-    setSearching(true);
-  }
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onOutsideClick(e) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onOutsideClick);
+    return () => document.removeEventListener('mousedown', onOutsideClick);
+  }, [menuOpen]);
+
+  function handleFocus() { setSearching(true); }
 
   function handleBlur(e) {
     if (clearBtnRef.current && clearBtnRef.current.contains(e.relatedTarget)) return;
@@ -109,8 +127,44 @@ export default function AppBar({ search, onSearch, searchRef }) {
           <>
             {!authed && (
               <>
-                <Link to="/login" className="appbar__btn-login">Log in</Link>
-                <Link to="/register" className="appbar__btn-signup">Sign up</Link>
+                {/* Full auth buttons — hidden on small screens */}
+                <div className="appbar__auth-full">
+                  <Link to="/login" className="appbar__btn-login">Log in</Link>
+                  <Link to="/register" className="appbar__btn-signup">Sign up</Link>
+                </div>
+
+                {/* Compact avatar — shown on small screens */}
+                <div className="appbar__auth-compact" ref={avatarRef}>
+                  <button
+                    className="appbar__avatar-btn"
+                    onClick={() => setMenuOpen(o => !o)}
+                    aria-label="Account menu"
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
+                  >
+                    <PersonIcon />
+                  </button>
+                  {menuOpen && (
+                    <div className="appbar__avatar-menu" role="menu">
+                      <Link
+                        to="/login"
+                        className="appbar__avatar-menu-item"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Log in
+                      </Link>
+                      <Link
+                        to="/register"
+                        className="appbar__avatar-menu-item appbar__avatar-menu-item--accent"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  )}
+                </div>
               </>
             )}
             <ThemeToggle />

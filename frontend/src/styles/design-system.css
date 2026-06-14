@@ -160,6 +160,17 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* ── Global disabled state — covers all interactive elements ── */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: 0.35;
+  pointer-events: auto;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);

@@ -202,11 +202,6 @@
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.home__scroll-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
 /* ── Horizontal scroll row ── */
 .home__scroll-row {
   display: flex;
