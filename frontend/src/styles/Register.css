@@ -1,0 +1,31 @@
+/* Register-specific styles only — shared layout in AuthCard.css, shared form styles in forms.css */
+
+/* Avatar / image picker */
+.avatar-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+.avatar-preview {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: 2px dashed var(--border-strong);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.avatar-preview:hover { border-color: var(--accent); }
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-picker .btn--sm { align-self: center; }
