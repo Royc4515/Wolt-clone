@@ -34,9 +34,14 @@ export default function CategoryFilter({ categories, active, onSelect }) {
 
   return (
     <div className="category-filter-wrap">
-      <button className="home__scroll-btn" onClick={() => scroll(-1)} aria-label="Scroll categories left">
-        <ChevronLeft />
-      </button>
+      <div className="category-filter-nav">
+        <button className="home__scroll-btn" onClick={() => scroll(-1)} aria-label="Scroll categories left">
+          <ChevronLeft />
+        </button>
+        <button className="home__scroll-btn" onClick={() => scroll(1)} aria-label="Scroll categories right">
+          <ChevronRight />
+        </button>
+      </div>
 
       <div className="category-filter" role="group" aria-label="Filter by category" ref={rowRef}>
         <button
@@ -66,10 +71,6 @@ export default function CategoryFilter({ categories, active, onSelect }) {
           </button>
         ))}
       </div>
-
-      <button className="home__scroll-btn" onClick={() => scroll(1)} aria-label="Scroll categories right">
-        <ChevronRight />
-      </button>
     </div>
   );
 }

@@ -23,7 +23,13 @@
 /* ── Category filter ── */
 .category-filter-wrap {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.category-filter-nav {
+  display: flex;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 
@@ -64,8 +70,8 @@
 }
 
 .category-card__icon {
-  width: 96px;
-  height: 96px;
+  width: 90px;
+  height: 90px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
