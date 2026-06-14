@@ -20,6 +20,10 @@ export const CATEGORIES = [
   { name: 'Mexican', emoji: '🌮', image: '/images/categories/mexican.jpg' },
 ];
 
+export function getRestaurantById(id) {
+  return MOCK_RESTAURANTS.find(r => r.id === id) || null;
+}
+
 export function getRestaurants({ search = '', category = null } = {}) {
   return MOCK_RESTAURANTS.filter(r => {
     const matchesSearch =
