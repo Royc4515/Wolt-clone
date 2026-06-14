@@ -5,7 +5,9 @@ import './AuthCard.css';
 export default function AuthCard({ title, footer, children, maxWidth = '440px' }) {
   return (
     <>
-      <ThemeToggle />
+      <div className="auth-toggle-wrap">
+        <ThemeToggle />
+      </div>
       <div className="auth-wrap">
         <div className="auth-card card card--pad" style={{ maxWidth }}>
           <div className="auth-brand">

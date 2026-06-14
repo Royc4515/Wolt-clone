@@ -85,24 +85,24 @@
    2. THEME — DARK
    ============================================================ */
 [data-theme="dark"] {
-  --bg:            #141414;
-  --surface:       #1e1e1e; /* cards — slightly lighter than page */
-  --surface-2:     #282828; /* elevated / hover */
-  --surface-sunken:#0a0a0a; /* wells, input track */
+  --bg:            #0A0C17;  /* matches real Wolt dark bg */
+  --surface:       #13152a;  /* cards — slightly lighter */
+  --surface-2:     #1c1e35;  /* elevated / hover */
+  --surface-sunken:#06070f;  /* wells, input track */
 
   --text:        #ffffff;
   --text-muted:  #b8b8d0;
   --text-faint:  #8080a8;
 
-  --border:        rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
+  --border:        rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-  --input-bg: #131320;
+  --input-bg: #0e1020;
 
   --accent-soft: rgba(0, 157, 224, 0.16);
   --ring:        rgba(0, 157, 224, 0.45);
 
-  --header-bg:     #131320;
+  --header-bg:     #080a14;  /* slightly darker than bg for AppBar */
   --cta-soft-bg:   #00C2E8; /* official Wolt brand blue */
   --cta-soft-text: #041525;
   --soft-track:    rgba(102, 203, 240, 0.18); /* pale stepper track */
@@ -159,6 +159,17 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
+
+/* ── Global disabled state — covers all interactive elements ── */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: 0.35;
+  pointer-events: auto;
+}
 
 body {
   margin: 0;
