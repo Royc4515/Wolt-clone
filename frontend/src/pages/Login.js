@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../services/auth';
 import { validatePassword } from '../utils/validation';
+import ThemeToggle from '../components/ThemeToggle';
 import '../styles/Login.css';
 
 function validateUsername(username) {
@@ -61,6 +62,8 @@ export default function Login() {
   }
 
   return (
+    <>
+    <ThemeToggle />
     <div className="login-wrap">
       <div className="card card--pad login-card">
 
@@ -136,5 +139,6 @@ export default function Login() {
 
       </div>
     </div>
+    </>
   );
 }
