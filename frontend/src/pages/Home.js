@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import AppBar from '../components/AppBar';
 import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
@@ -17,8 +17,34 @@ const ChevronRight = () => (
   </svg>
 );
 
+function useScrollEdges(ref) {
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    function update() {
+      setCanLeft(el.scrollLeft > 1);
+      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    }
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [ref]);
+
+  return { canLeft, canRight };
+}
+
 function ScrollSection({ title, children }) {
   const rowRef = useRef(null);
+  const { canLeft, canRight } = useScrollEdges(rowRef);
 
   function scroll(dir) {
     rowRef.current?.scrollBy({ left: dir * 560, behavior: 'smooth' });
@@ -29,10 +55,20 @@ function ScrollSection({ title, children }) {
       <div className="home__section-header">
         <h2 className="home__section-title">{title}</h2>
         <div className="home__section-nav">
-          <button className="home__scroll-btn" onClick={() => scroll(-1)} aria-label="Scroll left">
+          <button
+            className="home__scroll-btn"
+            onClick={() => scroll(-1)}
+            aria-label="Scroll left"
+            disabled={!canLeft}
+          >
             <ChevronLeft />
           </button>
-          <button className="home__scroll-btn" onClick={() => scroll(1)} aria-label="Scroll right">
+          <button
+            className="home__scroll-btn"
+            onClick={() => scroll(1)}
+            aria-label="Scroll right"
+            disabled={!canRight}
+          >
             <ChevronRight />
           </button>
         </div>

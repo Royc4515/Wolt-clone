@@ -198,8 +198,13 @@
   transition: background var(--dur-fast) var(--ease);
 }
 
-.home__scroll-btn:hover {
+.home__scroll-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.home__scroll-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ── Horizontal scroll row ── */
@@ -407,4 +412,19 @@
 .restaurant-card__category {
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .restaurant-card { flex: 0 0 300px; }
+}
+
+@media (max-width: 600px) {
+  .home__content {
+    padding: var(--space-2) var(--space-3) var(--space-4);
+    gap: var(--space-4);
+  }
+  .restaurant-card { flex: 0 0 min(280px, 80vw); }
+  .category-card__icon { width: 72px; height: 72px; }
+  .home__section-title { font-size: var(--text-lg); }
 }

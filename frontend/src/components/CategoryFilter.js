@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const ChevronLeft = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -27,6 +27,26 @@ function CategoryIcon({ image, emoji, colorClass }) {
 
 export default function CategoryFilter({ categories, active, onSelect }) {
   const rowRef = useRef(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(true);
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+
+    function update() {
+      setCanLeft(el.scrollLeft > 1);
+      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    }
+
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   function scroll(dir) {
     rowRef.current?.scrollBy({ left: dir * 360, behavior: 'smooth' });
@@ -35,10 +55,20 @@ export default function CategoryFilter({ categories, active, onSelect }) {
   return (
     <div className="category-filter-wrap">
       <div className="category-filter-nav">
-        <button className="home__scroll-btn" onClick={() => scroll(-1)} aria-label="Scroll categories left">
+        <button
+          className="home__scroll-btn"
+          onClick={() => scroll(-1)}
+          aria-label="Scroll categories left"
+          disabled={!canLeft}
+        >
           <ChevronLeft />
         </button>
-        <button className="home__scroll-btn" onClick={() => scroll(1)} aria-label="Scroll categories right">
+        <button
+          className="home__scroll-btn"
+          onClick={() => scroll(1)}
+          aria-label="Scroll categories right"
+          disabled={!canRight}
+        >
           <ChevronRight />
         </button>
       </div>
