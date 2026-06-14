@@ -1,0 +1,60 @@
+.auth-wrap {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5);
+}
+
+.auth-card {
+  width: 100%;
+  padding: var(--space-7) var(--space-6) var(--space-6);
+}
+
+.auth-brand {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.auth-brand__logo {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
+}
+
+[data-theme="dark"] .auth-brand__logo {
+  filter: invert(1);
+  mix-blend-mode: screen;
+}
+
+.auth-card h1 {
+  margin: 0 0 var(--space-6);
+  text-align: center;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.auth-foot {
+  margin-top: var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.auth-foot a {
+  font-weight: var(--weight-bold);
+}
+.auth-foot a:hover {
+  text-decoration: underline;
+}
+
+/* Soft CTA button — use a matching sky ring, not the deep accent ring */
+.auth-form .btn--soft:focus-visible {
+  box-shadow: 0 0 0 4px rgba(0, 194, 232, 0.40);
+}

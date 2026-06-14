@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import './ThemeToggle.css';
 
 function applyTheme(t) {
   document.documentElement.setAttribute('data-theme', t);
@@ -9,6 +10,10 @@ export default function ThemeToggle() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem('wolt-theme') || 'dark'
   );
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []); // intentional: sync DOM attribute once on mount; handleToggle handles subsequent changes
 
   function handleToggle(t) {
     setTheme(t);

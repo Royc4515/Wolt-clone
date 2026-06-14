@@ -6,8 +6,7 @@
    Every screen built next should link this file and inherit it.
    ============================================================ */
 
-/* ---- Fonts ---- */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* ---- Fonts loaded via <link> in index.html (non-blocking) ---- */
 
 /* ============================================================
    1. GLOBAL TOKENS  (theme-independent)
@@ -62,10 +61,10 @@
   --radius-xl:   24px;  /* hero panels, sheets */
   --radius-pill: 999px; /* pills, avatars */
 
-  /* Accent — shared across both themes */
-  --accent:          #009de0;
-  --accent-hover:    #0089c4;
-  --accent-active:   #0076aa;
+  /* Accent — official Wolt brand blue #00C2E8 */
+  --accent:          #00C2E8;
+  --accent-hover:    #00aed0;
+  --accent-active:   #0099b8;
   --accent-contrast: #ffffff;
 
   /* Semantic status */
@@ -86,26 +85,26 @@
    2. THEME — DARK
    ============================================================ */
 [data-theme="dark"] {
-  --bg:            #1a1a2e;
-  --surface:       #24243e; /* cards — slightly lighter than page */
-  --surface-2:     #2d2d4a; /* elevated / hover */
-  --surface-sunken:#15152a; /* wells, input track */
+  --bg:            #141414;
+  --surface:       #1e1e1e; /* cards — slightly lighter than page */
+  --surface-2:     #282828; /* elevated / hover */
+  --surface-sunken:#0a0a0a; /* wells, input track */
 
-  --text:        #f4f4f8;
-  --text-muted:  #a2a2bc;
-  --text-faint:  #6c6c88;
+  --text:        #ffffff;
+  --text-muted:  #b8b8d0;
+  --text-faint:  #8080a8;
 
-  --border:        rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border:        rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
 
-  --input-bg: #1f1f38;
+  --input-bg: #131320;
 
   --accent-soft: rgba(0, 157, 224, 0.16);
   --ring:        rgba(0, 157, 224, 0.45);
 
-  --header-bg:     #1f1f33;
-  --cta-soft-bg:   #66cbf0; /* signature sky-cyan CTA (detected) */
-  --cta-soft-text: #0c3a47;
+  --header-bg:     #131320;
+  --cta-soft-bg:   #00C2E8; /* official Wolt brand blue */
+  --cta-soft-text: #041525;
   --soft-track:    rgba(102, 203, 240, 0.18); /* pale stepper track */
   --overlay-badge: rgba(6, 16, 22, 0.82);
   --tag-deal-bg:   rgba(31, 171, 109, 0.16);
@@ -122,10 +121,10 @@
    3. THEME — LIGHT
    ============================================================ */
 [data-theme="light"] {
-  --bg:            #eeeae5; /* warm off-white (detected) */
-  --surface:       #ffffff; /* cards — float above warm page */
-  --surface-2:     #faf8f5;
-  --surface-sunken:#e7e2da;
+  --bg:            #ffffff;
+  --surface:       #ffffff;
+  --surface-2:     #f5f5f5;
+  --surface-sunken:#ebebeb;
 
   --text:        #1c1d2a;
   --text-muted:  #6a6760;
@@ -140,14 +139,14 @@
   --ring:        rgba(0, 157, 224, 0.30);
 
   --header-bg:     #ffffff;
-  --cta-soft-bg:   #66cbf0; /* signature sky-cyan CTA (detected) */
-  --cta-soft-text: #0c3a47;
+  --cta-soft-bg:   #00C2E8; /* official Wolt brand blue */
+  --cta-soft-text: #041525;
   --soft-track:    #dcf7ff; /* pale stepper track (detected) */
   --overlay-badge: rgba(8, 18, 24, 0.82);
   --tag-deal-bg:   rgba(31, 171, 109, 0.12);
   --tag-deal-text: #138a55;
 
-  --shadow-card: 0 1px 3px rgba(20, 20, 50, 0.06), 0 8px 24px rgba(20, 20, 50, 0.05);
+  --shadow-card: 0 2px 8px rgba(20, 20, 50, 0.10), 0 12px 32px rgba(20, 20, 50, 0.10);
   --shadow-pop:  0 12px 32px rgba(20, 20, 50, 0.14);
   --overlay:     rgba(20, 20, 40, 0.40);
 
@@ -375,7 +374,7 @@ textarea.input { resize: vertical; min-height: 96px; line-height: var(--leading-
 
 /* Soft CTA — pale accent, dark text. The prominent in-context
    action (add to order, checkout sheet). */
-.btn--soft { background: var(--cta-soft-bg); color: var(--cta-soft-text); }
+.btn--soft { background: var(--cta-soft-bg); color: var(--cta-soft-text); font-weight: var(--weight-extrabold); }
 .btn--soft:hover { filter: brightness(1.05); }
 
 /* Circular add button — sits on a product image corner */
