@@ -1,1 +1,0 @@
-This folder will manage logged-in user data and shopping cart.
