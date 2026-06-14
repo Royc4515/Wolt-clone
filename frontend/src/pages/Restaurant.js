@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useRef } from 'react';
 import AppBar from '../components/AppBar';
 import MenuItemCard from '../components/MenuItemCard';
@@ -35,6 +35,7 @@ const StarIcon = () => (
 
 export default function Restaurant() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { items, addItem, count, total } = useCart();
   const sectionRefs = useRef({});
 
@@ -56,6 +57,14 @@ export default function Restaurant() {
   function getQty(itemId) {
     const entry = items.find(e => e.item.id === itemId);
     return entry ? entry.qty : 0;
+  }
+
+  function handleAdd(item) {
+    if (!localStorage.getItem('jwt_token')) {
+      navigate('/login');
+      return;
+    }
+    addItem(item);
   }
 
   function scrollToSection(sectionId) {
@@ -125,7 +134,7 @@ export default function Restaurant() {
                   key={item.id}
                   item={item}
                   qty={getQty(item.id)}
-                  onAdd={() => addItem(item)}
+                  onAdd={() => handleAdd(item)}
                 />
               ))}
             </div>

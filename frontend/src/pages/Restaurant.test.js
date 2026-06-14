@@ -4,9 +4,11 @@ import { getRestaurantById } from '../mocks/restaurants';
 import { getMenu } from '../mocks/menu';
 
 const mockUseParams = jest.fn(() => ({ id: '1' }));
+const mockNavigate = jest.fn();
 
 jest.mock('react-router-dom', () => ({
   useParams: () => mockUseParams(),
+  useNavigate: () => mockNavigate,
   Link: ({ children, to }) => <a href={to}>{children}</a>,
 }));
 
@@ -44,9 +46,13 @@ beforeEach(() => {
   mockUseParams.mockReturnValue({ id: '1' });
   getRestaurantById.mockReturnValue(MOCK_RESTAURANT);
   getMenu.mockReturnValue(MOCK_MENU);
+  localStorage.setItem('jwt_token', 'test-token');
 });
 
-afterEach(() => jest.clearAllMocks());
+afterEach(() => {
+  jest.clearAllMocks();
+  localStorage.clear();
+});
 
 describe('Restaurant page', () => {
   test('renders restaurant name as heading', () => {
@@ -142,5 +148,28 @@ describe('Restaurant page', () => {
     renderRestaurant();
     expect(screen.getByRole('button', { name: /starters/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pizzas/i })).toBeInTheDocument();
+  });
+
+  describe('auth guard on add', () => {
+    test('clicking "+" when logged out redirects to /login', () => {
+      localStorage.clear();
+      renderRestaurant();
+      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
+    });
+
+    test('clicking "+" when logged out does not add item to cart', () => {
+      localStorage.clear();
+      renderRestaurant();
+      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
+      expect(screen.queryByRole('region', { name: /cart/i })).not.toBeInTheDocument();
+    });
+
+    test('clicking "+" when logged in adds item normally', () => {
+      renderRestaurant();
+      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
+      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(screen.getByRole('region', { name: /cart/i })).toBeInTheDocument();
+    });
   });
 });
