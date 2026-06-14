@@ -70,9 +70,15 @@ export default function Home() {
         />
 
         {isSearching ? (
-          <ScrollSection title={restaurants.length > 0 ? `Results for "${search}"` : `No results for "${search}"`}>
-            {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
-          </ScrollSection>
+          restaurants.length > 0 ? (
+            <ScrollSection title={`Results for "${search}"`}>
+              {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
+            </ScrollSection>
+          ) : (
+            <section className="home__section">
+              <h2 className="home__section-title home__empty">No results for "{search}"</h2>
+            </section>
+          )
         ) : (
           <>
             {!activeCategory && promoted.length > 0 && (

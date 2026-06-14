@@ -28,7 +28,7 @@ function hashIndex(str) {
 export default function RestaurantCard({ id, name, description, image, category, rating, deliveryTime, deliveryFee, isPromoted }) {
 
   return (
-    <Link to={`/restaurant/${id}`} className="restaurant-card" aria-label={name}>
+    <Link to={`/restaurant/${id}`} className="restaurant-card" aria-labelledby={`rc-name-${id}`}>
       <div className="restaurant-card__image">
         {image
           ? <img src={image} alt={name} />
@@ -55,7 +55,7 @@ export default function RestaurantCard({ id, name, description, image, category,
 
       <div className="restaurant-card__body">
         <div className="restaurant-card__header-row">
-          <h3 className="restaurant-card__name">{name}</h3>
+          <h3 id={`rc-name-${id}`} className="restaurant-card__name">{name}</h3>
           <div className="restaurant-card__time-box">
             {deliveryTime}
           </div>

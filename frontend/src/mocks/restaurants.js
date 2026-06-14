@@ -31,6 +31,3 @@ export function getRestaurants({ search = '', category = null } = {}) {
   });
 }
 
-export function getCategories() {
-  return CATEGORIES.map(c => c.name);
-}

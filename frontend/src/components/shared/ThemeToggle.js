@@ -26,7 +26,7 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-  }, []); // intentional: sync DOM on mount; handleToggle handles subsequent changes
+  }, [theme]);
 
   function handleToggle() {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -35,7 +35,7 @@ export default function ThemeToggle() {
   }
 
   return (
-    <div className="theme-toggle" role="group" aria-label="Theme">
+    <div className="theme-toggle">
       <button
         className="theme-toggle__btn"
         onClick={handleToggle}
