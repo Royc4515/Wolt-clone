@@ -5,10 +5,12 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Restaurant from './pages/Restaurant';
 import PublicRoute from './components/PublicRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />

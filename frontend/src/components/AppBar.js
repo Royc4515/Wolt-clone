@@ -42,7 +42,7 @@ const PersonIcon = () => (
   </svg>
 );
 
-export default function AppBar({ search, onSearch, searchRef }) {
+export default function AppBar({ search = '', onSearch = () => {}, searchRef = { current: null }, cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false }) {
   const authed = isAuthenticated();
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -63,15 +63,25 @@ export default function AppBar({ search, onSearch, searchRef }) {
         setMenuOpen(false);
       }
     }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+        avatarRef.current?.focus();
+      }
+    }
     document.addEventListener('mousedown', onOutsideClick);
-    return () => document.removeEventListener('mousedown', onOutsideClick);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onOutsideClick);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [menuOpen]);
 
   function handleFocus() { setSearching(true); }
 
   function handleBlur(e) {
     if (clearBtnRef.current && clearBtnRef.current.contains(e.relatedTarget)) return;
-    setTimeout(() => setSearching(false), 80);
+    setSearching(false);
   }
 
   function handleClear() {
@@ -81,10 +91,16 @@ export default function AppBar({ search, onSearch, searchRef }) {
   }
 
   return (
-    <header className={`appbar${searching ? ' appbar--searching' : ''}${scrolled ? ' appbar--scrolled' : ''}`}>
+    <header className={`appbar${searching ? ' appbar--searching' : ''}${scrolled ? ' appbar--scrolled' : ''}${transparent && !scrolled ? ' appbar--transparent' : ''}`}>
       {/* Left: logo + location */}
       <div className="appbar__left">
-        <img src={woltLogo} alt="Wolt" className="appbar__logo" />
+        {logoLinkDisabled ? (
+          <img src={woltLogo} alt="Wolt" className="appbar__logo appbar__logo--disabled" />
+        ) : (
+          <Link to="/" className="appbar__logo-link">
+            <img src={woltLogo} alt="Wolt" className="appbar__logo" />
+          </Link>
+        )}
         {!searching && (
           <button className="appbar__location" aria-label="Change location">
             <span className="appbar__location-pin"><PinIcon /></span>
@@ -117,7 +133,9 @@ export default function AppBar({ search, onSearch, searchRef }) {
         {searching ? (
           <button
             ref={clearBtnRef}
+            type="button"
             className="appbar__clear-btn"
+            onMouseDown={e => e.preventDefault()}
             onClick={handleClear}
             aria-label="Clear search"
           >
@@ -166,6 +184,13 @@ export default function AppBar({ search, onSearch, searchRef }) {
                   )}
                 </div>
               </>
+            )}
+            {cartCount > 0 && (
+              <button type="button" className="appbar__cart-pill" onClick={onShowCart}>
+                <span className="appbar__cart-pill-count">{cartCount}</span>
+                <span className="appbar__cart-pill-label">Show items</span>
+                <span className="appbar__cart-pill-price">₪{cartTotal}</span>
+              </button>
             )}
             <ThemeToggle />
           </>
