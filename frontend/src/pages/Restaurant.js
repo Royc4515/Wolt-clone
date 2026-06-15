@@ -73,11 +73,6 @@ export default function Restaurant() {
   }
 
   function handleAdd(item) {
-    const token = localStorage.getItem('jwt_token');
-    if (!token || token.split('.').length !== 3) {
-      navigate('/login');
-      return;
-    }
     addItem(item);
   }
 

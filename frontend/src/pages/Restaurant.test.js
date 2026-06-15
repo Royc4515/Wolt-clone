@@ -54,7 +54,6 @@ beforeEach(() => {
   mockUseParams.mockReturnValue({ id: '1' });
   fetchRestaurant.mockResolvedValue(MOCK_RESTAURANT);
   fetchMenu.mockResolvedValue(MOCK_MENU);
-  localStorage.setItem('jwt_token', 'a.valid.token');
 });
 
 afterEach(() => {
@@ -163,19 +162,13 @@ describe('Restaurant page', () => {
     expect(screen.getByRole('button', { name: /pizzas/i })).toBeInTheDocument();
   });
 
-  describe('auth guard on add', () => {
-    test('clicking "+" when logged out redirects to /login', async () => {
+  describe('auth guard on checkout', () => {
+    test('clicking "+" when logged out still adds item to cart', async () => {
       localStorage.clear();
       renderRestaurant();
       fireEvent.click(await screen.findByRole('button', { name: /add garlic bread/i }));
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
-    });
-
-    test('clicking "+" when logged out does not add item to cart', async () => {
-      localStorage.clear();
-      renderRestaurant();
-      fireEvent.click(await screen.findByRole('button', { name: /add garlic bread/i }));
-      expect(screen.queryByText(/show items/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/show items/i)).toBeInTheDocument();
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     test('clicking "+" when logged in adds item normally', async () => {
