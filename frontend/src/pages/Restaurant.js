@@ -1,23 +1,18 @@
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useRef } from 'react';
 import AppBar from '../components/AppBar';
 import MenuItemCard from '../components/MenuItemCard';
-import CartBar from '../components/CartBar';
+import CartDrawer from '../components/CartDrawer';
+import MenuItemModal from '../components/MenuItemModal';
+import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
-import { getRestaurantById } from '../mocks/restaurants';
-import { getMenu } from '../mocks/menu';
+import { fetchRestaurant, fetchMenu } from '../api/restaurants';
+import { hashColor } from '../utils/colorHash';
+import useTheme from '../hooks/useTheme';
+import woltIcon from '../assets/wolt-logo.png';
 import './Restaurant.css';
 
-const PLACEHOLDER_COLORS = [
-  '#0a1a2e','#1a0a2e','#0a2e1a','#2e0a0a',
-  '#0a2e2e','#2e1a0a','#1a2e0a','#2e2e0a',
-];
-
-function hashColor(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  return PLACEHOLDER_COLORS[h % PLACEHOLDER_COLORS.length];
-}
+const FEATURED_SECTION_TITLE = 'Most Ordered';
 
 const BikeIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -36,35 +31,64 @@ const StarIcon = () => (
 export default function Restaurant() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, addItem, count, total } = useCart();
+  const { items, addItem, updateQty, count, total } = useCart();
   const sectionRefs = useRef({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const isLight = useTheme() === 'light';
 
-  const restaurant = getRestaurantById(id);
-  if (!restaurant) {
-    return (
-      <div className="restaurant">
-        <AppBar search="" onSearch={() => {}} searchRef={{ current: null }} />
-        <main className="restaurant__not-found">
-          <h1>Restaurant not found</h1>
-        </main>
-      </div>
-    );
-  }
+  const [restaurant, setRestaurant] = useState(null);
+  const [menu, setMenu] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  const menu = getMenu(id);
-  const bgColor = hashColor(restaurant.name);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setNotFound(false);
 
-  function getQty(itemId) {
-    const entry = items.find(e => e.item.id === itemId);
-    return entry ? entry.qty : 0;
+    Promise.all([fetchRestaurant(id), fetchMenu(id)])
+      .then(([rest, menuData]) => {
+        if (!cancelled) {
+          setRestaurant(rest);
+          setMenu(menuData);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNotFound(true);
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
+  function getQty(itemId) { return cartMap.get(itemId) ?? 0; }
+
+  function handleRemove(item) {
+    updateQty(item.id, getQty(item.id) - 1);
   }
 
   function handleAdd(item) {
-    if (!localStorage.getItem('jwt_token')) {
+    const token = localStorage.getItem('jwt_token');
+    if (!token || token.split('.').length !== 3) {
       navigate('/login');
       return;
     }
     addItem(item);
+  }
+
+  function handleCheckout() {
+    const token = localStorage.getItem('jwt_token');
+    if (!token || token.split('.').length !== 3) {
+      setCartOpen(false);
+      navigate('/login');
+      return;
+    }
+    // TODO: navigate to checkout page
   }
 
   function scrollToSection(sectionId) {
@@ -72,19 +96,57 @@ export default function Restaurant() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  if (loading) {
+    return (
+      <div className="restaurant">
+        <AppBar />
+        <main className="restaurant__loading">
+          <img src={woltIcon} alt="Loading" className="restaurant__loading-logo" />
+        </main>
+      </div>
+    );
+  }
+
+  if (notFound || !restaurant) {
+    return (
+      <div className="restaurant">
+        <AppBar />
+        <main className="restaurant__not-found">
+          <h1>Restaurant not found</h1>
+        </main>
+      </div>
+    );
+  }
+
+  const bgColor = hashColor(restaurant.name);
+
   return (
     <div className="restaurant">
-      <AppBar search="" onSearch={() => {}} searchRef={{ current: null }} />
+      <AppBar
+        cartCount={count}
+        cartTotal={total}
+        onShowCart={() => setCartOpen(true)}
+        transparent
+      />
 
-      {/* ── Hero ── */}
-      <div className="restaurant__hero" style={{ background: bgColor }}>
-        <span className="restaurant__hero-emoji" aria-hidden="true">🍽</span>
+      {/* ── Hero (extends behind AppBar) ── */}
+      <div className="restaurant__hero" style={!restaurant.image && !isLight ? { background: bgColor } : undefined}>
+        {restaurant.image
+          ? <img src={restaurant.image} alt={restaurant.name} className="restaurant__hero-img" />
+          : <span className="restaurant__hero-emoji" aria-hidden="true">🍽</span>
+        }
+        <div className="restaurant__hero-overlay" aria-hidden="true" />
+        <div className="restaurant__hero-info">
+          <h1 className="restaurant__hero-name">{restaurant.name}</h1>
+          {restaurant.description && (
+            <p className="restaurant__hero-desc">{restaurant.description}</p>
+          )}
+        </div>
       </div>
 
-      {/* ── Info header ── */}
+      {/* ── Info bar ── */}
       <div className="restaurant__header">
         <div className="restaurant__header-inner">
-          <h1 className="restaurant__name">{restaurant.name}</h1>
           <div className="restaurant__meta">
             <span className="restaurant__rating">
               <StarIcon />
@@ -121,28 +183,65 @@ export default function Restaurant() {
 
       {/* ── Menu ── */}
       <main className="restaurant__menu">
-        {menu.map(section => (
-          <section
-            key={section.id}
-            className="restaurant__section"
-            ref={el => { sectionRefs.current[section.id] = el; }}
-          >
-            <h2 className="restaurant__section-title">{section.title}</h2>
-            <div className="restaurant__grid">
-              {section.items.map(item => (
-                <MenuItemCard
-                  key={item.id}
-                  item={item}
-                  qty={getQty(item.id)}
-                  onAdd={() => handleAdd(item)}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
+        {menu.map(section => {
+          const cards = section.items.map(item => (
+            <MenuItemCard
+              key={item.id}
+              item={item}
+              qty={getQty(item.id)}
+              onAdd={() => handleAdd(item)}
+              onRemove={() => handleRemove(item)}
+              onCardClick={() => setSelectedItem(item)}
+            />
+          ));
+
+          if (section.title === FEATURED_SECTION_TITLE) {
+            return (
+              <ScrollSection
+                key={section.id}
+                classPrefix="restaurant"
+                title={section.title}
+                sectionRef={el => { sectionRefs.current[section.id] = el; }}
+              >
+                {cards}
+              </ScrollSection>
+            );
+          }
+
+          return (
+            <section
+              key={section.id}
+              className="restaurant__section"
+              ref={el => { sectionRefs.current[section.id] = el; }}
+            >
+              <h2 className="restaurant__section-title">{section.title}</h2>
+              <div className="restaurant__grid">{cards}</div>
+            </section>
+          );
+        })}
       </main>
 
-      {count > 0 && <CartBar count={count} total={total} />}
+      {/* ── Item detail modal ── */}
+      {selectedItem && (
+        <MenuItemModal
+          item={selectedItem}
+          qty={getQty(selectedItem.id)}
+          onAdd={() => addItem(selectedItem)}
+          onRemove={() => handleRemove(selectedItem)}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
+
+      {/* ── Cart drawer ── */}
+      {cartOpen && (
+        <CartDrawer
+          items={items}
+          total={total}
+          onClose={() => setCartOpen(false)}
+          onCheckout={handleCheckout}
+          onUpdateQty={updateQty}
+        />
+      )}
     </div>
   );
 }

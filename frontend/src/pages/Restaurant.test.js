@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import Restaurant from './Restaurant';
-import { getRestaurantById } from '../mocks/restaurants';
-import { getMenu } from '../mocks/menu';
+import { fetchRestaurant, fetchMenu } from '../api/restaurants';
 
 const mockUseParams = jest.fn(() => ({ id: '1' }));
 const mockNavigate = jest.fn();
@@ -12,9 +11,18 @@ jest.mock('react-router-dom', () => ({
   Link: ({ children, to }) => <a href={to}>{children}</a>,
 }));
 
-jest.mock('../mocks/restaurants', () => ({ getRestaurantById: jest.fn() }));
-jest.mock('../mocks/menu',        () => ({ getMenu: jest.fn() }));
-jest.mock('../components/AppBar', () => () => <div />);
+jest.mock('../api/restaurants', () => ({
+  fetchRestaurant: jest.fn(),
+  fetchMenu: jest.fn(),
+}));
+
+jest.mock('../components/AppBar', () =>
+  ({ cartCount = 0, cartTotal = 0, onShowCart }) =>
+    cartCount > 0
+      ? <button onClick={onShowCart}>{cartCount} Show items ₪{cartTotal}</button>
+      : <div />
+);
+
 jest.mock('../components/shared/ThemeToggle', () => () => <div />);
 
 const MOCK_RESTAURANT = {
@@ -44,9 +52,9 @@ function renderRestaurant() {
 
 beforeEach(() => {
   mockUseParams.mockReturnValue({ id: '1' });
-  getRestaurantById.mockReturnValue(MOCK_RESTAURANT);
-  getMenu.mockReturnValue(MOCK_MENU);
-  localStorage.setItem('jwt_token', 'test-token');
+  fetchRestaurant.mockResolvedValue(MOCK_RESTAURANT);
+  fetchMenu.mockResolvedValue(MOCK_MENU);
+  localStorage.setItem('jwt_token', 'a.valid.token');
 });
 
 afterEach(() => {
@@ -55,121 +63,126 @@ afterEach(() => {
 });
 
 describe('Restaurant page', () => {
-  test('renders restaurant name as heading', () => {
+  test('renders restaurant name as heading', async () => {
     renderRestaurant();
-    expect(screen.getByRole('heading', { name: /pizza roma/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /pizza roma/i })).toBeInTheDocument();
   });
 
-  test('renders restaurant rating', () => {
+  test('renders restaurant rating', async () => {
     renderRestaurant();
+    await screen.findByRole('heading', { name: /pizza roma/i });
     expect(screen.getByText(/8\.6/)).toBeInTheDocument();
   });
 
-  test('renders delivery time', () => {
+  test('renders delivery time', async () => {
     renderRestaurant();
+    await screen.findByRole('heading', { name: /pizza roma/i });
     expect(screen.getByText(/25.{0,3}35 min/i)).toBeInTheDocument();
   });
 
-  test('renders "Free delivery" when deliveryFee is 0', () => {
+  test('renders "Free delivery" when deliveryFee is 0', async () => {
     renderRestaurant();
+    await screen.findByRole('heading', { name: /pizza roma/i });
     expect(screen.getByText(/free delivery/i)).toBeInTheDocument();
   });
 
-  test('renders delivery fee amount when non-zero', () => {
-    getRestaurantById.mockReturnValue({ ...MOCK_RESTAURANT, deliveryFee: 9 });
+  test('renders delivery fee amount when non-zero', async () => {
+    fetchRestaurant.mockResolvedValue({ ...MOCK_RESTAURANT, deliveryFee: 9 });
     renderRestaurant();
+    await screen.findByRole('heading', { name: /pizza roma/i });
     expect(screen.getByText(/₪9/)).toBeInTheDocument();
   });
 
-  test('shows not-found message for unknown restaurant', () => {
-    getRestaurantById.mockReturnValue(null);
+  test('shows not-found message for unknown restaurant', async () => {
+    fetchRestaurant.mockRejectedValue(new Error('Not found'));
     mockUseParams.mockReturnValue({ id: '999' });
     renderRestaurant();
-    expect(screen.getByText(/not found/i)).toBeInTheDocument();
+    expect(await screen.findByText(/not found/i)).toBeInTheDocument();
   });
 
-  test('renders menu section titles', () => {
+  test('renders menu section titles', async () => {
     renderRestaurant();
-    expect(screen.getByRole('heading', { name: /starters/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /starters/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /pizzas/i })).toBeInTheDocument();
   });
 
-  test('renders menu item names', () => {
+  test('renders menu item names', async () => {
     renderRestaurant();
-    expect(screen.getByText('Garlic Bread')).toBeInTheDocument();
+    expect(await screen.findByText('Garlic Bread')).toBeInTheDocument();
     expect(screen.getByText('Margherita')).toBeInTheDocument();
   });
 
-  test('renders menu item prices', () => {
+  test('renders menu item prices', async () => {
     renderRestaurant();
-    expect(screen.getByText(/₪24/)).toBeInTheDocument();
+    expect(await screen.findByText(/₪24/)).toBeInTheDocument();
     expect(screen.getByText(/₪62/)).toBeInTheDocument();
   });
 
-  test('CartBar is not visible initially', () => {
+  test('cart pill is not visible initially', async () => {
     renderRestaurant();
-    expect(screen.queryByRole('region', { name: /cart/i })).not.toBeInTheDocument();
+    await screen.findByText('Garlic Bread');
+    expect(screen.queryByText(/show items/i)).not.toBeInTheDocument();
   });
 
-  test('clicking "+" adds item and shows CartBar', () => {
+  test('clicking "+" adds item and shows cart pill', async () => {
     renderRestaurant();
-    const addButton = screen.getByRole('button', { name: /add garlic bread/i });
+    const addButton = await screen.findByRole('button', { name: /add garlic bread/i });
     fireEvent.click(addButton);
-    expect(screen.getByRole('region', { name: /cart/i })).toBeInTheDocument();
+    expect(screen.getByText(/show items/i)).toBeInTheDocument();
   });
 
-  test('CartBar shows correct item count', () => {
+  test('cart pill shows correct item count', async () => {
     renderRestaurant();
-    const addBread = screen.getByRole('button', { name: /add garlic bread/i });
+    const addBread = await screen.findByRole('button', { name: /add garlic bread/i });
     fireEvent.click(addBread);
     fireEvent.click(addBread);
-    expect(screen.getByText(/2 items/i)).toBeInTheDocument();
+    const pill = screen.getByText(/show items/i).closest('button');
+    expect(pill).toHaveTextContent('2');
   });
 
-  test('CartBar shows total price', () => {
+  test('cart pill shows total price', async () => {
     renderRestaurant();
-    const addBread = screen.getByRole('button', { name: /add garlic bread/i });
+    const addBread = await screen.findByRole('button', { name: /add garlic bread/i });
     fireEvent.click(addBread);
-    // CartBar total shows ₪24
-    const cartBar = screen.getByRole('region', { name: /cart/i });
-    expect(cartBar).toHaveTextContent('₪24');
+    const pill = screen.getByText(/show items/i).closest('button');
+    expect(pill).toHaveTextContent('₪24');
   });
 
-  test('"+" button disabled when item is at maxQty', () => {
+  test('"+" button disabled when item is at maxQty', async () => {
     renderRestaurant();
-    const addArancini = screen.getByRole('button', { name: /add arancini/i });
+    const addArancini = await screen.findByRole('button', { name: /add arancini/i });
     fireEvent.click(addArancini); // qty 1
     fireEvent.click(addArancini); // qty 2
     fireEvent.click(addArancini); // qty 3 (max)
     expect(addArancini).toBeDisabled();
   });
 
-  test('category nav renders a button for each section', () => {
+  test('category nav renders a button for each section', async () => {
     renderRestaurant();
-    expect(screen.getByRole('button', { name: /starters/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /starters/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pizzas/i })).toBeInTheDocument();
   });
 
   describe('auth guard on add', () => {
-    test('clicking "+" when logged out redirects to /login', () => {
+    test('clicking "+" when logged out redirects to /login', async () => {
       localStorage.clear();
       renderRestaurant();
-      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /add garlic bread/i }));
       expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
 
-    test('clicking "+" when logged out does not add item to cart', () => {
+    test('clicking "+" when logged out does not add item to cart', async () => {
       localStorage.clear();
       renderRestaurant();
-      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
-      expect(screen.queryByRole('region', { name: /cart/i })).not.toBeInTheDocument();
+      fireEvent.click(await screen.findByRole('button', { name: /add garlic bread/i }));
+      expect(screen.queryByText(/show items/i)).not.toBeInTheDocument();
     });
 
-    test('clicking "+" when logged in adds item normally', () => {
+    test('clicking "+" when logged in adds item normally', async () => {
       renderRestaurant();
-      fireEvent.click(screen.getByRole('button', { name: /add garlic bread/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /add garlic bread/i }));
       expect(mockNavigate).not.toHaveBeenCalled();
-      expect(screen.getByRole('region', { name: /cart/i })).toBeInTheDocument();
+      expect(screen.getByText(/show items/i)).toBeInTheDocument();
     });
   });
 });

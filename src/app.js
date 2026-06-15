@@ -1,7 +1,9 @@
 require('dotenv').config(); // Load .env variables.
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const { seed } = require('./seed');
 
 const apiRouter = require('./routes');
 const notFound = require('./middleware/notFound');
@@ -13,6 +15,9 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.set('json spaces', 2);
 
+seed();
+
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
 app.use('/api', apiRouter);
 app.use('/api', notFound);
 

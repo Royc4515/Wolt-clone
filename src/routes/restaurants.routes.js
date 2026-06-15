@@ -10,7 +10,8 @@ router.get('/', restController.getRestaurants); // Fetch all.
 router.post('/', requireAuth, restController.createRest);    // Create new (protected).
 
 // Item-specific routes (Require a dynamic :id parameter).
-router.get('/:id', restController.getRest);         // Fetch one.
+router.get('/:id', restController.getRest);                      // Fetch one.
+router.get('/:id/menu', restController.getMenu);                 // Fetch menu sections.
 router.patch('/:id', requireAuth, restController.updateRest);    // Update one (protected).
 router.delete('/:id', requireAuth, restController.deleteRest);   // Delete one (protected).
 
