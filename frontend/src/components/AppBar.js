@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import woltLogo from '../assets/wolt-wordmark.png';
 import ThemeToggle from './shared/ThemeToggle';
+import { isAuthenticated, getCurrentUser } from '../utils/auth';
+import { getUser } from '../api/users';
+import { logout } from '../api/auth';
 import './AppBar.css';
-
-function isAuthenticated() {
-  const token = localStorage.getItem('jwt_token');
-  return Boolean(token && token.split('.').length === 3);
-}
 
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -30,8 +28,14 @@ const PinIcon = () => (
 );
 
 const ChevronDown = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+const ChevronRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 18l6-6-6-6" />
   </svg>
 );
 
@@ -44,6 +48,9 @@ const PersonIcon = () => (
 
 export default function AppBar({ search = '', onSearch = () => {}, searchRef = { current: null }, cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false }) {
   const authed = isAuthenticated();
+  const user = getCurrentUser();
+  const navigate = useNavigate();
+  const [profilePicture, setProfilePicture] = useState(null);
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,6 +61,14 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     function onScroll() { setScrolled(window.scrollY > 8); }
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!authed || !user) return;
+    getUser(user.id).then(data => {
+      if (data?.profilePicture) setProfilePicture(data.profilePicture);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -88,6 +103,11 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     onSearch('');
     setSearching(false);
     searchRef.current?.blur();
+  }
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
   }
 
   return (
@@ -185,6 +205,68 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
                 </div>
               </>
             )}
+
+            {authed && user && (
+              <div className="appbar__user" ref={avatarRef}>
+                <button
+                  className="appbar__user-pill"
+                  onClick={() => setMenuOpen(o => !o)}
+                  aria-label="Account menu"
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                >
+                  {profilePicture ? (
+                    <img src={profilePicture} alt={user.displayName} className="appbar__user-avatar" />
+                  ) : (
+                    <span className="appbar__user-avatar appbar__user-avatar--initials">
+                      {user.displayName?.[0]?.toUpperCase()}
+                    </span>
+                  )}
+                  <span className={`appbar__user-chevron${menuOpen ? ' appbar__user-chevron--up' : ''}`}>
+                    <ChevronDown />
+                  </span>
+                </button>
+                {menuOpen && (
+                  <div className="appbar__avatar-menu" role="menu">
+                    <Link
+                      to="/profile"
+                      className="appbar__avatar-menu-profile"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {profilePicture ? (
+                        <img src={profilePicture} alt={user.displayName} className="appbar__avatar-menu-profile-avatar" />
+                      ) : (
+                        <span className="appbar__avatar-menu-profile-avatar appbar__user-avatar--initials">
+                          {user.displayName?.[0]?.toUpperCase()}
+                        </span>
+                      )}
+                      <div className="appbar__avatar-menu-profile-info">
+                        <span className="appbar__avatar-menu-profile-name">{user.displayName}</span>
+                        <span className="appbar__avatar-menu-profile-sub">Profile</span>
+                      </div>
+                      <ChevronRight />
+                    </Link>
+                    <Link
+                      to="/orders"
+                      className="appbar__avatar-menu-item"
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                    <button
+                      className="appbar__avatar-menu-item appbar__avatar-menu-item--danger"
+                      role="menuitem"
+                      onClick={handleLogout}
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {cartCount > 0 && (
               <button type="button" className="appbar__cart-pill" onClick={onShowCart}>
                 <span className="appbar__cart-pill-count">{cartCount}</span>
