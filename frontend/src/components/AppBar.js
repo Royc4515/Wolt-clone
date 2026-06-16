@@ -4,7 +4,7 @@ import woltLogo from '../assets/wolt-wordmark.png';
 import ThemeToggle from './shared/ThemeToggle';
 import { isAuthenticated, getCurrentUser } from '../utils/auth';
 import { getUser } from '../api/users';
-import { logout } from '../api/auth';
+import { logout, updateUserProfile } from '../api/auth';
 import './AppBar.css';
 
 const SearchIcon = () => (
@@ -51,11 +51,18 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const [profilePicture, setProfilePicture] = useState(null);
+  const [location, setLocation] = useState(user?.location || null);
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locationMenuOpen, setLocationMenuOpen] = useState(false);
+  const [locationLat, setLocationLat] = useState(user?.location?.lat ?? '');
+  const [locationLng, setLocationLng] = useState(user?.location?.lng ?? '');
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const clearBtnRef = useRef(null);
   const avatarRef = useRef(null);
+  const locationRef = useRef(null);
 
   useEffect(() => {
     function onScroll() { setScrolled(window.scrollY > 8); }
@@ -92,6 +99,45 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!locationMenuOpen) return;
+    function onOutsideClick(e) {
+      if (locationRef.current && !locationRef.current.contains(e.target)) {
+        setLocationMenuOpen(false);
+        setLocationError('');
+      }
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') { setLocationMenuOpen(false); setLocationError(''); }
+    }
+    document.addEventListener('mousedown', onOutsideClick);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onOutsideClick);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [locationMenuOpen]);
+
+  async function handleLocationSave() {
+    const lat = parseFloat(locationLat);
+    const lng = parseFloat(locationLng);
+    if (isNaN(lat) || lat < -90 || lat > 90 || isNaN(lng) || lng < -180 || lng > 180) {
+      setLocationError('Invalid coordinates');
+      return;
+    }
+    setLocationSaving(true);
+    setLocationError('');
+    try {
+      await updateUserProfile(user.id, { location: { lat, lng } });
+      setLocation({ lat, lng });
+      setLocationMenuOpen(false);
+    } catch {
+      setLocationError('Failed to save location');
+    } finally {
+      setLocationSaving(false);
+    }
+  }
+
   function handleFocus() { setSearching(true); }
 
   function handleBlur(e) {
@@ -122,11 +168,56 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
           </Link>
         )}
         {!searching && (
-          <button className="appbar__location" aria-label="Change location">
-            <span className="appbar__location-pin"><PinIcon /></span>
-            <span className="appbar__location-text">Tel Aviv</span>
-            <ChevronDown />
-          </button>
+          <div className="appbar__location-wrapper" ref={locationRef}>
+            <button
+              className="appbar__location"
+              aria-label="Change location"
+              onClick={() => authed && setLocationMenuOpen(o => !o)}
+            >
+              <span className="appbar__location-pin"><PinIcon /></span>
+              <span className="appbar__location-text">
+                {location ? `${location.lat}, ${location.lng}` : 'Tel Aviv'}
+              </span>
+              {authed && <ChevronDown />}
+            </button>
+            {locationMenuOpen && (
+              <div className="appbar__location-menu">
+                <span className="appbar__location-menu-title">Set your location</span>
+                <div className="appbar__location-menu-fields">
+                  <div className="appbar__location-menu-field">
+                    <label htmlFor="loc-lat">Lat</label>
+                    <input
+                      id="loc-lat"
+                      type="number"
+                      step="any"
+                      placeholder="32.08"
+                      value={locationLat}
+                      onChange={e => setLocationLat(e.target.value)}
+                    />
+                  </div>
+                  <div className="appbar__location-menu-field">
+                    <label htmlFor="loc-lng">Lng</label>
+                    <input
+                      id="loc-lng"
+                      type="number"
+                      step="any"
+                      placeholder="34.78"
+                      value={locationLng}
+                      onChange={e => setLocationLng(e.target.value)}
+                    />
+                  </div>
+                </div>
+                {locationError && <span className="appbar__location-menu-error">{locationError}</span>}
+                <button
+                  className="appbar__location-menu-save"
+                  onClick={handleLocationSave}
+                  disabled={locationSaving}
+                >
+                  {locationSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
