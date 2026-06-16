@@ -15,6 +15,8 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { errors, serverError, setErrors, setServerError, clearFieldError } = useFormErrors();
 
@@ -53,6 +55,8 @@ export default function Register() {
       confirmPassword,
       displayName,
       profilePicture,
+      lat,
+      lng,
     });
 
     if (!isValid) {
@@ -62,7 +66,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register({ username, password, confirmPassword, displayName, profilePicture, location: { lat: 0, lng: 0 } });
+      await register({ username, password, confirmPassword, displayName, profilePicture, location: { lat: parseFloat(lat), lng: parseFloat(lng) } });
       navigate('/login');
     } catch (err) {
       setServerError(err.message || 'Registration failed. Please try again.');
@@ -158,6 +162,31 @@ export default function Register() {
             </button>
           </div>
         </FormField>
+
+        <div className="location-fields">
+          <FormField label="Latitude" htmlFor="lat" hint="-90 to 90" error={errors.lat}>
+            <input
+              className={`input${errors.lat ? ' is-invalid' : ''}`}
+              id="lat"
+              type="number"
+              step="any"
+              placeholder="32.08"
+              value={lat}
+              onChange={e => { setLat(e.target.value); clearFieldError('lat'); }}
+            />
+          </FormField>
+          <FormField label="Longitude" htmlFor="lng" hint="-180 to 180" error={errors.lng}>
+            <input
+              className={`input${errors.lng ? ' is-invalid' : ''}`}
+              id="lng"
+              type="number"
+              step="any"
+              placeholder="34.78"
+              value={lng}
+              onChange={e => { setLng(e.target.value); clearFieldError('lng'); }}
+            />
+          </FormField>
+        </div>
 
         <button
           className="btn btn--soft btn--pill btn--block btn--lg"
