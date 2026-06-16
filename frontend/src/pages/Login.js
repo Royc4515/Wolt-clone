@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../services/auth';
+import { login } from '../api/auth';
 import { validatePassword } from '../utils/validation';
 import useFormErrors from '../hooks/useFormErrors';
 import AuthCard from '../components/auth/AuthCard';

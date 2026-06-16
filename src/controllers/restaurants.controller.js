@@ -9,13 +9,13 @@ const getRestaurants = (req, res) => {
 
 // Create a new restaurant.
 const createRest = (req, res) => {
-    const { name, description, address, phone, openHours, tags, rating } = req.body;
+    const { name, description, location, category, phone, openHours, isPromoted, rating, image } = req.body;
 
     // Validation for mandatory data.
     const missingFields = [];
     if (!name) missingFields.push("Name");
-    if (!address) missingFields.push("Address");
-    if (!phone) missingFields.push("Phone number");
+    if (!location || !location.lat || !location.lng) missingFields.push("Location (lat & lng)");
+    if (!category) missingFields.push("Category");
 
     if (missingFields.length > 0) {
         return res.status(400).json({ error: `${missingFields.join(', ')} is required` });
@@ -25,12 +25,14 @@ const createRest = (req, res) => {
     const newRestData = {
         name,
         description: description || "",
-        address,
-        phone,
+        location,
+        category,
+        phone: phone || "",
         openHours: openHours || "",
-        tags: tags || [],
+        isPromoted: isPromoted || false,
         rating: rating || 0,
-        creatorId: req.userId
+        image: image || "",
+        ownerId: req.userId
     };
 
     // Pass the data to create a new object.
@@ -62,9 +64,9 @@ const updateRest = (req, res) => {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    // Ensure that the user trying to update is the creator.
-    if (restaurant.creatorId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the creator can update this restaurant" });
+    // Ensure that the user trying to update is the owner.
+    if (restaurant.ownerId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the owner can update this restaurant" });
     }
 
     // Update the restaurant.
@@ -82,9 +84,9 @@ const deleteRest = (req, res) => {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    // Ensure that the user trying to delete is the creator.
-    if (restaurant.creatorId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the creator can update this restaurant" });
+    // Ensure that the user trying to delete is the owner.
+    if (restaurant.ownerId !== req.userId) {
+        return res.status(403).json({ error: "Forbidden: Only the owner can update this restaurant" });
     }
 
     // Delete the restaurant.

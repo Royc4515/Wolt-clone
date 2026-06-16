@@ -4,14 +4,46 @@ const restRepo = require('./services/repositories/restaurants.repository');
 const productsRepo = require('./services/repositories/products.repository');
 
 const RESTAURANTS = [
-  { name: 'Pizza Roma',     description: 'Authentic Italian pizza',        image: '/images/restaurants/pizza-roma.jpg',    category: 'Pizza',    rating: 8.6, deliveryTime: '25–35 min', deliveryFee: 0, isPromoted: true,  address: 'Tel Aviv', phone: '03-1111111', openHours: '10:00-23:00', tags: [], creatorId: 'system' },
-  { name: 'Sushi Bar TLV', description: 'Fresh sushi & Japanese cuisine',  image: '/images/restaurants/sushi-bar-tlv.jpg', category: 'Sushi',    rating: 9.4, deliveryTime: '35–45 min', deliveryFee: 0, isPromoted: true,  address: 'Tel Aviv', phone: '03-2222222', openHours: '12:00-23:00', tags: [], creatorId: 'system' },
-  { name: 'Burger Boss',   description: 'Smash burgers & loaded fries',   image: '/images/restaurants/burger-boss.jpg',   category: 'Burgers',  rating: 8.8, deliveryTime: '25–35 min', deliveryFee: 0, isPromoted: true,  address: 'Tel Aviv', phone: '03-3333333', openHours: '11:00-00:00', tags: [], creatorId: 'system' },
-  { name: 'Golden Dragon', description: 'Chinese & Asian favorites',       image: '/images/restaurants/golden-dragon.jpg', category: 'Asian',    rating: 8.4, deliveryTime: '30–40 min', deliveryFee: 9, isPromoted: false, address: 'Tel Aviv', phone: '03-4444444', openHours: '11:00-22:30', tags: [], creatorId: 'system' },
-  { name: 'Green Bowl',    description: 'Healthy salads & grain bowls',    image: '/images/restaurants/green-bowl.jpg',    category: 'Salads',   rating: 8.9, deliveryTime: '20–30 min', deliveryFee: 0, isPromoted: false, address: 'Tel Aviv', phone: '03-5555555', openHours: '09:00-21:00', tags: [], creatorId: 'system' },
-  { name: 'The Pasta House', description: 'Homemade pasta & risotto',     image: '/images/restaurants/pasta-house.jpg',   category: 'Pasta',    rating: 8.2, deliveryTime: '30–40 min', deliveryFee: 9, isPromoted: false, address: 'Tel Aviv', phone: '03-6666666', openHours: '12:00-23:00', tags: [], creatorId: 'system' },
-  { name: 'Sweet Dreams',  description: 'Desserts, cakes & ice cream',    image: '/images/restaurants/sweet-dreams.jpg',  category: 'Desserts', rating: 9.1, deliveryTime: '20–30 min', deliveryFee: 0, isPromoted: false, address: 'Tel Aviv', phone: '03-7777777', openHours: '10:00-23:30', tags: [], creatorId: 'system' },
-  { name: 'Taco Fiesta',   description: 'Mexican street food & tacos',    image: '/images/restaurants/taco-fiesta.jpg',   category: 'Mexican',  rating: 8.0, deliveryTime: '30–40 min', deliveryFee: 9, isPromoted: false, address: 'Tel Aviv', phone: '03-8888888', openHours: '11:00-23:00', tags: [], creatorId: 'system' },
+  { 
+    name: 'Pizza Roma', description: 'Authentic Italian pizza', location: { lat: 32.0853, lng: 34.7818 }, 
+    category: 'Pizza', phone: '03-1111111', openHours: '10:00-23:00', isPromoted: true, rating: 8.6, ownerId: 'system', 
+    image: '/images/restaurants/pizza-roma.jpg', deliveryTime: '25–35 min', deliveryFee: 0 
+  },
+  { 
+    name: 'Sushi Bar TLV', description: 'Fresh sushi & Japanese cuisine', location: { lat: 32.0722, lng: 34.7789 }, 
+    category: 'Sushi', phone: '03-2222222', openHours: '12:00-23:00', isPromoted: true, rating: 9.4, ownerId: 'system', 
+    image: '/images/restaurants/sushi-bar-tlv.jpg', deliveryTime: '35–45 min', deliveryFee: 0 
+  },
+  { 
+    name: 'Burger Boss', description: 'Smash burgers & loaded fries', location: { lat: 32.0669, lng: 34.7778 }, 
+    category: 'Burgers', phone: '03-3333333', openHours: '11:00-00:00', isPromoted: true, rating: 8.8, ownerId: 'system', 
+    image: '/images/restaurants/burger-boss.jpg', deliveryTime: '25–35 min', deliveryFee: 0 
+  },
+  { 
+    name: 'Golden Dragon', description: 'Chinese & Asian favorites', location: { lat: 32.0745, lng: 34.7912 }, 
+    category: 'Asian', phone: '03-4444444', openHours: '11:00-22:30', isPromoted: false, rating: 8.4, ownerId: 'system', 
+    image: '/images/restaurants/golden-dragon.jpg', deliveryTime: '30–40 min', deliveryFee: 9 
+  },
+  { 
+    name: 'Green Bowl', description: 'Healthy salads & grain bowls', location: { lat: 32.0624, lng: 34.7712 }, 
+    category: 'Salads', phone: '03-5555555', openHours: '09:00-21:00', isPromoted: false, rating: 8.9, ownerId: 'system', 
+    image: '/images/restaurants/green-bowl.jpg', deliveryTime: '20–30 min', deliveryFee: 0 
+  },
+  { 
+    name: 'The Pasta House', description: 'Homemade pasta & risotto', location: { lat: 32.0801, lng: 34.7805 }, 
+    category: 'Pasta', phone: '03-6666666', openHours: '12:00-23:00', isPromoted: false, rating: 8.2, ownerId: 'system', 
+    image: '/images/restaurants/pasta-house.jpg', deliveryTime: '30–40 min', deliveryFee: 9 
+  },
+  { 
+    name: 'Sweet Dreams', description: 'Desserts, cakes & ice cream', location: { lat: 32.0700, lng: 34.7750 }, 
+    category: 'Desserts', phone: '03-7777777', openHours: '10:00-23:30', isPromoted: false, rating: 9.1, ownerId: 'system', 
+    image: '/images/restaurants/sweet-dreams.jpg', deliveryTime: '20–30 min', deliveryFee: 0 
+  },
+  { 
+    name: 'Taco Fiesta', description: 'Mexican street food & tacos', location: { lat: 32.0555, lng: 34.7700 }, 
+    category: 'Mexican', phone: '03-8888888', openHours: '11:00-23:00', isPromoted: false, rating: 8.0, ownerId: 'system', 
+    image: '/images/restaurants/taco-fiesta.jpg', deliveryTime: '30–40 min', deliveryFee: 9 
+  },
 ];
 
 const MENUS = [

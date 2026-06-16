@@ -32,8 +32,8 @@ const createProduct = (req,res) => {
         return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    // Ensure that the user trying to create a product is the restaurant's creator.
-    if (restaurant.creatorId !== req.userId) {
+    // Ensure that the user trying to create a product is the restaurant's owner.
+    if (restaurant.ownerId !== req.userId) {
         return res.status(403).json({ error: "Forbidden: Only the restaurant owner can add products" });
     }
 
@@ -81,9 +81,9 @@ const updateProduct = (req,res) => {
         return res.status(404).json({ error: "Product not found" });
     }
 
-    // Find the restaurant this product belongs to, and check for the creator.
+    // Find the restaurant this product belongs to, and check for the owner.
     const restaurant = restRepo.findById(product.restId);
-    if (!restaurant || restaurant.creatorId !== req.userId) {
+    if (!restaurant || restaurant.ownerId !== req.userId) {
         return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
     }
 
@@ -102,9 +102,9 @@ const deleteProduct = (req, res) => {
         return res.status(404).json({ error: "Product not found" });
     }
 
-    // Find the restaurant this product belongs to, and check for the creator.
+    // Find the restaurant this product belongs to, and check for the owner.
     const restaurant = restRepo.findById(product.restId);
-    if (!restaurant || restaurant.creatorId !== req.userId) {
+    if (!restaurant || restaurant.ownerId !== req.userId) {
         return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
     }
 
