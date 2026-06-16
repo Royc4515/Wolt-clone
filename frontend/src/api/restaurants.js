@@ -1,17 +1,34 @@
-export async function fetchRestaurants() {
-  const res = await fetch('/api/restaurants');
-  if (!res.ok) throw new Error('Failed to fetch restaurants');
-  return res.json();
-}
+import { apiFetch } from './api';
 
-export async function fetchRestaurant(id) {
-  const res = await fetch(`/api/restaurants/${id}`);
-  if (!res.ok) throw new Error('Restaurant not found');
-  return res.json();
-}
+/**
+ * Fetches the list of all restaurants.
+ * Target: GET /api/restaurants
+ */
+export const getRestaurants = async () => {
+    return await apiFetch('/api/restaurants', {
+        method: 'GET',
+    });
+};
 
-export async function fetchMenu(restaurantId) {
-  const res = await fetch(`/api/restaurants/${restaurantId}/menu`);
-  if (!res.ok) throw new Error('Failed to fetch menu');
-  return res.json();
-}
+/**
+ * Searches for restaurants or products based on a text query.
+ * Target: GET /api/search/:query
+ */
+export const searchRestaurants = async (query) => {
+    // First, ensure that the query is not empty.
+    if (!query || query.trim() === '') return []; 
+    
+    return await apiFetch(`/api/search/${query}`, {
+        method: 'GET',
+    });
+};
+
+/**
+ * Fetches the full menu (all products) for a specific restaurant by its ID.
+ * Target: GET /api/restaurants/:id/products
+ */
+export const getRestaurantProducts = async (restaurantId) => {
+    return await apiFetch(`/api/restaurants/${restaurantId}/products`, {
+        method: 'GET',
+    });
+};

@@ -4,7 +4,7 @@ import AppBar from '../components/AppBar';
 import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
 import ScrollSection from '../components/shared/ScrollSection';
-import { fetchRestaurants } from '../api/restaurants';
+import { getRestaurants } from '../api/restaurants';
 import './Home.css';
 
 const CATEGORY_META = {
@@ -26,7 +26,7 @@ export default function Home() {
   const searchRef = useRef(null);
 
   useEffect(() => {
-    fetchRestaurants().then(setAllRestaurants).catch(() => {});
+    getRestaurants().then(setAllRestaurants).catch(() => {});
   }, []);
 
   const categories = useMemo(() => {
