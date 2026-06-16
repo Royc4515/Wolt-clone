@@ -41,3 +41,14 @@ export const register = async (userData) => {
 export const logout = () => {
     localStorage.removeItem('jwt_token');
 };
+
+/**
+ * Update Profile function
+ * Accepts an explicitly authenticated user ID and the fields to update.
+ */
+export const updateUserProfile = async (id, updateData) => {
+    return await apiFetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updateData),
+    });
+};

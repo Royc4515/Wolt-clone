@@ -26,6 +26,22 @@ const requireAuth = (req, res, next) => {
     }
 };
 
+// Middleware to verify admin privileges.
+const requireAdmin = (req, res, next) => {
+    // Ensure user is authenticated (must run after requireAuth).
+    if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized: User not authenticated" });
+    }
+
+    // Verify admin role from the decoded token.
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+
+    next();
+};
+
 module.exports = {
-    requireAuth
+    requireAuth,
+    requireAdmin
 };
