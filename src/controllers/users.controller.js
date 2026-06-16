@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const createUser = (req, res) => {
     // Extract user details from the incoming JSON request.
-    const { username, password, displayName, profilePicture } = req.body;
+    const { username, password, displayName, profilePicture, location, role } = req.body;
 
     // Array to collect missing fields.
     const missingFields = [];
@@ -16,6 +16,9 @@ const createUser = (req, res) => {
     if (!password) missingFields.push("Password");
     if (!displayName) missingFields.push("Display Name");
     if (!profilePicture) missingFields.push("Profile Picture");
+    if (!location || typeof location.lat !== 'number' ||  typeof location.lng !== 'number') {
+        missingFields.push("Location (with valid lat and lng)");
+    }
 
     // If there are missing fields, return a 400 Bad Request with a detailed message.
     if (missingFields.length > 0) {
@@ -29,8 +32,18 @@ const createUser = (req, res) => {
         return res.status(400).json({ error: "Username already exists" });
     }
 
+    // Assign role (default to 'customer').
+    const userRole = (role === 'admin') ? 'admin' : 'customer';
+
     // Generate a new user using the input data.
-    const newUser = usersRepo.create({ username, password, displayName, profilePicture });
+    const newUser = usersRepo.create({ 
+                    username,
+                    password, 
+                    displayName, 
+                    profilePicture,
+                    location,
+                    role: userRole
+                });
 
     // Return 201 Created on success with the new user's ID.
     res.status(201).json({ id: newUser.id });
@@ -66,7 +79,13 @@ const loginUser = (req, res) => {
 
     // Create a token for the user.
     const token = jwt.sign(
-        { id: user.id, username: user.username, displayName: user.displayName },
+        { 
+            id: user.id, 
+            username: user.username, 
+            displayName: user.displayName,
+            role: user.role,
+            location: user.location
+        },
         JWT_SECRET
     );
 
@@ -91,9 +110,54 @@ const getUser = (req, res) => {
     res.status(200).json(userWithoutPassword);
 };
 
+// Function to update user details.
+const updateUser = (req, res) => {
+    // Extract the user ID from the route parameter.
+    const { id } = req.params;
+    
+    // Ensure the user is only updating their own profile.
+    if (req.user && req.user.id !== id) {
+        return res.status(403).json({ error: "Forbidden: You can only update your own profile" });
+    }
+
+    // Find the user first to make sure they exist in DB.
+    const user = usersRepo.findById(id);
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    // Extract only the fields that are allowed to be updated.
+    const { displayName, profilePicture, password, location } = req.body;
+    
+    const updateData = {};
+
+    if (displayName) updateData.displayName = displayName;
+    if (profilePicture) updateData.profilePicture = profilePicture;
+    if (password) updateData.password = password; 
+    
+    // Validation for location if it's being updated.
+    if (location) {
+        if (typeof location.lat !== 'number' || typeof location.lng !== 'number') {
+             return res.status(400).json({ error: "Location must include valid lat and lng numbers" });
+        }
+        updateData.location = location;
+    }
+
+    const updatedUser = usersRepo.update(id, updateData);
+
+    if (!updatedUser) {
+         return res.status(500).json({ error: "Failed to update user" });
+    }
+
+    // Return the updated user (excluding password).
+    const { password: currentPassword, ...userWithoutPassword } = updatedUser;
+    res.status(200).json(userWithoutPassword);
+};
+
 // Export the function so the router can use it.
 module.exports = {
     createUser,
     loginUser,
-    getUser
+    getUser,
+    updateUser
 };
