@@ -62,7 +62,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register({ username, password, confirmPassword, displayName, profilePicture });
+      await register({ username, password, confirmPassword, displayName, profilePicture, location: { lat: 0, lng: 0 } });
       navigate('/login');
     } catch (err) {
       setServerError(err.message || 'Registration failed. Please try again.');
