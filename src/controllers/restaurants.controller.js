@@ -1,4 +1,5 @@
 const restRepo = require('../services/repositories/restaurants.repository');
+const productsRepo = require('../services/repositories/products.repository');
 
 // Extract all restaurants from the DB.
 const getRestaurants = (req, res) => {
@@ -91,11 +92,43 @@ const deleteRest = (req, res) => {
     res.status(204).send();
 }
 
+// Return all products for a restaurant grouped into menu sections.
+const getMenu = (req, res) => {
+    const { id } = req.params;
+    const restaurant = restRepo.findById(id);
+    if (!restaurant) {
+        return res.status(404).json({ error: "Restaurant not found" });
+    }
+
+    const products = productsRepo.findBy(p => p.restId === id);
+
+    const sectionsMap = new Map();
+    products.forEach(p => {
+        const title = p.section || 'Menu';
+        if (!sectionsMap.has(title)) {
+            sectionsMap.set(title, {
+                id: title.toLowerCase().replace(/\s+/g, '-'),
+                title,
+                _order: p.sectionOrder ?? 0,
+                items: [],
+            });
+        }
+        sectionsMap.get(title).items.push(p);
+    });
+
+    const sections = [...sectionsMap.values()]
+        .sort((a, b) => a._order - b._order)
+        .map(({ _order, ...section }) => section);
+
+    res.status(200).json(sections);
+};
+
 // Export controller functions for the router.
 module.exports = {
     getRestaurants,
     createRest,
     getRest,
     updateRest,
-    deleteRest
+    deleteRest,
+    getMenu,
 };

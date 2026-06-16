@@ -1,0 +1,206 @@
+/* ── Card shell ── */
+.menu-item-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.menu-item-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  border-color: var(--border-strong);
+}
+
+[data-theme="light"] .menu-item-card {
+  box-shadow: 0 1px 4px rgba(20, 20, 50, 0.08), 0 4px 12px rgba(20, 20, 50, 0.06);
+  border-color: rgba(30, 26, 20, 0.08);
+}
+
+[data-theme="light"] .menu-item-card:hover {
+  box-shadow: 0 2px 10px rgba(20, 20, 50, 0.14);
+}
+
+/* ── Image section ── */
+.menu-item-card__image {
+  position: relative;
+  width: 100%;
+  padding-top: 62%;   /* slightly taller than 16:9 — closer to Wolt's ratio */
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+[data-theme="light"] .menu-item-card__image {
+  background: #eeeef2;
+}
+
+.menu-item-card__image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-item-card__emoji {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  opacity: 0.55;
+}
+
+/* ── Corner badge — + when empty, count when in cart ── */
+.menu-item-card__qty-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--accent);
+  color: #041525;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  min-width: 35px;
+  padding: 12px;
+  text-align: center;
+  border: none;
+  border-bottom-left-radius: 12px;
+  z-index: 2;
+  cursor: pointer;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.menu-item-card__qty-badge:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* On hover, hide badge only when stepper also exists (qty > 0) */
+.menu-item-card:hover .menu-item-card__qty-badge:has(+ .menu-item-card__qty-ctrl) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Stepper (qty > 0) — corner-stuck, same style as badge ── */
+.menu-item-card__qty-ctrl {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  border-bottom-left-radius: 12px;
+  padding: 12px;
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+[data-theme="light"] .menu-item-card__qty-ctrl {
+  background: var(--accent);
+}
+
+.menu-item-card:hover .menu-item-card__qty-ctrl {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Touch: always show stepper, hide badge when qty > 0 */
+@media (hover: none) {
+  .menu-item-card__qty-ctrl {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .menu-item-card__qty-badge:has(+ .menu-item-card__qty-ctrl) {
+    display: none;
+  }
+}
+
+.menu-item-card__qty-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.22);
+  color: #041525;
+  font-size: 0.95rem;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.1s ease;
+  flex-shrink: 0;
+}
+
+.menu-item-card__qty-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.menu-item-card__qty-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.menu-item-card__qty-num {
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  color: #041525;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── Card body ── */
+.menu-item-card__body {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+/* Price — accent color, shown first */
+.menu-item-card__price {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  color: var(--accent);
+  line-height: 1.3;
+}
+
+[data-theme="light"] .menu-item-card__price {
+  color: #0078A0;
+}
+
+/* Name — bold, second */
+.menu-item-card__name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-extrabold);
+  color: var(--text);
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Description preview — 1 line, muted */
+.menu-item-card__desc {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+

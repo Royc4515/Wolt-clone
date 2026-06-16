@@ -1,92 +1,57 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import AppBar from '../components/AppBar';
 import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
-import { getRestaurants, CATEGORIES } from '../mocks/restaurants';
+import ScrollSection from '../components/shared/ScrollSection';
+import { fetchRestaurants } from '../api/restaurants';
 import './Home.css';
 
-const ChevronLeft = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M15 18l-6-6 6-6" />
-  </svg>
-);
-
-const ChevronRight = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M9 18l6-6-6-6" />
-  </svg>
-);
-
-function useScrollEdges(ref) {
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(true);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    function update() {
-      setCanLeft(el.scrollLeft > 1);
-      setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-    }
-
-    update();
-    el.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update, { passive: true });
-    return () => {
-      el.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [ref]);
-
-  return { canLeft, canRight };
-}
-
-function ScrollSection({ title, children }) {
-  const rowRef = useRef(null);
-  const { canLeft, canRight } = useScrollEdges(rowRef);
-
-  function scroll(dir) {
-    rowRef.current?.scrollBy({ left: dir * 560, behavior: 'smooth' });
-  }
-
-  return (
-    <section className="home__section">
-      <div className="home__section-header">
-        <h2 className="home__section-title">{title}</h2>
-        <div className="home__section-nav">
-          <button
-            className="home__scroll-btn"
-            onClick={() => scroll(-1)}
-            aria-label="Scroll left"
-            disabled={!canLeft}
-          >
-            <ChevronLeft />
-          </button>
-          <button
-            className="home__scroll-btn"
-            onClick={() => scroll(1)}
-            aria-label="Scroll right"
-            disabled={!canRight}
-          >
-            <ChevronRight />
-          </button>
-        </div>
-      </div>
-      <div className="home__scroll-row" ref={rowRef}>
-        {children}
-      </div>
-    </section>
-  );
-}
+const CATEGORY_META = {
+  'Pizza':    { emoji: '🍕', image: '/images/categories/pizza.jpg' },
+  'Sushi':    { emoji: '🍣', image: '/images/categories/sushi.jpg' },
+  'Burgers':  { emoji: '🍔', image: '/images/categories/burgers.jpg' },
+  'Asian':    { emoji: '🥡', image: '/images/categories/asian.jpg' },
+  'Salads':   { emoji: '🥗', image: '/images/categories/salads.jpg' },
+  'Pasta':    { emoji: '🍝', image: '/images/categories/pasta.jpg' },
+  'Desserts': { emoji: '🍰', image: '/images/categories/desserts.jpg' },
+  'Mexican':  { emoji: '🌮', image: '/images/categories/mexican.jpg' },
+};
 
 export default function Home() {
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
   const [activeCategory, setActiveCategory] = useState(null);
+  const [allRestaurants, setAllRestaurants] = useState([]);
   const searchRef = useRef(null);
 
-  const restaurants = getRestaurants({ search, category: activeCategory });
-  const promoted = restaurants.filter(r => r.isPromoted);
+  useEffect(() => {
+    fetchRestaurants().then(setAllRestaurants).catch(() => {});
+  }, []);
+
+  const categories = useMemo(() => {
+    const seen = new Set();
+    return allRestaurants
+      .filter(r => r.category && !seen.has(r.category) && seen.add(r.category))
+      .map(r => ({
+        name: r.category,
+        emoji: CATEGORY_META[r.category]?.emoji || '🍽️',
+        image: CATEGORY_META[r.category]?.image || '',
+      }));
+  }, [allRestaurants]);
+
+  const restaurants = useMemo(() => {
+    return allRestaurants.filter(r => {
+      const matchesSearch =
+        !search ||
+        r.name.toLowerCase().includes(search.toLowerCase()) ||
+        (r.category && r.category.toLowerCase().includes(search.toLowerCase()));
+      const matchesCategory = !activeCategory || r.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [allRestaurants, search, activeCategory]);
+
+  const promoted = useMemo(() => restaurants.filter(r => r.isPromoted), [restaurants]);
   const isSearching = search.trim().length > 0;
 
   function handleCategorySelect(cat) {
@@ -96,18 +61,18 @@ export default function Home() {
 
   return (
     <div className="home">
-      <AppBar search={search} onSearch={setSearch} searchRef={searchRef} />
+      <AppBar search={search} onSearch={setSearch} searchRef={searchRef} logoLinkDisabled />
 
       <main className="home__content">
         <CategoryFilter
-          categories={CATEGORIES}
+          categories={categories}
           active={activeCategory}
           onSelect={handleCategorySelect}
         />
 
         {isSearching ? (
           restaurants.length > 0 ? (
-            <ScrollSection title={`Results for "${search}"`}>
+            <ScrollSection classPrefix="home" title={`Results for "${search}"`}>
               {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
             </ScrollSection>
           ) : (
@@ -118,12 +83,12 @@ export default function Home() {
         ) : (
           <>
             {!activeCategory && promoted.length > 0 && (
-              <ScrollSection title="Promoted">
+              <ScrollSection classPrefix="home" title="Promoted">
                 {promoted.map(r => <RestaurantCard key={r.id} {...r} />)}
               </ScrollSection>
             )}
 
-            <ScrollSection title={activeCategory || 'All Restaurants'}>
+            <ScrollSection classPrefix="home" title={activeCategory || 'All Restaurants'}>
               {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
             </ScrollSection>
           </>
