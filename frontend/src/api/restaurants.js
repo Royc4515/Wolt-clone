@@ -11,6 +11,16 @@ export const getRestaurants = async () => {
 };
 
 /**
+ * Fetches a specific restaurant by id.
+ * Target: GET /api/restaurants/:id
+ */
+export const getRestaurant = async (id) => {
+    return await apiFetch(`/api/restaurants/${id}`, {
+        method: 'GET',
+    });
+};
+
+/**
  * Searches for restaurants or products based on a text query.
  * Target: GET /api/search/:query
  */
@@ -27,8 +37,8 @@ export const searchRestaurants = async (query) => {
  * Fetches the full menu (all products) for a specific restaurant by its ID.
  * Target: GET /api/restaurants/:id/products
  */
-export const getRestaurantProducts = async (restaurantId) => {
-    return await apiFetch(`/api/restaurants/${restaurantId}/products`, {
+export const getMenu = async (restaurantId) => {
+    return await apiFetch(`/api/restaurants/${restaurantId}/menu`, {
         method: 'GET',
     });
 };

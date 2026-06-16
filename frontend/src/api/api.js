@@ -1,5 +1,5 @@
 // Base URL of the Node.js server.
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = '';
 
 // Exporting the wrapper function. It accepts a route endpoint and optional fetch settings.
 export const apiFetch = async (endpoint, options = {}) => {

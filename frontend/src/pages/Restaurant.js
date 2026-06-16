@@ -6,7 +6,7 @@ import CartDrawer from '../components/CartDrawer';
 import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
-import { fetchRestaurant, fetchMenu } from '../api/restaurants';
+import { getRestaurant, getMenu } from '../api/restaurants';
 import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
 import woltIcon from '../assets/wolt-logo.png';
@@ -47,7 +47,7 @@ export default function Restaurant() {
     setLoading(true);
     setNotFound(false);
 
-    Promise.all([fetchRestaurant(id), fetchMenu(id)])
+    Promise.all([getRestaurant(id), getMenu(id)])
       .then(([rest, menuData]) => {
         if (!cancelled) {
           setRestaurant(rest);
