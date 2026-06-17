@@ -9,7 +9,7 @@ export default function AuthCard({ title, footer, children, maxWidth = '440px' }
         <ThemeToggle />
       </div>
       <div className="auth-wrap">
-        <div className="auth-card card card--pad" style={{ maxWidth }}>
+        <div className="auth-card card card--pad" style={{ '--auth-card-max-width': maxWidth }}>
           <div className="auth-brand">
             <AnimatedLogo className="auth-brand__logo" />
           </div>

@@ -280,6 +280,10 @@
   flex-shrink: 0;
 }
 
+[data-theme="light"] .appbar__location svg {
+  color: var(--text);
+}
+
 .appbar__location-chevron {
   display: inline-flex;
   align-items: center;
@@ -296,7 +300,7 @@
 }
 
 .appbar__location:hover .appbar__location-text {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .appbar__location-pin {
@@ -308,6 +312,15 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.appbar__location:hover .appbar__location-pin {
+  background: rgba(0, 194, 232, 0.32);
+}
+
+.appbar--transparent .appbar__location:hover .appbar__location-pin {
+  background: rgba(255, 255, 255, 0.60);
 }
 
 /* ── Search pill ── */

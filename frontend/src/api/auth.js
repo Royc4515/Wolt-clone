@@ -48,14 +48,8 @@ export const logout = () => {
  * Replaces the old JWT token with the newly generated one.
  */
 export const updateUserProfile = async (id, updateData) => {
-    return await apiFetch(`/api/users/${id}`, {
+    return apiFetch(`/api/users/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(updateData),
     });
-
-    if (data && data.token) {
-        localStorage.setItem('jwt_token', data.token);
-    }
-
-    return data;
 };

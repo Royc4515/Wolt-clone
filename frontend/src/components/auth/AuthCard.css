@@ -17,6 +17,7 @@
 
 .auth-card {
   width: 100%;
+  max-width: var(--auth-card-max-width, 440px);
   padding: var(--space-7) var(--space-6) var(--space-6);
 }
 
