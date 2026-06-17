@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AppBar from '../components/AppBar';
 import MenuItemCard from '../components/MenuItemCard';
 import CartDrawer from '../components/CartDrawer';
 import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import { getRestaurant, getMenu } from '../api/restaurants';
 import { getOrders, createOrder } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
@@ -33,6 +34,7 @@ const StarIcon = () => (
 export default function Restaurant() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { items, addItem, updateQty, restoreItems, count, total } = useCart();
   const sectionRefs = useRef({});
   const [cartOpen, setCartOpen] = useState(false);
@@ -50,10 +52,7 @@ export default function Restaurant() {
   // Prevents the initial items=[] from wiping localStorage before the cart is restored.
   const cartSaveReady = useRef(false);
 
-  useEffect(() => {
-    document.body.style.overflow = cartOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [cartOpen]);
+  useBodyScrollLock(cartOpen);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +75,24 @@ export default function Restaurant() {
         setRestaurant(rest);
         setMenu(menuData);
         setLoading(false);
+
+        // If navigated via "Order again", pre-populate cart from that order's items.
+        const reorderItems = location.state?.reorderItems;
+        if (reorderItems?.length) {
+          const allItems = menuData.flatMap(s => s.items);
+          const menuById = new Map(allItems.map(item => [item.id, item]));
+          const cartItems = reorderItems
+            .map(({ productId, quantity }) => {
+              const menuItem = menuById.get(productId);
+              return menuItem ? { item: menuItem, qty: quantity } : null;
+            })
+            .filter(Boolean);
+          if (cartItems.length) {
+            restoreItems(cartItems);
+            window.history.replaceState({}, '');
+            return;
+          }
+        }
 
         if (!isAuthenticated()) return;
 
@@ -126,7 +143,7 @@ export default function Restaurant() {
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
 
-  async function handleCheckout() {
+  const handleCheckout = useCallback(async () => {
     if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
@@ -149,7 +166,7 @@ export default function Restaurant() {
     } finally {
       setIsCheckingOut(false);
     }
-  }
+  }, [id, items, hasActiveOrder, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function scrollToSection(sectionId) {
     const el = sectionRefs.current[sectionId];

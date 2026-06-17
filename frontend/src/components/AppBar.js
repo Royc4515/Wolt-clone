@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import AnimatedLogo from './AnimatedLogo';
 import ThemeToggle from './shared/ThemeToggle';
+import OrdersDrawer from './OrdersDrawer';
+import { XIcon } from './icons';
 import { getAuthState, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
@@ -24,11 +26,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-const XIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M18 6 6 18M6 6l12 12" />
-  </svg>
-);
 
 const PinIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -36,6 +33,23 @@ const PinIcon = () => (
     <circle cx="12" cy="9" r="2.5" />
   </svg>
 );
+
+const BagIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <path d="M16 10a4 4 0 0 1-8 0" />
+  </svg>
+);
+
+function getLocalCartCount() {
+  let n = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k?.startsWith('cart_')) n++;
+  }
+  return n;
+}
 
 const ChevronDown = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -68,6 +82,8 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const [badgeCount, setBadgeCount] = useState(getLocalCartCount);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
   const [locationLat, setLocationLat] = useState(cachedLoc?.lat ?? '');
   const [locationLng, setLocationLng] = useState(cachedLoc?.lng ?? '');
@@ -244,7 +260,7 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
             onClick={handleClear}
             aria-label="Clear search"
           >
-            <XIcon />
+            <XIcon size={16} />
           </button>
         ) : (
           <>
@@ -352,6 +368,20 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
               </div>
             )}
 
+            {authed && (
+              <button
+                type="button"
+                className="appbar__orders-btn"
+                onClick={() => { setBadgeCount(getLocalCartCount()); setOrdersOpen(true); }}
+                aria-label="Your orders"
+              >
+                <BagIcon />
+                {badgeCount > 0 && (
+                  <span className="appbar__orders-badge">{badgeCount}</span>
+                )}
+              </button>
+            )}
+
             {cartCount > 0 && (
               <button type="button" className="appbar__cart-pill" onClick={onShowCart}>
                 <span className="appbar__cart-pill-count">{cartCount}</span>
@@ -359,10 +389,15 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
                 <span className="appbar__cart-pill-price">₪{cartTotal}</span>
               </button>
             )}
+
             <ThemeToggle />
           </>
         )}
       </div>
+
+      {ordersOpen && (
+        <OrdersDrawer onClose={() => { setOrdersOpen(false); setBadgeCount(getLocalCartCount()); }} />
+      )}
     </header>
   );
 }

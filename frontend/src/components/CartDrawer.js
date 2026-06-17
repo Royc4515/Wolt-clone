@@ -1,22 +1,8 @@
 import { useState, useRef } from 'react';
+import { XIcon, TrashIcon } from './icons';
 import './CartDrawer.css';
 
 const SCROLL_THRESHOLD_PX = 20;
-
-const XIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M18 6 6 18M6 6l12 12" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14H6L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4h6v2" />
-  </svg>
-);
 
 export default function CartDrawer({ items, count, total, onClose, onCheckout, onUpdateQty, onItemClick, checkoutLabel = 'Go to checkout', checkoutLoading = false, error }) {
   const [expandedId, setExpandedId] = useState(null);
@@ -99,7 +85,7 @@ export default function CartDrawer({ items, count, total, onClose, onCheckout, o
                         type="button"
                         className="cart-drawer__stepper-btn"
                         onClick={e => handleQtyChange(e, item.id, qty + 1)}
-                        disabled={qty >= item.maxQty}
+                        disabled={qty >= (item.maxQty ?? Infinity)}
                         aria-label="Increase quantity"
                       >+</button>
                       <button
@@ -107,7 +93,7 @@ export default function CartDrawer({ items, count, total, onClose, onCheckout, o
                         className="cart-drawer__stepper-btn cart-drawer__stepper-btn--trash"
                         onClick={e => handleDelete(e, item.id)}
                         aria-label="Remove item"
-                      ><TrashIcon /></button>
+                      ><TrashIcon size={14} /></button>
                     </div>
                   ) : (
                     <div className="cart-drawer__qty-badge">{qty}</div>

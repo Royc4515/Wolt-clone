@@ -2,3 +2,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 body { margin: 0; }
+
+/* ── Press feedback baseline ── */
+button { transition: transform 0.12s ease; }
+
+button:not(:disabled):active,
+[role="button"]:active {
+  transform: scale(0.95);
+}

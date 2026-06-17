@@ -26,18 +26,21 @@ export default function Home() {
   const searchRef = useRef(null);
 
   useEffect(() => {
-    getRestaurants().then(setAllRestaurants).catch(() => {});
+    getRestaurants().then(setAllRestaurants).catch(err => console.error('Failed to load restaurants', err));
   }, []);
 
   const categories = useMemo(() => {
-    const seen = new Set();
-    return allRestaurants
-      .filter(r => r.category && !seen.has(r.category) && seen.add(r.category))
-      .map(r => ({
-        name: r.category,
-        emoji: CATEGORY_META[r.category]?.emoji || '🍽️',
-        image: CATEGORY_META[r.category]?.image || '',
-      }));
+    const seen = new Map();
+    for (const r of allRestaurants) {
+      if (r.category && !seen.has(r.category)) {
+        seen.set(r.category, {
+          name: r.category,
+          emoji: CATEGORY_META[r.category]?.emoji || '🍽️',
+          image: CATEGORY_META[r.category]?.image || '',
+        });
+      }
+    }
+    return [...seen.values()];
   }, [allRestaurants]);
 
   const restaurants = useMemo(() => {
