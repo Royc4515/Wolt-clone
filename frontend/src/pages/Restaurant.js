@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AppBar from '../components/AppBar';
 import MenuItemCard from '../components/MenuItemCard';
 import CartDrawer from '../components/CartDrawer';
 import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import { getRestaurant, getMenu } from '../api/restaurants';
-import { hashColor } from '../utils/colorHash';
+import { getOrders, createOrder } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
+import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
 import woltIcon from '../assets/wolt-logo.png';
 import './Restaurant.css';
@@ -32,7 +34,8 @@ const StarIcon = () => (
 export default function Restaurant() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, addItem, updateQty, count, total } = useCart();
+  const location = useLocation();
+  const { items, addItem, updateQty, restoreItems, count, total } = useCart();
   const sectionRefs = useRef({});
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -42,24 +45,77 @@ export default function Restaurant() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
-  useEffect(() => {
-    document.body.style.overflow = cartOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [cartOpen]);
+  // Prevents the initial items=[] from wiping localStorage before the cart is restored.
+  const cartSaveReady = useRef(false);
+
+  useBodyScrollLock(cartOpen);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
+    setHasActiveOrder(false);
+    cartSaveReady.current = false;
+
+    // Restore saved shopping cart for this restaurant immediately (before async fetch).
+    try {
+      const saved = localStorage.getItem(`cart_${id}`);
+      restoreItems(saved ? JSON.parse(saved) : []);
+    } catch {
+      restoreItems([]);
+    }
 
     Promise.all([getRestaurant(id), getMenu(id)])
-      .then(([rest, menuData]) => {
-        if (!cancelled) {
-          setRestaurant(rest);
-          setMenu(menuData);
-          setLoading(false);
+      .then(async ([rest, menuData]) => {
+        if (cancelled) return;
+        setRestaurant(rest);
+        setMenu(menuData);
+        setLoading(false);
+
+        // If navigated via "Order again", pre-populate cart from that order's items.
+        const reorderItems = location.state?.reorderItems;
+        if (reorderItems?.length) {
+          const allItems = menuData.flatMap(s => s.items);
+          const menuById = new Map(allItems.map(item => [item.id, item]));
+          const cartItems = reorderItems
+            .map(({ productId, quantity }) => {
+              const menuItem = menuById.get(productId);
+              return menuItem ? { item: menuItem, qty: quantity } : null;
+            })
+            .filter(Boolean);
+          if (cartItems.length) {
+            restoreItems(cartItems);
+            window.history.replaceState({}, '');
+            return;
+          }
         }
+
+        if (!isAuthenticated()) return;
+
+        // Check whether the user already has a pending order at this restaurant.
+        const orders = await getOrders().catch(() => []);
+        if (cancelled) return;
+
+        const activeOrder = orders.find(o => o.restaurantId === id && o.status === 'pending');
+        if (!activeOrder) return;
+
+        setHasActiveOrder(true);
+
+        // Restore the order items into the cart so the user can see what they ordered.
+        const allItems = menuData.flatMap(s => s.items);
+        const menuById = new Map(allItems.map(item => [item.id, item]));
+        const cartItems = activeOrder.items
+          .map(({ productId, quantity }) => {
+            const menuItem = menuById.get(productId);
+            return menuItem ? { item: menuItem, qty: quantity } : null;
+          })
+          .filter(Boolean);
+
+        restoreItems(cartItems);
       })
       .catch(() => {
         if (!cancelled) {
@@ -69,19 +125,48 @@ export default function Restaurant() {
       });
 
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist the shopping cart to localStorage on every change.
+  useEffect(() => {
+    if (!cartSaveReady.current) {
+      cartSaveReady.current = true;
+      return;
+    }
+    if (items.length === 0) {
+      localStorage.removeItem(`cart_${id}`);
+    } else {
+      localStorage.setItem(`cart_${id}`, JSON.stringify(items));
+    }
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
 
-  function handleCheckout() {
+  const handleCheckout = useCallback(async () => {
     if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
       return;
     }
-    // TODO: navigate to checkout page
-  }
+    if (hasActiveOrder) {
+      navigate('/orders');
+      return;
+    }
+    setCheckoutError('');
+    setIsCheckingOut(true);
+    try {
+      const orderItems = items.map(e => ({ productId: e.item.id, quantity: e.qty }));
+      await createOrder(id, orderItems);
+      localStorage.removeItem(`cart_${id}`);
+      setCartOpen(false);
+      navigate('/orders');
+    } catch (err) {
+      setCheckoutError(err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsCheckingOut(false);
+    }
+  }, [id, items, hasActiveOrder, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function scrollToSection(sectionId) {
     const el = sectionRefs.current[sectionId];
@@ -223,6 +308,9 @@ export default function Restaurant() {
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
           onItemClick={item => setSelectedItem(item)}
+          checkoutLabel={hasActiveOrder ? 'View Cart' : isCheckingOut ? 'Placing order…' : 'Go to checkout'}
+          checkoutLoading={isCheckingOut}
+          error={checkoutError}
         />
       )}
 

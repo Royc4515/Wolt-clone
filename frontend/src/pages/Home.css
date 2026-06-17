@@ -65,6 +65,10 @@
   transform: scale(1.05);
 }
 
+.category-card:active {
+  transform: scale(0.92);
+}
+
 .category-card--active {
   border-color: var(--accent);
 }
@@ -195,7 +199,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease), transform 0.1s ease;
 }
 
 .home__scroll-btn:hover:not(:disabled) {
@@ -236,6 +240,10 @@
   transform: scale(1.03);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
   border-color: var(--border-strong);
+}
+
+.restaurant-card:active {
+  transform: scale(0.975);
 }
 
 .restaurant-card__image {

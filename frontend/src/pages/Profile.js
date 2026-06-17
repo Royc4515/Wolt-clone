@@ -9,7 +9,7 @@ import '../styles/Profile.css';
 
 const TABS = [
   { id: 'personal', label: 'Personal info' },
-  { id: 'orders',   label: 'Order history', to: '/orders' },
+  { id: 'orders',   label: 'My Orders', to: '/orders' },
 ];
 
 export default function Profile() {
