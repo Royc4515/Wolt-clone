@@ -143,6 +143,8 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     try {
       await updateUserProfile(user.id, { location: { lat, lng } });
       setLocation({ lat, lng });
+      // TODO(dana): once PATCH /api/users/:id re-issues the JWT, store the new token here
+      // via localStorage.setItem('jwt_token', response.token) and remove this localStorage cache line.
       localStorage.setItem('user_location', JSON.stringify({ lat, lng }));
       setLocationMenuOpen(false);
     } catch {

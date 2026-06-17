@@ -93,6 +93,8 @@ export default function Profile() {
       setSaveSuccess(true);
       setPassword('');
       setConfirmPassword('');
+      // TODO(dana): once PATCH /api/users/:id re-issues the JWT, store the new token here
+      // via localStorage.setItem('jwt_token', response.token) and remove these two cache lines.
       localStorage.setItem('user_location', JSON.stringify({ lat: parseFloat(lat), lng: parseFloat(lng) }));
       localStorage.setItem('user_displayname', displayName);
     } catch (err) {
