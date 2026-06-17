@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppBar from '../components/AppBar';
 import MenuItemCard from '../components/MenuItemCard';
@@ -8,6 +8,7 @@ import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import { getRestaurant, getMenu } from '../api/restaurants';
 import { hashColor } from '../utils/colorHash';
+import { isAuthenticated } from '../utils/auth';
 import useTheme from '../hooks/useTheme';
 import woltIcon from '../assets/wolt-logo.png';
 import './Restaurant.css';
@@ -43,6 +44,11 @@ export default function Restaurant() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    document.body.style.overflow = cartOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [cartOpen]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
@@ -66,19 +72,10 @@ export default function Restaurant() {
   }, [id]);
 
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
-  function getQty(itemId) { return cartMap.get(itemId) ?? 0; }
-
-  function handleRemove(item) {
-    updateQty(item.id, getQty(item.id) - 1);
-  }
-
-  function handleAdd(item) {
-    addItem(item);
-  }
+  const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
 
   function handleCheckout() {
-    const token = localStorage.getItem('jwt_token');
-    if (!token || token.split('.').length !== 3) {
+    if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
       return;
@@ -184,8 +181,8 @@ export default function Restaurant() {
               key={item.id}
               item={item}
               qty={getQty(item.id)}
-              onAdd={() => handleAdd(item)}
-              onRemove={() => handleRemove(item)}
+              onAdd={() => addItem(item)}
+              onRemove={() => updateQty(item.id, getQty(item.id) - 1)}
               onCardClick={() => setSelectedItem(item)}
             />
           ));
@@ -216,25 +213,27 @@ export default function Restaurant() {
         })}
       </main>
 
-      {/* ── Item detail modal ── */}
+      {/* ── Cart drawer ── */}
+      {cartOpen && (
+        <CartDrawer
+          items={items}
+          count={count}
+          total={total}
+          onClose={() => setCartOpen(false)}
+          onCheckout={handleCheckout}
+          onUpdateQty={updateQty}
+          onItemClick={item => setSelectedItem(item)}
+        />
+      )}
+
+      {/* ── Item detail modal (rendered after drawer so it sits on top) ── */}
       {selectedItem && (
         <MenuItemModal
           item={selectedItem}
           qty={getQty(selectedItem.id)}
           onAdd={() => addItem(selectedItem)}
-          onRemove={() => handleRemove(selectedItem)}
+          onRemove={() => updateQty(selectedItem.id, getQty(selectedItem.id) - 1)}
           onClose={() => setSelectedItem(null)}
-        />
-      )}
-
-      {/* ── Cart drawer ── */}
-      {cartOpen && (
-        <CartDrawer
-          items={items}
-          total={total}
-          onClose={() => setCartOpen(false)}
-          onCheckout={handleCheckout}
-          onUpdateQty={updateQty}
         />
       )}
     </div>

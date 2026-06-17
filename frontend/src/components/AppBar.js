@@ -1,11 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import woltLogo from '../assets/wolt-wordmark.png';
+import { Link, useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
+import AnimatedLogo from './AnimatedLogo';
 import ThemeToggle from './shared/ThemeToggle';
-import { isAuthenticated, getCurrentUser } from '../utils/auth';
+import { getAuthState, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
+import useOutsideClick from '../hooks/useOutsideClick';
 import './AppBar.css';
+
+function getCachedLocation() {
+  try {
+    const raw = localStorage.getItem(USER_LOCATION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -47,30 +57,20 @@ const PersonIcon = () => (
 );
 
 export default function AppBar({ search = '', onSearch = () => {}, searchRef = { current: null }, cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false }) {
-  const authed = isAuthenticated();
-  const user = getCurrentUser();
-  const displayName = localStorage.getItem('user_displayname') || user?.displayName;
+  const { authenticated: authed, user } = getAuthState();
+  const displayName = localStorage.getItem(USER_DISPLAYNAME_KEY) || user?.displayName;
   const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
+  const isHome = routerLocation.pathname === '/';
+  const cachedLoc = getCachedLocation() || user?.location || null;
   const [profilePicture, setProfilePicture] = useState(null);
-  const [location, setLocation] = useState(() => {
-    const cached = localStorage.getItem('user_location');
-    if (cached) { try { return JSON.parse(cached); } catch { /* ignore */ } }
-    return user?.location || null;
-  });
+  const [location, setLocation] = useState(cachedLoc);
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
-  const [locationLat, setLocationLat] = useState(() => {
-    const cached = localStorage.getItem('user_location');
-    if (cached) { try { return JSON.parse(cached).lat ?? ''; } catch { /* ignore */ } }
-    return user?.location?.lat ?? '';
-  });
-  const [locationLng, setLocationLng] = useState(() => {
-    const cached = localStorage.getItem('user_location');
-    if (cached) { try { return JSON.parse(cached).lng ?? ''; } catch { /* ignore */ } }
-    return user?.location?.lng ?? '';
-  });
+  const [locationLat, setLocationLat] = useState(cachedLoc?.lat ?? '');
+  const [locationLng, setLocationLng] = useState(cachedLoc?.lng ?? '');
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState('');
   const clearBtnRef = useRef(null);
@@ -83,53 +83,25 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!authed || !user) return;
+    if (!user?.id) return;
     getUser(user.id).then(data => {
       if (data?.profilePicture) setProfilePicture(data.profilePicture);
     }).catch(() => {});
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onOutsideClick(e) {
-      if (avatarRef.current && !avatarRef.current.contains(e.target)) {
-        setMenuOpen(false);
-      }
-    }
-    function onKeyDown(e) {
-      if (e.key === 'Escape') {
-        setMenuOpen(false);
-        avatarRef.current?.focus();
-      }
-    }
-    document.addEventListener('mousedown', onOutsideClick);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onOutsideClick);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [menuOpen]);
+  useOutsideClick(
+    avatarRef,
+    menuOpen,
+    () => setMenuOpen(false),
+    () => { setMenuOpen(false); avatarRef.current?.focus(); }
+  );
 
-  useEffect(() => {
-    if (!locationMenuOpen) return;
-    function onOutsideClick(e) {
-      if (locationRef.current && !locationRef.current.contains(e.target)) {
-        setLocationMenuOpen(false);
-        setLocationError('');
-      }
-    }
-    function onKeyDown(e) {
-      if (e.key === 'Escape') { setLocationMenuOpen(false); setLocationError(''); }
-    }
-    document.addEventListener('mousedown', onOutsideClick);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onOutsideClick);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [locationMenuOpen]);
+  useOutsideClick(
+    locationRef,
+    locationMenuOpen,
+    () => { setLocationMenuOpen(false); setLocationError(''); }
+  );
 
   async function handleLocationSave() {
     const lat = parseFloat(locationLat);
@@ -145,7 +117,7 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
       setLocation({ lat, lng });
       // TODO(dana): once PATCH /api/users/:id re-issues the JWT, store the new token here
       // via localStorage.setItem('jwt_token', response.token) and remove this localStorage cache line.
-      localStorage.setItem('user_location', JSON.stringify({ lat, lng }));
+      localStorage.setItem(USER_LOCATION_KEY, JSON.stringify({ lat, lng }));
       setLocationMenuOpen(false);
     } catch {
       setLocationError('Failed to save location');
@@ -168,8 +140,8 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   }
 
   function handleLogout() {
-    localStorage.removeItem('user_location');
-    localStorage.removeItem('user_displayname');
+    localStorage.removeItem(USER_LOCATION_KEY);
+    localStorage.removeItem(USER_DISPLAYNAME_KEY);
     logout();
     navigate('/login');
   }
@@ -179,10 +151,10 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
       {/* Left: logo + location */}
       <div className="appbar__left">
         {logoLinkDisabled ? (
-          <img src={woltLogo} alt="Wolt" className="appbar__logo appbar__logo--disabled" />
+          <AnimatedLogo className="appbar__logo appbar__logo--disabled" animate={isHome} />
         ) : (
           <Link to="/" className="appbar__logo-link">
-            <img src={woltLogo} alt="Wolt" className="appbar__logo" />
+            <AnimatedLogo className="appbar__logo" animate={isHome} />
           </Link>
         )}
         {!searching && (
