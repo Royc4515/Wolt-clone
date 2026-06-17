@@ -122,22 +122,11 @@
 .appbar__logo {
   width: 60px;
   height: auto;
-  object-fit: contain;
   flex-shrink: 0;
 }
 
 .appbar__logo--disabled {
   cursor: not-allowed;
-}
-
-[data-theme="dark"] .appbar__logo {
-  filter: invert(1);
-  mix-blend-mode: screen;
-}
-
-[data-theme="light"] .appbar--transparent .appbar__logo {
-  filter: invert(1);
-  mix-blend-mode: screen;
 }
 
 .appbar__logo-link:hover .appbar__logo {

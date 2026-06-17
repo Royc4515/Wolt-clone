@@ -1,0 +1,12 @@
+.wolt-logo-wrap {
+  display: block;
+  color: #202125;
+}
+
+[data-theme="dark"] .wolt-logo-wrap {
+  color: #ffffff;
+}
+
+[data-theme="light"] .appbar--transparent .wolt-logo-wrap {
+  color: #ffffff;
+}

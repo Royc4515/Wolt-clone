@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import woltLogo from '../assets/wolt-wordmark.png';
+import AnimatedLogo from './AnimatedLogo';
 import ThemeToggle from './shared/ThemeToggle';
 import { isAuthenticated, getCurrentUser } from '../utils/auth';
 import { getUser } from '../api/users';
@@ -115,10 +115,10 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
       {/* Left: logo + location */}
       <div className="appbar__left">
         {logoLinkDisabled ? (
-          <img src={woltLogo} alt="Wolt" className="appbar__logo appbar__logo--disabled" />
+          <AnimatedLogo className="appbar__logo appbar__logo--disabled" />
         ) : (
           <Link to="/" className="appbar__logo-link">
-            <img src={woltLogo} alt="Wolt" className="appbar__logo" />
+            <AnimatedLogo className="appbar__logo" />
           </Link>
         )}
         {!searching && (

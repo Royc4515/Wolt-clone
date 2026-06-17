@@ -176,7 +176,7 @@
 .item-modal__step-btn {
   width: 32px;
   height: 32px;
-  border-radius: 12px;
+  border-radius: 50%;
   border: none;
   background: #154657;
   color: #54BCE1;

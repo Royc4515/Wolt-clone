@@ -29,12 +29,6 @@
 .auth-brand__logo {
   width: 120px;
   height: auto;
-  object-fit: contain;
-}
-
-[data-theme="dark"] .auth-brand__logo {
-  filter: invert(1);
-  mix-blend-mode: screen;
 }
 
 .auth-card h1 {
