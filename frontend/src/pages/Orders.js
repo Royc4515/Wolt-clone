@@ -7,7 +7,7 @@ import '../styles/Orders.css';
 
 const TABS = [
   { id: 'personal', label: 'Personal info', to: '/profile' },
-  { id: 'orders',   label: 'Order history' },
+  { id: 'orders',   label: 'Order Again' },
 ];
 
 function formatDate(iso) {
@@ -113,9 +113,9 @@ export default function Orders() {
         ) : (
           <>
             <section className="orders-section">
-              <h2 className="orders-section-title">Active Orders</h2>
+              <h2 className="orders-section-title">Shopping Cart</h2>
               {activeOrders.length === 0 ? (
-                <p className="orders-empty">You have no active orders.</p>
+                <p className="orders-empty">Your cart is empty.</p>
               ) : (
                 <ul className="orders-list">
                   {activeOrders.map(order => (
@@ -132,7 +132,7 @@ export default function Orders() {
             </section>
 
             <section className="orders-section">
-              <h2 className="orders-section-title">Order History</h2>
+              <h2 className="orders-section-title">Order Again</h2>
               {historyOrders.length === 0 ? (
                 <p className="orders-empty">No past orders yet.</p>
               ) : (

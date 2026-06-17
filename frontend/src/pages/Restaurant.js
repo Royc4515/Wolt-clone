@@ -289,7 +289,7 @@ export default function Restaurant() {
           onClose={() => setCartOpen(false)}
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
-          checkoutLabel={hasActiveOrder ? 'View my order' : 'Go to checkout'}
+          checkoutLabel={hasActiveOrder ? 'View Cart' : 'Go to checkout'}
         />
       )}
     </div>
