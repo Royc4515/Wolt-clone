@@ -86,7 +86,7 @@ const deleteRest = (req, res) => {
 
     // Ensure that the user trying to delete is the owner.
     if (restaurant.ownerId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the owner can update this restaurant" });
+        return res.status(403).json({ error: "Forbidden: Only the owner can delete this restaurant" });
     }
 
     // Delete the restaurant.
