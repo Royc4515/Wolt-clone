@@ -11,60 +11,33 @@ const searchAll = (req, res) => {
     const allRests = restRepo.findAll();
     const allProds = prodRepo.findAll();
 
-    // Filter all restaurants that include the query in their name\desfription.
+    // Filter all restaurants that include the query in their name/description/category.
     const matchRests = allRests.filter(rest => {
-        // Turn the name to lower case.
-        const lowerName = rest.name.toLowerCase();
+        const lowerName = rest.name ? rest.name.toLowerCase() : '';
+        const lowerDesc = rest.description ? rest.description.toLowerCase() : '';
+        const lowerCat = rest.category ? rest.category.toLowerCase() : '';
 
-        // Check if the query is in the name.
-        if (lowerName.includes(query)) {
+        if (lowerName.includes(query) || lowerDesc.includes(query) || lowerCat.includes(query)) {
             return true;
         }
-
-        // Ensure that there's a description.
-        if (rest.description) {
-            // Turn the description to lower case.
-            const lowerDesc = rest.description.toLowerCase();
-
-            // Check if the query is in the description.
-            if (lowerDesc.includes(query)) {
-                return true;
-            }
-        }
-
-        // If not found, return false.
         return false;
     });
 
-    // Filter all products that include the query in their name\desfription.
+    // Filter all products that include the query in their name/description.
     const matchProds = allProds.filter(prod => {
-        // Turn the name to lower case.
-        const lowerName = prod.name.toLowerCase();
+        const lowerName = prod.name ? prod.name.toLowerCase() : '';
+        const lowerDesc = prod.description ? prod.description.toLowerCase() : '';
 
-        // Check if the query is in the name.
-        if (lowerName.includes(query)) {
+        if (lowerName.includes(query) || lowerDesc.includes(query)) {
             return true;
         }
-
-        // Ensure that there's a description.
-        if (prod.description) {
-            // Turn the description to lower case.
-            const lowerDesc = prod.description.toLowerCase();
-
-            // Check if the query is in the description.
-            if (lowerDesc.includes(query)) {
-                return true;
-            }
-        }
-
-        // If not found, return false.
         return false;
     });
 
-    // Return the list of restaurants and products found for this query.
+    // Return the list with LOWERCASE keys to match the empty search route behavior
     res.status(200).json({
-        Restaurants: matchRests,
-        Products: matchProds
+        restaurants: matchRests,
+        products: matchProds
     });
 };
 
