@@ -43,6 +43,11 @@ export default function Restaurant() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
+    document.body.style.overflow = cartOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [cartOpen]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
@@ -216,17 +221,6 @@ export default function Restaurant() {
         })}
       </main>
 
-      {/* ── Item detail modal ── */}
-      {selectedItem && (
-        <MenuItemModal
-          item={selectedItem}
-          qty={getQty(selectedItem.id)}
-          onAdd={() => addItem(selectedItem)}
-          onRemove={() => handleRemove(selectedItem)}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
-
       {/* ── Cart drawer ── */}
       {cartOpen && (
         <CartDrawer
@@ -235,6 +229,18 @@ export default function Restaurant() {
           onClose={() => setCartOpen(false)}
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
+          onItemClick={item => setSelectedItem(item)}
+        />
+      )}
+
+      {/* ── Item detail modal (rendered after drawer so it sits on top) ── */}
+      {selectedItem && (
+        <MenuItemModal
+          item={selectedItem}
+          qty={getQty(selectedItem.id)}
+          onAdd={() => addItem(selectedItem)}
+          onRemove={() => handleRemove(selectedItem)}
+          onClose={() => setSelectedItem(null)}
         />
       )}
     </div>
