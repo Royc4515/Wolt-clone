@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
 import AppBar from '../components/AppBar';
 import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
@@ -19,11 +18,8 @@ const CATEGORY_META = {
 };
 
 export default function Home() {
-  const [searchParams] = useSearchParams();
-  const [search, setSearch] = useState(() => searchParams.get('q') || '');
   const [activeCategory, setActiveCategory] = useState(null);
   const [allRestaurants, setAllRestaurants] = useState([]);
-  const searchRef = useRef(null);
 
   useEffect(() => {
     getRestaurants().then(setAllRestaurants).catch(err => console.error('Failed to load restaurants', err));
@@ -44,58 +40,33 @@ export default function Home() {
   }, [allRestaurants]);
 
   const restaurants = useMemo(() => {
-    return allRestaurants.filter(r => {
-      const matchesSearch =
-        !search ||
-        r.name.toLowerCase().includes(search.toLowerCase()) ||
-        (r.category && r.category.toLowerCase().includes(search.toLowerCase()));
-      const matchesCategory = !activeCategory || r.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [allRestaurants, search, activeCategory]);
+    return allRestaurants.filter(r =>
+      !activeCategory || r.category === activeCategory
+    );
+  }, [allRestaurants, activeCategory]);
 
   const promoted = useMemo(() => restaurants.filter(r => r.isPromoted), [restaurants]);
-  const isSearching = search.trim().length > 0;
-
-  function handleCategorySelect(cat) {
-    setActiveCategory(cat);
-    setSearch('');
-  }
 
   return (
     <div className="home">
-      <AppBar search={search} onSearch={setSearch} searchRef={searchRef} logoLinkDisabled />
+      <AppBar logoLinkDisabled />
 
       <main className="home__content">
         <CategoryFilter
           categories={categories}
           active={activeCategory}
-          onSelect={handleCategorySelect}
+          onSelect={setActiveCategory}
         />
 
-        {isSearching ? (
-          restaurants.length > 0 ? (
-            <ScrollSection classPrefix="home" title={`Results for "${search}"`}>
-              {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
-            </ScrollSection>
-          ) : (
-            <section className="home__section">
-              <h2 className="home__section-title home__empty">No results for "{search}"</h2>
-            </section>
-          )
-        ) : (
-          <>
-            {!activeCategory && promoted.length > 0 && (
-              <ScrollSection classPrefix="home" title="Promoted">
-                {promoted.map(r => <RestaurantCard key={r.id} {...r} />)}
-              </ScrollSection>
-            )}
-
-            <ScrollSection classPrefix="home" title={activeCategory || 'All Restaurants'}>
-              {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
-            </ScrollSection>
-          </>
+        {!activeCategory && promoted.length > 0 && (
+          <ScrollSection classPrefix="home" title="Promoted">
+            {promoted.map(r => <RestaurantCard key={r.id} {...r} />)}
+          </ScrollSection>
         )}
+
+        <ScrollSection classPrefix="home" title={activeCategory || 'All Restaurants'}>
+          {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
+        </ScrollSection>
       </main>
     </div>
   );

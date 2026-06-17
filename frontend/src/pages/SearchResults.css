@@ -1,0 +1,217 @@
+.sr {
+  min-height: 100vh;
+  background: var(--bg, #f5f5f5);
+}
+
+.sr__main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* ── Header ── */
+.sr__header {
+  margin-bottom: 32px;
+}
+
+.sr__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  margin: 0 0 16px;
+  letter-spacing: -0.5px;
+}
+
+/* ── Tabs ── */
+.sr__tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.sr__tab {
+  padding: 8px 20px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1.5px solid var(--border, #e0e0e0);
+  background: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  font-family: var(--font-sans, sans-serif);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.sr__tab:hover {
+  border-color: var(--text, #1a1a1a);
+  color: var(--text, #1a1a1a);
+}
+
+.sr__tab--active {
+  background: var(--text, #1a1a1a);
+  border-color: var(--text, #1a1a1a);
+  color: var(--bg, #fff);
+}
+
+/* ── States ── */
+.sr__loading,
+.sr__empty {
+  padding: 60px 0;
+  text-align: center;
+  color: var(--text-muted, #888);
+  font-size: 16px;
+}
+
+/* ── Restaurant grid — 4 columns, ~2/3 of content width ── */
+.sr__rest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  max-width: 730px;
+}
+
+/* Restaurant card styles live in SearchRestaurantCard.css (variant="full"). */
+
+/* ── Item grid — 2 columns ── */
+.sr__item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 800px;
+  gap: 14px;
+}
+
+.sr__item-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--search-card-bg, #fff);
+  border: 1px solid #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 16:9 small image on the left */
+.sr__item-img-wrap {
+  width: 144px;
+  height: 86px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+
+.sr__item-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sr__item-info {
+  flex: 1;
+  padding: 10px 18px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sr__item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--search-brand, #009DE0);
+}
+
+.sr__item-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--search-text-primary, #202125);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr__item-rest-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sr__item-rest-name {
+  color: var(--search-brand, #009DE0);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr__item-rest-name:hover {
+  text-decoration: underline;
+}
+
+.sr__item-sep {
+  color: var(--search-text-secondary, #7A858F);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.sr__item-location {
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr__item-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--search-text-secondary, #7A858F);
+  margin-top: 2px;
+}
+
+.sr__item-dot {
+  color: var(--search-text-secondary, #7A858F);
+  opacity: 0.6;
+}
+
+/* ── Responsive ── */
+/* ── Dark-mode overrides ── */
+[data-theme="dark"] .sr {
+  background: #161929;
+}
+
+[data-theme="dark"] .sr__item-card {
+  background: #161929;
+  border: 1px solid #161929;
+}
+
+@media (max-width: 760px) {
+  .sr__rest-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .sr__main {
+    padding: 20px 16px 40px;
+  }
+
+  .sr__rest-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+  }
+
+  .sr__item-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}

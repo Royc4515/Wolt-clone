@@ -115,6 +115,15 @@
   --shadow-pop:  0 16px 40px rgba(0, 0, 0, 0.45);
   --overlay:     rgba(8, 8, 18, 0.62);
 
+  /* Search component tokens */
+  --search-card-bg:        #192332;
+  --search-card-border:    transparent;
+  --search-input-bg:       #101722;
+  --search-input-ring:     #ffffff;
+  --search-text-primary:   #ffffff;
+  --search-text-secondary: #9EA8B3;
+  --search-brand:          #009DE0;
+
   color-scheme: dark;
 }
 
@@ -150,6 +159,15 @@
   --shadow-card: 0 2px 8px rgba(20, 20, 50, 0.10), 0 12px 32px rgba(20, 20, 50, 0.10);
   --shadow-pop:  0 12px 32px rgba(20, 20, 50, 0.14);
   --overlay:     rgba(20, 20, 40, 0.40);
+
+  /* Search component tokens */
+  --search-card-bg:        #FFFFFF;
+  --search-card-border:    #ffffff;
+  --search-input-bg:       #F5F6F7;
+  --search-input-ring:     #009DE0;
+  --search-text-primary:   #202125;
+  --search-text-secondary: #7A858F;
+  --search-brand:          #009DE0;
 
   color-scheme: light;
 }
@@ -579,3 +597,17 @@ textarea.input { resize: vertical; min-height: 96px; line-height: var(--leading-
 .modal__body { padding: var(--space-5); overflow-y: auto; }
 .modal__footer { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border); }
 .modal__footer .btn { flex: 1; }
+
+/* ── Accessibility: honour reduced-motion preference ──────────────────────
+   Neutralises entrances, hover transitions, and looping spinners/pulses for
+   users who ask the OS to minimise motion, while keeping the UI fully usable. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

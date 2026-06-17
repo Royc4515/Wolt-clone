@@ -41,12 +41,12 @@ describe('AuthCard', () => {
   it('applies default maxWidth of 440px to the card', () => {
     const { container } = renderCard();
     const card = container.querySelector('.auth-card');
-    expect(card).toHaveStyle({ maxWidth: '440px' });
+    expect(card.style.getPropertyValue('--auth-card-max-width')).toBe('440px');
   });
 
   it('applies custom maxWidth when prop is provided', () => {
     const { container } = renderCard({ maxWidth: '460px' });
     const card = container.querySelector('.auth-card');
-    expect(card).toHaveStyle({ maxWidth: '460px' });
+    expect(card.style.getPropertyValue('--auth-card-max-width')).toBe('460px');
   });
 });

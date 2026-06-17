@@ -1,57 +1,84 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Home from './Home';
+import { getRestaurants } from '../api/restaurants';
 
+jest.mock('../api/restaurants');
+jest.mock('../components/AppBar', () => () => <div data-testid="appbar" />);
 jest.mock('react-router-dom', () => ({
   Link: ({ to, children, ...rest }) => <a href={to} {...rest}>{children}</a>,
 }));
 
-jest.mock('../components/shared/ThemeToggle', () => () => <div />);
+const RESTAURANTS = [
+  { id: '1', name: 'Pizza Roma',    category: 'Pizza',   isPromoted: true,  image: '' },
+  { id: '2', name: 'Sushi Bar TLV', category: 'Sushi',   isPromoted: false, image: '' },
+  { id: '3', name: 'Burger King',   category: 'Burgers', isPromoted: false, image: '' },
+];
 
-test('renders promoted section heading', () => {
+beforeEach(() => {
+  getRestaurants.mockResolvedValue(RESTAURANTS);
+});
+afterEach(() => jest.clearAllMocks());
+
+test('renders AppBar', () => {
   render(<Home />);
-  expect(screen.getByRole('heading', { name: 'Promoted' })).toBeInTheDocument();
+  expect(screen.getByTestId('appbar')).toBeInTheDocument();
 });
 
-test('renders All Restaurants section heading', () => {
+test('renders All Restaurants section heading', async () => {
   render(<Home />);
-  expect(screen.getByRole('heading', { name: 'All Restaurants' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'All Restaurants' })).toBeInTheDocument();
 });
 
-test('renders restaurant cards', () => {
+test('renders Promoted section when promoted restaurants exist', async () => {
   render(<Home />);
-  expect(screen.getAllByText('Pizza Roma').length).toBeGreaterThan(0);
-  expect(screen.getAllByText('Sushi Bar TLV').length).toBeGreaterThan(0);
+  expect(await screen.findByRole('heading', { name: 'Promoted' })).toBeInTheDocument();
 });
 
-test('renders search input', () => {
+test('does not render Promoted section when no restaurants are promoted', async () => {
+  getRestaurants.mockResolvedValue([
+    { id: '1', name: 'Sushi Bar', category: 'Sushi', isPromoted: false, image: '' },
+  ]);
   render(<Home />);
-  expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  await screen.findByText('Sushi Bar');
+  expect(screen.queryByRole('heading', { name: 'Promoted' })).not.toBeInTheDocument();
 });
 
-test('searching filters restaurants', async () => {
+test('renders restaurant cards returned by the API', async () => {
   render(<Home />);
-  await userEvent.type(screen.getByRole('searchbox'), 'pizza');
-  expect(screen.getByRole('heading', { name: /Results for "pizza"/i })).toBeInTheDocument();
-  expect(screen.getByText('Pizza Roma')).toBeInTheDocument();
-  expect(screen.queryByText('Sushi Bar TLV')).not.toBeInTheDocument();
+  // Sushi Bar TLV is not promoted so it only appears once — safe to use getBy
+  expect(await screen.findByText('Sushi Bar TLV')).toBeInTheDocument();
+  // Pizza Roma is promoted so it appears in both Promoted + All sections
+  expect(screen.getAllByText('Pizza Roma').length).toBeGreaterThanOrEqual(1);
+  expect(screen.getByText('Burger King')).toBeInTheDocument();
 });
 
-test('shows no results message when search has no matches', async () => {
+test('category filter shows only restaurants in selected category', async () => {
   render(<Home />);
-  await userEvent.type(screen.getByRole('searchbox'), 'xyznotfound');
-  expect(screen.getByRole('heading', { name: /No results for/i })).toBeInTheDocument();
+  const sushiBtn = await screen.findByRole('button', { name: 'Sushi' });
+  fireEvent.click(sushiBtn);
+  await waitFor(() => {
+    expect(screen.getByText('Sushi Bar TLV')).toBeInTheDocument();
+    expect(screen.queryByText('Pizza Roma')).not.toBeInTheDocument();
+  });
 });
 
-test('clicking a category filters restaurants', async () => {
+test('section heading updates to selected category name', async () => {
   render(<Home />);
-  await userEvent.click(screen.getByRole('button', { name: 'Sushi' }));
-  expect(screen.getByText('Sushi Bar TLV')).toBeInTheDocument();
-  expect(screen.queryByText('Pizza Roma')).not.toBeInTheDocument();
+  const pizzaBtn = await screen.findByRole('button', { name: 'Pizza' });
+  fireEvent.click(pizzaBtn);
+  expect(await screen.findByRole('heading', { name: 'Pizza' })).toBeInTheDocument();
 });
 
-test('category section heading updates when category selected', async () => {
+test('handles API error without crashing', async () => {
+  getRestaurants.mockRejectedValue(new Error('Network error'));
   render(<Home />);
-  await userEvent.click(screen.getByRole('button', { name: 'Sushi' }));
-  expect(screen.getByRole('heading', { name: 'Sushi' })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: 'All Restaurants' })).toBeInTheDocument();
+});
+
+test('category buttons are rendered for each unique category', async () => {
+  render(<Home />);
+  expect(await screen.findByRole('button', { name: 'Pizza' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Sushi' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Burgers' })).toBeInTheDocument();
 });

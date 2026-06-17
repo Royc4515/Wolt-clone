@@ -1,0 +1,167 @@
+/* Shared restaurant card for the search dropdown (compact) and the search
+   results page (full). One structure, two size variants. */
+.search-rest-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  background: var(--search-card-bg, #fff);
+  border: 1px solid var(--search-card-border, #E6E8EA);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-rest-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Image ── */
+.search-rest-card__img {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.search-rest-card__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Emoji placeholder ── */
+.search-rest-card__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-rest-card__placeholder--c0 { background: #0a1a2e; }
+.search-rest-card__placeholder--c1 { background: #1a0a2e; }
+.search-rest-card__placeholder--c2 { background: #0a2e1a; }
+.search-rest-card__placeholder--c3 { background: #2e0a0a; }
+.search-rest-card__placeholder--c4 { background: #0a2e2e; }
+.search-rest-card__placeholder--c5 { background: #2e1a0a; }
+.search-rest-card__placeholder--c6 { background: #1a2e0a; }
+.search-rest-card__placeholder--c7 { background: #2e2e0a; }
+
+[data-theme="light"] .search-rest-card__placeholder--c0 { background: #e0f0ff; }
+[data-theme="light"] .search-rest-card__placeholder--c1 { background: #f0e0ff; }
+[data-theme="light"] .search-rest-card__placeholder--c2 { background: #e0fff0; }
+[data-theme="light"] .search-rest-card__placeholder--c3 { background: #ffe0e0; }
+[data-theme="light"] .search-rest-card__placeholder--c4 { background: #e0faf8; }
+[data-theme="light"] .search-rest-card__placeholder--c5 { background: #fff5e0; }
+[data-theme="light"] .search-rest-card__placeholder--c6 { background: #f0ffe0; }
+[data-theme="light"] .search-rest-card__placeholder--c7 { background: #fffbe0; }
+
+/* ── Body ── */
+.search-rest-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.search-rest-card__header-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.search-rest-card__name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-weight: 700;
+  color: var(--search-text-primary, #202125);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-rest-card__category {
+  margin: 0;
+  font-weight: 400;
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Footer: [bike] fee · time ── */
+.search-rest-card__footer {
+  display: flex;
+  align-items: center;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.search-rest-card__fee,
+.search-rest-card__time {
+  color: var(--search-text-secondary, #7A858F);
+}
+
+.search-rest-card__dot {
+  color: var(--search-text-secondary, #7A858F);
+  opacity: 0.6;
+}
+
+/* ── Compact variant (search dropdown): square card, image fills top 55% ── */
+.search-rest-card--compact {
+  aspect-ratio: 1 / 1;
+}
+.search-rest-card--compact .search-rest-card__img {
+  flex: 0 0 55%;
+}
+.search-rest-card--compact .search-rest-card__placeholder {
+  width: 100%;
+  height: 100%;
+  font-size: 2rem;
+}
+.search-rest-card--compact .search-rest-card__body { padding: 8px 10px; }
+.search-rest-card--compact .search-rest-card__name { font-size: 12px; }
+.search-rest-card--compact .search-rest-card__category { font-size: 10px; }
+.search-rest-card--compact .search-rest-card__footer {
+  gap: 4px;
+  padding-top: 4px;
+  font-size: 10px;
+}
+
+/* ── Full variant (results page): image is a 55%-of-width ratio box ── */
+.search-rest-card--full .search-rest-card__img {
+  padding-top: 55%;
+}
+.search-rest-card--full .search-rest-card__img img {
+  position: absolute;
+  inset: 0;
+}
+.search-rest-card--full .search-rest-card__placeholder {
+  position: absolute;
+  inset: 0;
+  font-size: 3rem;
+}
+.search-rest-card--full .search-rest-card__body { padding: 8px 12px 10px; }
+.search-rest-card--full .search-rest-card__name { font-size: 14px; }
+.search-rest-card--full .search-rest-card__category { font-size: 12px; }
+.search-rest-card--full .search-rest-card__footer {
+  gap: 5px;
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+/* ── Dark mode (identical in both contexts) ── */
+[data-theme="dark"] .search-rest-card {
+  background: #161929;
+  border-color: #161929;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}

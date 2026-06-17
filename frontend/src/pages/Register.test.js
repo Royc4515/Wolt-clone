@@ -9,13 +9,13 @@ jest.mock('react-router-dom', () => ({
   MemoryRouter: ({ children }) => <>{children}</>,
 }));
 
-jest.mock('../services/auth', () => ({ register: jest.fn() }));
+jest.mock('../api/auth', () => ({ register: jest.fn() }));
 jest.mock('../utils/validation', () => ({
   validateRegistration: jest.fn(() => ({ isValid: true, errors: {} })),
 }));
 jest.mock('../components/shared/ThemeToggle', () => () => <div />);
 
-const { register } = require('../services/auth');
+const { register } = require('../api/auth');
 const { validateRegistration } = require('../utils/validation');
 
 const mockReadAsDataURL = jest.fn();

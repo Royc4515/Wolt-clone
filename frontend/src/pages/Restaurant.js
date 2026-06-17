@@ -31,14 +31,24 @@ const StarIcon = () => (
   </svg>
 );
 
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.35-4.35" />
+  </svg>
+);
+
 export default function Restaurant() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { items, addItem, updateQty, restoreItems, count, total } = useCart();
   const sectionRefs = useRef({});
+  const heroRef = useRef(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [menuSearch, setMenuSearch] = useState('');
+  const [heroScrolledPast, setHeroScrolledPast] = useState(false);
   const isLight = useTheme() === 'light';
 
   const [restaurant, setRestaurant] = useState(null);
@@ -140,6 +150,32 @@ export default function Restaurant() {
     }
   }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroScrolledPast(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading]);
+
+  const filteredMenu = useMemo(() => {
+    if (!menuSearch.trim()) return menu;
+    const q = menuSearch.toLowerCase();
+    return menu
+      .map(section => ({
+        ...section,
+        items: section.items.filter(
+          item =>
+            item.name?.toLowerCase().includes(q) ||
+            item.description?.toLowerCase().includes(q)
+        ),
+      }))
+      .filter(section => section.items.length > 0);
+  }, [menu, menuSearch]);
+
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
 
@@ -204,10 +240,11 @@ export default function Restaurant() {
         cartTotal={total}
         onShowCart={() => setCartOpen(true)}
         transparent
+        hideGlobalSearch={heroScrolledPast}
       />
 
       {/* ── Hero (extends behind AppBar) ── */}
-      <div className="restaurant__hero" style={!restaurant.image && !isLight ? { background: bgColor } : undefined}>
+      <div ref={heroRef} className="restaurant__hero" style={!restaurant.image && !isLight ? { background: bgColor } : undefined}>
         {restaurant.image
           ? <img src={restaurant.image} alt={restaurant.name} className="restaurant__hero-img" />
           : <span className="restaurant__hero-emoji" aria-hidden="true">🍽</span>
@@ -255,12 +292,26 @@ export default function Restaurant() {
               {section.title}
             </button>
           ))}
+          <div className="restaurant__nav-search">
+            <SearchIcon />
+            <input
+              className="restaurant__nav-search-input"
+              type="search"
+              placeholder="Search menu…"
+              value={menuSearch}
+              onChange={e => setMenuSearch(e.target.value)}
+              aria-label="Search menu items"
+            />
+          </div>
         </nav>
       )}
 
       {/* ── Menu ── */}
       <main className="restaurant__menu">
-        {menu.map(section => {
+        {filteredMenu.length === 0 && menuSearch.trim() && (
+          <p className="restaurant__search-empty">No items found for "{menuSearch}"</p>
+        )}
+        {filteredMenu.map(section => {
           const cards = section.items.map(item => (
             <MenuItemCard
               key={item.id}

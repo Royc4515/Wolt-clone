@@ -1,0 +1,260 @@
+.psm__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+  animation: psm-backdrop-in 0.18s ease;
+}
+
+@keyframes psm-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.psm__card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+  animation: psm-card-in 0.2s ease;
+}
+
+@keyframes psm-card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.psm__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  line-height: 1;
+}
+
+.psm__img-wrap {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
+}
+
+.psm__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.psm__body {
+  padding: 20px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.psm__name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #202125;
+  margin: 0;
+}
+
+.psm__price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #007A9B;
+  margin: 0;
+}
+
+.psm__desc {
+  font-size: 14px;
+  color: #707070;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.psm__rest-section {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.psm__rest-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #707070;
+}
+
+.psm__rest-loading {
+  font-size: 13px;
+  color: #707070;
+  padding: 8px 0;
+}
+
+.psm__rest-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #EAEAEA;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.psm__rest-card:hover {
+  background: #f5f5f5;
+}
+
+.psm__rest-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.psm__rest-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.psm__rest-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #202125;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.psm__rest-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #707070;
+}
+
+.psm__rest-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.psm__footer {
+  padding: 16px 20px 20px;
+  flex-shrink: 0;
+}
+
+.psm__start-btn {
+  width: 100%;
+  padding: 16px;
+  background: #00C2E8;
+  color: #202125;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.psm__start-btn:hover {
+  background: #00afd3;
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] .psm__overlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .psm__card {
+  background: #1A212B;
+}
+
+[data-theme="dark"] .psm__close {
+  background: #151B24;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .psm__name {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+[data-theme="dark"] .psm__price {
+  color: #00A3E0;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .psm__desc {
+  color: #D1D5DB;
+}
+
+[data-theme="dark"] .psm__rest-label {
+  color: #8894AB;
+}
+
+[data-theme="dark"] .psm__rest-loading {
+  color: #8894AB;
+}
+
+[data-theme="dark"] .psm__rest-card {
+  background: #222B38;
+  border-color: #222B38;
+}
+
+[data-theme="dark"] .psm__rest-card:hover {
+  background: #2a3545;
+}
+
+[data-theme="dark"] .psm__rest-name {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .psm__rest-meta {
+  color: #A3AAB2;
+}
+
+[data-theme="dark"] .psm__start-btn {
+  background: #72D0F4;
+  color: #0A141E;
+  border-radius: 12px;
+}
+
+[data-theme="dark"] .psm__start-btn:hover {
+  background: #5ac4ef;
+}
