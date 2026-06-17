@@ -7,7 +7,7 @@ import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import { getRestaurant, getMenu } from '../api/restaurants';
-import { getOrders } from '../api/orders';
+import { getOrders, createOrder } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
@@ -44,6 +44,8 @@ export default function Restaurant() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
 
   // Prevents the initial items=[] from wiping localStorage before the cart is restored.
   const cartSaveReady = useRef(false);
@@ -127,7 +129,7 @@ export default function Restaurant() {
     addItem(item);
   }
 
-  function handleCheckout() {
+  async function handleCheckout() {
     if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
@@ -137,7 +139,19 @@ export default function Restaurant() {
       navigate('/orders');
       return;
     }
-    navigate('/checkout');
+    setCheckoutError('');
+    setIsCheckingOut(true);
+    try {
+      const orderItems = items.map(e => ({ productId: e.item.id, quantity: e.qty }));
+      await createOrder(id, orderItems);
+      localStorage.removeItem(`cart_${id}`);
+      setCartOpen(false);
+      navigate('/orders');
+    } catch (err) {
+      setCheckoutError(err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsCheckingOut(false);
+    }
   }
 
   function scrollToSection(sectionId) {
@@ -289,7 +303,9 @@ export default function Restaurant() {
           onClose={() => setCartOpen(false)}
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
-          checkoutLabel={hasActiveOrder ? 'View Cart' : 'Go to checkout'}
+          checkoutLabel={hasActiveOrder ? 'View Cart' : isCheckingOut ? 'Placing order…' : 'Go to checkout'}
+          checkoutLoading={isCheckingOut}
+          error={checkoutError}
         />
       )}
     </div>
