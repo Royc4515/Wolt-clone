@@ -7,6 +7,7 @@ import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import { getRestaurant, getMenu } from '../api/restaurants';
+import { getOrders } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
@@ -42,19 +43,19 @@ export default function Restaurant() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [hasActiveOrder, setHasActiveOrder] = useState(false);
 
-  // Prevents saving an empty cart to localStorage on the very first render
-  // before the saved cart has been restored for the current restaurant.
+  // Prevents the initial items=[] from wiping localStorage before the cart is restored.
   const cartSaveReady = useRef(false);
 
-  // Restore saved cart from localStorage when the restaurant id changes,
-  // then fetch restaurant + menu data.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
+    setHasActiveOrder(false);
     cartSaveReady.current = false;
 
+    // Restore saved shopping cart for this restaurant immediately (before async fetch).
     try {
       const saved = localStorage.getItem(`cart_${id}`);
       restoreItems(saved ? JSON.parse(saved) : []);
@@ -63,12 +64,34 @@ export default function Restaurant() {
     }
 
     Promise.all([getRestaurant(id), getMenu(id)])
-      .then(([rest, menuData]) => {
-        if (!cancelled) {
-          setRestaurant(rest);
-          setMenu(menuData);
-          setLoading(false);
-        }
+      .then(async ([rest, menuData]) => {
+        if (cancelled) return;
+        setRestaurant(rest);
+        setMenu(menuData);
+        setLoading(false);
+
+        if (!isAuthenticated()) return;
+
+        // Check whether the user already has a pending order at this restaurant.
+        const orders = await getOrders().catch(() => []);
+        if (cancelled) return;
+
+        const activeOrder = orders.find(o => o.restaurantId === id && o.status === 'pending');
+        if (!activeOrder) return;
+
+        setHasActiveOrder(true);
+
+        // Restore the order items into the cart so the user can see what they ordered.
+        const allItems = menuData.flatMap(s => s.items);
+        const menuById = new Map(allItems.map(item => [item.id, item]));
+        const cartItems = activeOrder.items
+          .map(({ productId, quantity }) => {
+            const menuItem = menuById.get(productId);
+            return menuItem ? { item: menuItem, qty: quantity } : null;
+          })
+          .filter(Boolean);
+
+        restoreItems(cartItems);
       })
       .catch(() => {
         if (!cancelled) {
@@ -80,9 +103,7 @@ export default function Restaurant() {
     return () => { cancelled = true; };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save cart to localStorage on every change.
-  // Skips the first call per mount so the initial items=[] doesn't wipe the saved cart
-  // before the restore effect has had a chance to run.
+  // Persist the shopping cart to localStorage on every change.
   useEffect(() => {
     if (!cartSaveReady.current) {
       cartSaveReady.current = true;
@@ -110,6 +131,10 @@ export default function Restaurant() {
     if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
+      return;
+    }
+    if (hasActiveOrder) {
+      navigate('/orders');
       return;
     }
     navigate('/checkout');
@@ -264,6 +289,7 @@ export default function Restaurant() {
           onClose={() => setCartOpen(false)}
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
+          checkoutLabel={hasActiveOrder ? 'View my order' : 'Go to checkout'}
         />
       )}
     </div>
