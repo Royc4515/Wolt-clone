@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AppBar from '../components/AppBar';
 import { getOrders, cancelOrder } from '../api/orders';
 import { getRestaurant } from '../api/restaurants';
@@ -28,7 +28,26 @@ function statusLabel(status) {
   return labels[status] || status;
 }
 
+function readLocalCarts() {
+  const carts = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('cart_')) continue;
+    try {
+      const items = JSON.parse(localStorage.getItem(key));
+      if (Array.isArray(items) && items.length > 0) {
+        carts.push({ restaurantId: key.slice('cart_'.length), items });
+      }
+    } catch {
+      // malformed entry — skip
+    }
+  }
+  return carts;
+}
+
 export default function Orders() {
+  const navigate = useNavigate();
+  const [localCarts, setLocalCarts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [restaurants, setRestaurants] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -38,14 +57,20 @@ export default function Orders() {
   useEffect(() => {
     let stale = false;
 
+    const carts = readLocalCarts();
+    setLocalCarts(carts);
+
     getOrders()
       .then(async (data) => {
         if (stale) return;
         setOrders(data);
 
-        const uniqueRestIds = [...new Set(data.map(o => o.restaurantId))];
+        const orderRestIds = data.map(o => o.restaurantId);
+        const cartRestIds  = carts.map(c => c.restaurantId);
+        const uniqueIds    = [...new Set([...orderRestIds, ...cartRestIds])];
+
         const pairs = await Promise.all(
-          uniqueRestIds.map(id =>
+          uniqueIds.map(id =>
             getRestaurant(id)
               .then(r => [id, r])
               .catch(() => [id, null])
@@ -78,9 +103,6 @@ export default function Orders() {
     }
   }
 
-  const activeOrders  = orders.filter(o => o.status === 'pending');
-  const historyOrders = orders.filter(o => o.status !== 'pending');
-
   return (
     <div className="orders-page">
       <AppBar />
@@ -112,13 +134,33 @@ export default function Orders() {
           </div>
         ) : (
           <>
+            {/* ── Shopping Cart: localStorage items not yet checked out ── */}
             <section className="orders-section">
               <h2 className="orders-section-title">Shopping Cart</h2>
-              {activeOrders.length === 0 ? (
+              {localCarts.length === 0 ? (
                 <p className="orders-empty">Your cart is empty.</p>
               ) : (
                 <ul className="orders-list">
-                  {activeOrders.map(order => (
+                  {localCarts.map(cart => (
+                    <LocalCartCard
+                      key={cart.restaurantId}
+                      cart={cart}
+                      restaurant={restaurants[cart.restaurantId]}
+                      onContinue={() => navigate(`/restaurant/${cart.restaurantId}`)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* ── Order Again: all placed orders from backend ── */}
+            <section className="orders-section">
+              <h2 className="orders-section-title">Order Again</h2>
+              {orders.length === 0 ? (
+                <p className="orders-empty">No past orders yet.</p>
+              ) : (
+                <ul className="orders-list">
+                  {orders.map(order => (
                     <OrderCard
                       key={order.id}
                       order={order}
@@ -130,27 +172,37 @@ export default function Orders() {
                 </ul>
               )}
             </section>
-
-            <section className="orders-section">
-              <h2 className="orders-section-title">Order Again</h2>
-              {historyOrders.length === 0 ? (
-                <p className="orders-empty">No past orders yet.</p>
-              ) : (
-                <ul className="orders-list">
-                  {historyOrders.map(order => (
-                    <OrderCard
-                      key={order.id}
-                      order={order}
-                      restaurant={restaurants[order.restaurantId]}
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+function LocalCartCard({ cart, restaurant, onContinue }) {
+  const restName  = restaurant?.name ?? 'Restaurant';
+  const itemCount = cart.items.reduce((sum, e) => sum + e.qty, 0);
+  const total     = cart.items
+    .reduce((sum, e) => sum + e.item.price * e.qty, 0)
+    .toFixed(2);
+
+  return (
+    <li className="order-card">
+      <div className="order-card-top">
+        <span className="order-card-restaurant">{restName}</span>
+        <span className="order-status order-status--cart">In Cart</span>
+      </div>
+
+      <div className="order-card-meta">
+        <span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+        <span className="order-card-sep">·</span>
+        <span>₪{total}</span>
+      </div>
+
+      <button className="order-continue-btn" onClick={onContinue}>
+        Continue order
+      </button>
+    </li>
   );
 }
 
