@@ -35,8 +35,9 @@ export const apiFetch = async (endpoint, options = {}) => {
         const data = await response.json();
 
         // If the response status is not as expected, throw the server's error message.
+        // NOTE: backend uses { error: "..." } not { message: "..." } — check both
         if (!response.ok) {
-            throw new Error(data.message || 'Something went wrong');
+            throw new Error(data.error || data.message || 'Something went wrong');
         }
 
         // Return the parsed data upon success.

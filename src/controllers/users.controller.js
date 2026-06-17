@@ -149,9 +149,21 @@ const updateUser = (req, res) => {
          return res.status(500).json({ error: "Failed to update user" });
     }
 
+    // Create a new token with the updated data.
+    const newToken = jwt.sign(
+        { 
+            id: updatedUser.id, 
+            username: updatedUser.username, 
+            displayName: updatedUser.displayName,
+            role: updatedUser.role,           
+            location: updatedUser.location    
+        },
+        JWT_SECRET         
+    );
+
     // Return the updated user (excluding password).
     const { password: currentPassword, ...userWithoutPassword } = updatedUser;
-    res.status(200).json(userWithoutPassword);
+    res.status(200).json(userWithoutPassword, newToken);
 };
 
 // Export the function so the router can use it.
