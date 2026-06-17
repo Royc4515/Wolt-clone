@@ -163,7 +163,10 @@ const updateUser = (req, res) => {
 
     // Return the updated user (excluding password).
     const { password: currentPassword, ...userWithoutPassword } = updatedUser;
-    res.status(200).json(userWithoutPassword, newToken);
+    res.status(200).json({
+        user: userWithoutPassword, 
+        token: newToken 
+    });
 };
 
 // Export the function so the router can use it.

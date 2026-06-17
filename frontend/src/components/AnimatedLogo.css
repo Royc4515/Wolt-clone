@@ -1,0 +1,61 @@
+@keyframes woltWrite {
+  0%   { clip-path: inset(0 100% 0 0); }
+  20%  { clip-path: inset(0 72%  0 0); }
+  38%  { clip-path: inset(0 57%  0 0); }
+  58%  { clip-path: inset(0 35%  0 0); }
+  72%  { clip-path: inset(0 22%  0 0); }
+  82%  { clip-path: inset(0 10%  0 0); }
+  100% { clip-path: inset(0 0%   0 0); }
+}
+
+@keyframes penTip {
+  0%   { left: 0%;   opacity: 0; }
+  4%   { left: 0%;   opacity: 1; }
+  20%  { left: 28%;  opacity: 1; }
+  38%  { left: 43%;  opacity: 1; }
+  58%  { left: 65%;  opacity: 1; }
+  72%  { left: 78%;  opacity: 1; }
+  82%  { left: 90%;  opacity: 1; }
+  92%  { left: 97%;  opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+.wolt-logo-wrap {
+  position: relative;
+  display: inline-flex;
+  overflow: visible;
+}
+
+/* Pen-tip dot — only when animating */
+.wolt-logo-wrap--animate::after {
+  content: '';
+  position: absolute;
+  top: 70%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00c2e8;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: penTip 1.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.wolt-logo-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  color: #202125;
+}
+
+/* Reveal animation — only when animating */
+.wolt-logo-svg--animate {
+  animation: woltWrite 1.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+[data-theme="dark"] .wolt-logo-svg {
+  color: #ffffff;
+}
+
+[data-theme="light"] .appbar--transparent .wolt-logo-svg {
+  color: #ffffff;
+}
