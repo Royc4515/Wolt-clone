@@ -1,18 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import AppBar from '../components/AppBar';
-import FormField from '../components/auth/FormField';
-import FormError from '../components/auth/FormError';
 import PasswordInput from '../components/auth/PasswordInput';
 import { getCurrentUser } from '../utils/auth';
 import { getUser } from '../api/users';
 import { updateUserProfile, logout } from '../api/auth';
 import '../styles/Profile.css';
 
+const TABS = [
+  { id: 'personal', label: 'Personal info' },
+  { id: 'orders',   label: 'Order history', to: '/orders' },
+];
+
 export default function Profile() {
   const user = getCurrentUser();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const [activeTab] = useState('personal');
 
   const [displayName, setDisplayName] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
@@ -25,6 +29,7 @@ export default function Profile() {
   const [serverError, setServerError] = useState('');
   const [errors, setErrors] = useState({});
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user) return;
     getUser(user.id).then(data => {
@@ -35,9 +40,7 @@ export default function Profile() {
     }).catch(() => {});
   }, []);
 
-  function handleAvatarClick() {
-    fileInputRef.current?.click();
-  }
+  function handleAvatarClick() { fileInputRef.current?.click(); }
 
   function handleFileChange(e) {
     const file = e.target.files[0];
@@ -90,6 +93,8 @@ export default function Profile() {
       setSaveSuccess(true);
       setPassword('');
       setConfirmPassword('');
+      localStorage.setItem('user_location', JSON.stringify({ lat: parseFloat(lat), lng: parseFloat(lng) }));
+      localStorage.setItem('user_displayname', displayName);
     } catch (err) {
       setServerError(err.message || 'Failed to save changes. Please try again.');
     } finally {
@@ -98,6 +103,8 @@ export default function Profile() {
   }
 
   function handleLogout() {
+    localStorage.removeItem('user_location');
+    localStorage.removeItem('user_displayname');
     logout();
     navigate('/login');
   }
@@ -105,91 +112,162 @@ export default function Profile() {
   return (
     <div className="profile-page">
       <AppBar />
-      <div className="profile-container">
-        <h1 className="profile-title">My Profile</h1>
 
-        <form className="profile-form" onSubmit={handleSave} noValidate>
+      <div className="profile-content">
+        {/* Page heading */}
+        <div className="profile-header">
+          <h1 className="profile-heading">Profile</h1>
+        </div>
 
-          {/* Avatar */}
-          <div className="profile-avatar-section">
-            <div className="profile-avatar" onClick={handleAvatarClick} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && handleAvatarClick()}>
-              {profilePicture
-                ? <img src={profilePicture} alt="profile" />
-                : <span className="profile-avatar-initials">{user?.displayName?.[0]?.toUpperCase()}</span>
-              }
+        {/* Tab bar */}
+        <nav className="profile-tabs">
+          {TABS.map(tab =>
+            tab.to ? (
+              <Link
+                key={tab.id}
+                to={tab.to}
+                className={`profile-tab${activeTab === tab.id ? ' profile-tab--active' : ''}`}
+              >
+                {tab.label}
+              </Link>
+            ) : (
+              <span
+                key={tab.id}
+                className={`profile-tab${activeTab === tab.id ? ' profile-tab--active' : ''}`}
+              >
+                {tab.label}
+              </span>
+            )
+          )}
+        </nav>
+
+        {/* Personal info rows */}
+        <form onSubmit={handleSave} noValidate>
+          {/* Avatar row */}
+          <div className="profile-row">
+            <span className="profile-row-label">Photo</span>
+            <div className="profile-row-control profile-avatar-control">
+              <div
+                className="profile-avatar"
+                onClick={handleAvatarClick}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && handleAvatarClick()}
+              >
+                {profilePicture
+                  ? <img src={profilePicture} alt="profile" />
+                  : <span className="profile-avatar-initials">{user?.displayName?.[0]?.toUpperCase()}</span>
+                }
+              </div>
+              <button type="button" className="profile-change-link" onClick={handleAvatarClick}>
+                Change photo
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+              {errors.profilePicture && <span className="profile-row-error">{errors.profilePicture}</span>}
             </div>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={handleAvatarClick}>Change photo</button>
-            <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
-            {errors.profilePicture && <span className="profile-field-error">{errors.profilePicture}</span>}
           </div>
 
-          {/* Username — read only */}
-          <div className="profile-readonly">
-            <span className="profile-readonly-label">Username</span>
-            <span className="profile-readonly-value">{user?.username}</span>
-          </div>
-
-          <FormField label="Display Name" htmlFor="displayName" error={errors.displayName}>
-            <input
-              className={`input${errors.displayName ? ' is-invalid' : ''}`}
-              id="displayName"
-              type="text"
-              value={displayName}
-              onChange={e => { setDisplayName(e.target.value); setErrors(prev => ({ ...prev, displayName: undefined })); }}
-            />
-          </FormField>
-
-          <div className="profile-section-label">Location</div>
-          <div className="profile-location-fields">
-            <FormField label="Latitude" htmlFor="lat" hint="-90 to 90" error={errors.lat}>
+          {/* Display name row */}
+          <div className="profile-row">
+            <label className="profile-row-label" htmlFor="displayName">Display name</label>
+            <div className="profile-row-control">
               <input
-                className={`input${errors.lat ? ' is-invalid' : ''}`}
-                id="lat" type="number" step="any"
-                value={lat}
-                onChange={e => { setLat(e.target.value); setErrors(prev => ({ ...prev, lat: undefined })); }}
+                id="displayName"
+                className={`profile-input${errors.displayName ? ' profile-input--error' : ''}`}
+                type="text"
+                value={displayName}
+                onChange={e => { setDisplayName(e.target.value); setErrors(prev => ({ ...prev, displayName: undefined })); }}
               />
-            </FormField>
-            <FormField label="Longitude" htmlFor="lng" hint="-180 to 180" error={errors.lng}>
-              <input
-                className={`input${errors.lng ? ' is-invalid' : ''}`}
-                id="lng" type="number" step="any"
-                value={lng}
-                onChange={e => { setLng(e.target.value); setErrors(prev => ({ ...prev, lng: undefined })); }}
-              />
-            </FormField>
+              {errors.displayName && <span className="profile-row-error">{errors.displayName}</span>}
+            </div>
           </div>
 
-          <div className="profile-section-label">Change Password <span className="profile-section-hint">(leave blank to keep current)</span></div>
-          <FormField label="New Password" htmlFor="password" error={errors.password}>
-            <PasswordInput
-              id="password"
-              className={`input${errors.password ? ' is-invalid' : ''}`}
-              placeholder="••••••••"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
-            />
-          </FormField>
-          <FormField label="Confirm Password" htmlFor="confirmPassword" error={errors.confirmPassword}>
-            <PasswordInput
-              id="confirmPassword"
-              className={`input${errors.confirmPassword ? ' is-invalid' : ''}`}
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={e => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
-            />
-          </FormField>
+          {/* Username row — read only */}
+          <div className="profile-row">
+            <span className="profile-row-label">Username</span>
+            <div className="profile-row-control">
+              <span className="profile-row-readonly">{user?.username}</span>
+            </div>
+          </div>
 
+          {/* Location row */}
+          <div className="profile-row">
+            <span className="profile-row-label">Location</span>
+            <div className="profile-row-control profile-location-row">
+              <div className="profile-location-pair">
+                <div className="profile-location-field">
+                  <label className="profile-sublabel" htmlFor="lat">Latitude <span className="profile-hint">(-90 to 90)</span></label>
+                  <input
+                    id="lat"
+                    className={`profile-input${errors.lat ? ' profile-input--error' : ''}`}
+                    type="number"
+                    step="any"
+                    placeholder="32.08"
+                    value={lat}
+                    onChange={e => { setLat(e.target.value); setErrors(prev => ({ ...prev, lat: undefined })); }}
+                  />
+                  {errors.lat && <span className="profile-row-error">{errors.lat}</span>}
+                </div>
+                <div className="profile-location-field">
+                  <label className="profile-sublabel" htmlFor="lng">Longitude <span className="profile-hint">(-180 to 180)</span></label>
+                  <input
+                    id="lng"
+                    className={`profile-input${errors.lng ? ' profile-input--error' : ''}`}
+                    type="number"
+                    step="any"
+                    placeholder="34.78"
+                    value={lng}
+                    onChange={e => { setLng(e.target.value); setErrors(prev => ({ ...prev, lng: undefined })); }}
+                  />
+                  {errors.lng && <span className="profile-row-error">{errors.lng}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Password row */}
+          <div className="profile-row">
+            <label className="profile-row-label" htmlFor="password">New password <span className="profile-hint">(leave blank to keep)</span></label>
+            <div className="profile-row-control">
+              <PasswordInput
+                id="password"
+                className={`profile-input${errors.password ? ' profile-input--error' : ''}`}
+                placeholder="••••••••"
+                value={password}
+                onChange={e => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
+              />
+              {errors.password && <span className="profile-row-error">{errors.password}</span>}
+            </div>
+          </div>
+
+          {/* Confirm password row */}
+          <div className="profile-row">
+            <label className="profile-row-label" htmlFor="confirmPassword">Confirm password</label>
+            <div className="profile-row-control">
+              <PasswordInput
+                id="confirmPassword"
+                className={`profile-input${errors.confirmPassword ? ' profile-input--error' : ''}`}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={e => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
+              />
+              {errors.confirmPassword && <span className="profile-row-error">{errors.confirmPassword}</span>}
+            </div>
+          </div>
+
+          {/* Actions */}
           {saveSuccess && <div className="profile-success">Changes saved successfully.</div>}
-          <FormError message={serverError} />
+          {serverError && <div className="profile-error-banner">{serverError}</div>}
 
-          <button className="btn btn--soft btn--pill btn--block btn--lg" type="submit" disabled={isLoading}>
-            {isLoading ? 'Saving…' : 'Save Changes'}
-          </button>
+          <div className="profile-actions">
+            <button className="profile-save-btn" type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving…' : 'Save changes'}
+            </button>
+            <button className="profile-logout-btn" type="button" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
         </form>
-
-        <button className="btn btn--danger btn--pill btn--block profile-logout" type="button" onClick={handleLogout}>
-          Log out
-        </button>
       </div>
     </div>
   );

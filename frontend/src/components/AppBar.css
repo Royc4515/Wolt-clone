@@ -27,6 +27,10 @@
   color: #ffffff;
 }
 
+.appbar--transparent .appbar__location svg {
+  color: #ffffff;
+}
+
 .appbar--transparent .appbar__location-pin {
   background: rgba(255, 255, 255, 0.40);
 }
@@ -152,65 +156,90 @@
 
 .appbar__location-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   left: 0;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-4);
-  min-width: 220px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  min-width: 240px;
   z-index: 200;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .appbar__location-menu-title {
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: var(--weight-extrabold);
   color: var(--text);
+  letter-spacing: var(--tracking-tight);
 }
 
 .appbar__location-menu-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .appbar__location-menu-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .appbar__location-menu-field label {
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
 }
 
 .appbar__location-menu-field input {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2) var(--space-3);
+  background: var(--input-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px var(--space-3);
   font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   color: var(--text);
   font-family: var(--font-sans);
   outline: none;
   width: 100%;
   box-sizing: border-box;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.appbar__location-menu-field input::placeholder {
+  color: var(--text-faint);
+  font-weight: var(--weight-regular);
+}
+
+.appbar__location-menu-field input::-webkit-inner-spin-button,
+.appbar__location-menu-field input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.appbar__location-menu-field input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.appbar__location-menu-field input:hover {
+  border-color: var(--text-faint);
 }
 
 .appbar__location-menu-field input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--ring);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .appbar__location-menu-error {
   font-size: var(--text-xs);
-  color: #e53e3e;
+  font-weight: var(--weight-semibold);
+  color: var(--danger);
 }
 
 .appbar__location-menu-save {
@@ -218,20 +247,25 @@
   color: #041525;
   border: none;
   border-radius: var(--radius-pill);
-  padding: var(--space-2) var(--space-4);
+  padding: 11px var(--space-5);
   font-size: var(--text-sm);
   font-weight: var(--weight-extrabold);
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: filter var(--dur-fast) var(--ease);
+  width: 100%;
+  transition: filter var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
 
 .appbar__location-menu-save:hover:not(:disabled) {
   filter: brightness(1.08);
 }
 
+.appbar__location-menu-save:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 .appbar__location-menu-save:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -244,12 +278,32 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: var(--accent);
+  color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.appbar__location svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.appbar__location-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.appbar__location-chevron--up {
+  transform: rotate(180deg);
+}
+
+.appbar--transparent .appbar__location-chevron {
+  color: #ffffff;
 }
 
 .appbar__location:hover .appbar__location-text {

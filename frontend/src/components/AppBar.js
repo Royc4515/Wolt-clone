@@ -49,15 +49,28 @@ const PersonIcon = () => (
 export default function AppBar({ search = '', onSearch = () => {}, searchRef = { current: null }, cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false }) {
   const authed = isAuthenticated();
   const user = getCurrentUser();
+  const displayName = localStorage.getItem('user_displayname') || user?.displayName;
   const navigate = useNavigate();
   const [profilePicture, setProfilePicture] = useState(null);
-  const [location, setLocation] = useState(user?.location || null);
+  const [location, setLocation] = useState(() => {
+    const cached = localStorage.getItem('user_location');
+    if (cached) { try { return JSON.parse(cached); } catch { /* ignore */ } }
+    return user?.location || null;
+  });
   const [searching, setSearching] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
-  const [locationLat, setLocationLat] = useState(user?.location?.lat ?? '');
-  const [locationLng, setLocationLng] = useState(user?.location?.lng ?? '');
+  const [locationLat, setLocationLat] = useState(() => {
+    const cached = localStorage.getItem('user_location');
+    if (cached) { try { return JSON.parse(cached).lat ?? ''; } catch { /* ignore */ } }
+    return user?.location?.lat ?? '';
+  });
+  const [locationLng, setLocationLng] = useState(() => {
+    const cached = localStorage.getItem('user_location');
+    if (cached) { try { return JSON.parse(cached).lng ?? ''; } catch { /* ignore */ } }
+    return user?.location?.lng ?? '';
+  });
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState('');
   const clearBtnRef = useRef(null);
@@ -130,6 +143,7 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     try {
       await updateUserProfile(user.id, { location: { lat, lng } });
       setLocation({ lat, lng });
+      localStorage.setItem('user_location', JSON.stringify({ lat, lng }));
       setLocationMenuOpen(false);
     } catch {
       setLocationError('Failed to save location');
@@ -152,6 +166,8 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   }
 
   function handleLogout() {
+    localStorage.removeItem('user_location');
+    localStorage.removeItem('user_displayname');
     logout();
     navigate('/login');
   }
@@ -178,7 +194,11 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
               <span className="appbar__location-text">
                 {location ? `${location.lat}, ${location.lng}` : 'Tel Aviv'}
               </span>
-              {authed && <ChevronDown />}
+              {authed && (
+                <span className={`appbar__location-chevron${locationMenuOpen ? ' appbar__location-chevron--up' : ''}`}>
+                  <ChevronDown />
+                </span>
+              )}
             </button>
             {locationMenuOpen && (
               <div className="appbar__location-menu">
@@ -307,10 +327,10 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
                   aria-haspopup="menu"
                 >
                   {profilePicture ? (
-                    <img src={profilePicture} alt={user.displayName} className="appbar__user-avatar" />
+                    <img src={profilePicture} alt={displayName} className="appbar__user-avatar" />
                   ) : (
                     <span className="appbar__user-avatar appbar__user-avatar--initials">
-                      {user.displayName?.[0]?.toUpperCase()}
+                      {displayName?.[0]?.toUpperCase()}
                     </span>
                   )}
                   <span className={`appbar__user-chevron${menuOpen ? ' appbar__user-chevron--up' : ''}`}>
@@ -326,14 +346,14 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
                       onClick={() => setMenuOpen(false)}
                     >
                       {profilePicture ? (
-                        <img src={profilePicture} alt={user.displayName} className="appbar__avatar-menu-profile-avatar" />
+                        <img src={profilePicture} alt={displayName} className="appbar__avatar-menu-profile-avatar" />
                       ) : (
                         <span className="appbar__avatar-menu-profile-avatar appbar__user-avatar--initials">
-                          {user.displayName?.[0]?.toUpperCase()}
+                          {displayName?.[0]?.toUpperCase()}
                         </span>
                       )}
                       <div className="appbar__avatar-menu-profile-info">
-                        <span className="appbar__avatar-menu-profile-name">{user.displayName}</span>
+                        <span className="appbar__avatar-menu-profile-name">{displayName}</span>
                         <span className="appbar__avatar-menu-profile-sub">Profile</span>
                       </div>
                       <ChevronRight />
