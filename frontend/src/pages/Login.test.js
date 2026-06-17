@@ -10,11 +10,11 @@ jest.mock('react-router-dom', () => ({
   MemoryRouter: ({ children }) => <>{children}</>,
 }));
 
-jest.mock('../services/auth', () => ({ login: jest.fn() }));
+jest.mock('../api/auth', () => ({ login: jest.fn() }));
 jest.mock('../utils/validation', () => ({ validatePassword: jest.fn(() => null) }));
 jest.mock('../components/shared/ThemeToggle', () => () => <div />);
 
-const { login } = require('../services/auth');
+const { login } = require('../api/auth');
 const { validatePassword } = require('../utils/validation');
 
 const renderLogin = () => render(<MemoryRouter><Login /></MemoryRouter>);

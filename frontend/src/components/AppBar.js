@@ -8,6 +8,9 @@ import { getAuthState, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
 import useOutsideClick from '../hooks/useOutsideClick';
+import useBodyScrollLock from '../hooks/useBodyScrollLock';
+import SearchDropdown from './SearchDropdown';
+import ProductSearchModal from './ProductSearchModal';
 import './AppBar.css';
 
 function getCachedLocation() {
@@ -26,6 +29,12 @@ const SearchIcon = () => (
   </svg>
 );
 
+
+const SmallXIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
 
 const PinIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -70,7 +79,7 @@ const PersonIcon = () => (
   </svg>
 );
 
-export default function AppBar({ search = '', onSearch = () => {}, searchRef = { current: null }, cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false }) {
+export default function AppBar({ cartCount = 0, cartTotal = 0, onShowCart, transparent = false, logoLinkDisabled = false, hideGlobalSearch = false }) {
   const { authenticated: authed, user } = getAuthState();
   const displayName = localStorage.getItem(USER_DISPLAYNAME_KEY) || user?.displayName;
   const navigate = useNavigate();
@@ -79,7 +88,9 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   const cachedLoc = getCachedLocation() || user?.location || null;
   const [profilePicture, setProfilePicture] = useState(null);
   const [location, setLocation] = useState(cachedLoc);
+  const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
@@ -89,15 +100,19 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   const [locationLng, setLocationLng] = useState(cachedLoc?.lng ?? '');
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const searchRef = useRef(null);
   const clearBtnRef = useRef(null);
   const avatarRef = useRef(null);
   const locationRef = useRef(null);
+  const searchContainerRef = useRef(null);
 
   useEffect(() => {
     function onScroll() { setScrolled(window.scrollY > 8); }
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useBodyScrollLock(searching);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -117,6 +132,12 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     locationRef,
     locationMenuOpen,
     () => { setLocationMenuOpen(false); setLocationError(''); }
+  );
+
+  useOutsideClick(
+    searchContainerRef,
+    searching,
+    () => { setSearching(false); setSearch(''); }
   );
 
   async function handleLocationSave() {
@@ -142,17 +163,23 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
     }
   }
 
-  function handleFocus() { setSearching(true); }
+  function handleFocus() {
+    setSearching(true);
+  }
 
-  function handleBlur(e) {
-    if (clearBtnRef.current && clearBtnRef.current.contains(e.relatedTarget)) return;
-    setSearching(false);
+  function handleSearchChange(value) {
+    setSearch(value);
   }
 
   function handleClear() {
-    onSearch('');
+    setSearch('');
     setSearching(false);
     searchRef.current?.blur();
+  }
+
+  function handleCloseDropdown() {
+    setSearch('');
+    setSearching(false);
   }
 
   function handleLogout() {
@@ -163,10 +190,11 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
   }
 
   return (
-    <header className={`appbar${searching ? ' appbar--searching' : ''}${scrolled ? ' appbar--scrolled' : ''}${transparent && !scrolled ? ' appbar--transparent' : ''}`}>
+    <>
+    <header className={`appbar${searching ? ' appbar--searching' : ''}${scrolled ? ' appbar--scrolled' : ''}${transparent && !scrolled ? ' appbar--transparent' : ''}${hideGlobalSearch && !searching ? ' appbar--restaurant-search' : ''}`}>
       {/* Left: logo + location */}
       <div className="appbar__left">
-        {logoLinkDisabled ? (
+        {logoLinkDisabled && !searching ? (
           <AnimatedLogo className="appbar__logo appbar__logo--disabled" animate={isHome} />
         ) : (
           <Link to="/" className="appbar__logo-link">
@@ -232,7 +260,7 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
       </div>
 
       {/* Center: search pill */}
-      <div className="appbar__center">
+      <div className="appbar__center" ref={searchContainerRef}>
         <div className="appbar__search-pill">
           <SearchIcon />
           <input
@@ -241,11 +269,28 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
             type="search"
             placeholder="Search in Wolt..."
             value={search}
-            onChange={e => onSearch(e.target.value)}
+            onChange={e => handleSearchChange(e.target.value)}
             onFocus={handleFocus}
-            onBlur={handleBlur}
-            aria-label="Search restaurants"
+            onKeyDown={e => {
+              if (e.key === 'Enter' && search.trim()) {
+                navigate(`/search?q=${encodeURIComponent(search.trim())}&type=restaurants`);
+                handleCloseDropdown();
+              }
+            }}
+            aria-label="Search restaurants and items"
           />
+          {search && (
+            <button
+              type="button"
+              className="appbar__search-clear"
+              tabIndex={-1}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => { setSearch(''); searchRef.current?.focus(); }}
+              aria-label="Clear search text"
+            >
+              <SmallXIcon />
+            </button>
+          )}
         </div>
       </div>
 
@@ -399,5 +444,24 @@ export default function AppBar({ search = '', onSearch = () => {}, searchRef = {
         <OrdersDrawer onClose={() => { setOrdersOpen(false); setBadgeCount(getLocalCartCount()); }} />
       )}
     </header>
+
+    {/* Overlay is a sibling of <header> so it's in the root stacking context
+        (z-index 99 < AppBar z-index 100) — the AppBar stays fully visible on top */}
+    {searching && search.trim().length > 0 && (
+      <SearchDropdown
+        query={search}
+        onProductClick={p => { setSelectedProduct(p); }}
+        onClose={handleCloseDropdown}
+        onQueryChange={value => { setSearch(value); }}
+      />
+    )}
+
+    {selectedProduct && (
+      <ProductSearchModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+      />
+    )}
+  </>
   );
 }

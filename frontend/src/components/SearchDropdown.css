@@ -1,0 +1,324 @@
+/* ── Full-page search overlay ── */
+.search-dd {
+  position: fixed;
+  inset: 0;
+  background: var(--header-bg, var(--surface, #fff));
+  z-index: 99;
+  overflow-y: auto;
+  padding: 76px 24px 40px;
+  animation: search-dd-in 0.2s var(--ease) both;
+}
+
+@keyframes search-dd-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.search-dd__body {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 32px 0 48px;
+  animation: search-dd-body-in 0.28s var(--ease) both;
+}
+
+@keyframes search-dd-body-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Loading / empty ── */
+.search-dd__loading {
+  padding: 56px 0;
+  color: var(--text-muted, #888);
+  font-size: 15px;
+  text-align: center;
+}
+
+.search-dd__empty {
+  padding: 48px 0 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-muted, #888);
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Placeholder animation — swap .search-dd__no-results-anim img/lottie for real asset */
+.search-dd__no-results-anim {
+  font-size: 72px;
+  animation: search-dd-float 2.4s ease-in-out infinite;
+  user-select: none;
+}
+
+@keyframes search-dd-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.search-dd__empty-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text, #1a1a1a);
+  letter-spacing: -0.01em;
+}
+
+.search-dd__empty-sub {
+  font-size: 14px;
+  color: var(--text-muted, #888);
+  max-width: 300px;
+}
+
+/* ── Section ── */
+.search-dd__section {
+  margin-top: 32px;
+  margin-bottom: 0;
+}
+
+.search-dd__section:first-of-type {
+  margin-top: 0;
+}
+
+.search-dd__section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.search-dd__section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text, #1a1a1a);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.search-dd__see-all {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--search-brand, #009DE0);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-family: var(--font-sans, sans-serif);
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.search-dd__see-all:hover {
+  background: rgba(0, 157, 224, 0.10);
+}
+
+/* ── Restaurant grid — 4 square cards, ~2/3 of body width ── */
+.search-dd__rest-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  max-width: 640px;
+}
+
+/* Restaurant card styles live in SearchRestaurantCard.css (variant="compact"). */
+
+/* ── Items grid — 2×2 no-border rectangular cards ── */
+.search-dd__item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 690px;
+  gap: 10px;
+}
+
+.search-dd__item-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: var(--search-card-bg, #fff);
+  border: 1px solid #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-dd__item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* 16:9 small image on the left */
+.search-dd__item-img-wrap {
+  width: 144px;
+  height: 86px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+
+.search-dd__item-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.search-dd__item-info {
+  flex: 1;
+  padding: 10px 16px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.search-dd__item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--search-brand, #009DE0);
+}
+
+.search-dd__item-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--search-text-primary, #202125);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-dd__item-rest-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.search-dd__item-rest-name {
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-dd__item-sep {
+  color: var(--search-text-secondary, #7A858F);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.search-dd__item-location {
+  color: var(--search-text-secondary, #7A858F);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-dd__item-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--search-text-secondary, #7A858F);
+  margin-top: 2px;
+}
+
+.search-dd__item-dot {
+  color: var(--search-text-secondary, #7A858F);
+  opacity: 0.6;
+}
+
+/* ── Recent searches ── */
+.search-dd__recent {
+  padding-top: 4px;
+}
+
+.search-dd__recent-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #888);
+  margin-bottom: 8px;
+}
+
+.search-dd__recent-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-dd__recent-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text, #1a1a1a);
+  text-align: left;
+  border-radius: 12px;
+  transition: background 0.12s;
+  font-family: var(--font-sans, sans-serif);
+}
+
+.search-dd__recent-item:hover {
+  background: var(--surface-2, rgba(0, 0, 0, 0.04));
+}
+
+.search-dd__recent-icon {
+  color: var(--text-muted, #aaa);
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* ── Dark-mode overrides ── */
+[data-theme="dark"] .search-dd {
+  background: #161929;
+}
+
+[data-theme="dark"] .search-dd__item-card {
+  background: #161929;
+  border: 1px solid #161929;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .search-dd__rest-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .search-dd {
+    padding: 72px 12px 32px;
+  }
+
+  .search-dd__body {
+    padding: 20px 0 28px;
+  }
+
+  .search-dd__rest-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 100%;
+  }
+
+  .search-dd__item-grid {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}
