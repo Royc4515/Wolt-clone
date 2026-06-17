@@ -38,8 +38,12 @@ export default function useCart() {
     setItems([]);
   }
 
+  function restoreItems(cartItems) {
+    setItems(cartItems);
+  }
+
   const total = items.reduce((sum, e) => sum + e.item.price * e.qty, 0);
   const count = items.reduce((sum, e) => sum + e.qty, 0);
 
-  return { items, addItem, removeItem, updateQty, clearCart, total, count };
+  return { items, addItem, removeItem, updateQty, clearCart, restoreItems, total, count };
 }

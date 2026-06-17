@@ -6,7 +6,7 @@ const XIcon = () => (
   </svg>
 );
 
-export default function CartDrawer({ items, total, onClose, onCheckout, onUpdateQty }) {
+export default function CartDrawer({ items, total, onClose, onCheckout, onUpdateQty, checkoutLabel = 'Go to checkout', checkoutLoading = false, error }) {
   const count = items.reduce((sum, e) => sum + e.qty, 0);
 
   return (
@@ -19,6 +19,8 @@ export default function CartDrawer({ items, total, onClose, onCheckout, onUpdate
             <XIcon />
           </button>
         </div>
+
+        {error && <div className="cart-drawer__error">{error}</div>}
 
         <div className="cart-drawer__body">
           {items.map(({ item, qty }) => (
@@ -54,9 +56,9 @@ export default function CartDrawer({ items, total, onClose, onCheckout, onUpdate
         </div>
 
         <div className="cart-drawer__footer">
-          <button type="button" className="cart-drawer__checkout-btn" onClick={onCheckout}>
+          <button type="button" className="cart-drawer__checkout-btn" onClick={onCheckout} disabled={checkoutLoading}>
             <span className="cart-drawer__checkout-count">{count}</span>
-            <span className="cart-drawer__checkout-label">Go to checkout</span>
+            <span className="cart-drawer__checkout-label">{checkoutLabel}</span>
             <span className="cart-drawer__checkout-total">₪{total}</span>
           </button>
         </div>
