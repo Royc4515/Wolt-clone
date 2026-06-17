@@ -7,7 +7,6 @@ import MenuItemModal from '../components/MenuItemModal';
 import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import { getRestaurant, getMenu } from '../api/restaurants';
-import { getOrders, createOrder } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
@@ -33,7 +32,7 @@ const StarIcon = () => (
 export default function Restaurant() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, addItem, updateQty, clearCart, restoreItems, count, total } = useCart();
+  const { items, addItem, updateQty, restoreItems, count, total } = useCart();
   const sectionRefs = useRef({});
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -43,44 +42,33 @@ export default function Restaurant() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [hasActiveOrder, setHasActiveOrder] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
 
+  // Prevents saving an empty cart to localStorage on the very first render
+  // before the saved cart has been restored for the current restaurant.
+  const cartSaveReady = useRef(false);
+
+  // Restore saved cart from localStorage when the restaurant id changes,
+  // then fetch restaurant + menu data.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    setHasActiveOrder(false);
-    clearCart();
+    cartSaveReady.current = false;
+
+    try {
+      const saved = localStorage.getItem(`cart_${id}`);
+      restoreItems(saved ? JSON.parse(saved) : []);
+    } catch {
+      restoreItems([]);
+    }
 
     Promise.all([getRestaurant(id), getMenu(id)])
-      .then(async ([rest, menuData]) => {
-        if (cancelled) return;
-        setRestaurant(rest);
-        setMenu(menuData);
-        setLoading(false);
-
-        if (!isAuthenticated()) return;
-
-        const orders = await getOrders().catch(() => []);
-        if (cancelled) return;
-
-        const activeOrder = orders.find(o => o.restaurantId === id && o.status === 'pending');
-        if (!activeOrder) return;
-
-        setHasActiveOrder(true);
-
-        const allItems = menuData.flatMap(s => s.items);
-        const menuById = new Map(allItems.map(item => [item.id, item]));
-        const cartItems = activeOrder.items
-          .map(({ productId, quantity }) => {
-            const menuItem = menuById.get(productId);
-            return menuItem ? { item: menuItem, qty: quantity } : null;
-          })
-          .filter(Boolean);
-
-        restoreItems(cartItems);
+      .then(([rest, menuData]) => {
+        if (!cancelled) {
+          setRestaurant(rest);
+          setMenu(menuData);
+          setLoading(false);
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -91,6 +79,21 @@ export default function Restaurant() {
 
     return () => { cancelled = true; };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save cart to localStorage on every change.
+  // Skips the first call per mount so the initial items=[] doesn't wipe the saved cart
+  // before the restore effect has had a chance to run.
+  useEffect(() => {
+    if (!cartSaveReady.current) {
+      cartSaveReady.current = true;
+      return;
+    }
+    if (items.length === 0) {
+      localStorage.removeItem(`cart_${id}`);
+    } else {
+      localStorage.setItem(`cart_${id}`, JSON.stringify(items));
+    }
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   function getQty(itemId) { return cartMap.get(itemId) ?? 0; }
@@ -103,29 +106,13 @@ export default function Restaurant() {
     addItem(item);
   }
 
-  async function handleCheckout() {
+  function handleCheckout() {
     if (!isAuthenticated()) {
       setCartOpen(false);
       navigate('/login');
       return;
     }
-    if (hasActiveOrder) {
-      navigate('/orders');
-      return;
-    }
-    setCheckoutError('');
-    setIsCheckingOut(true);
-    try {
-      const orderItems = items.map(e => ({ productId: e.item.id, quantity: e.qty }));
-      await createOrder(id, orderItems);
-      clearCart();
-      setCartOpen(false);
-      navigate('/orders');
-    } catch (err) {
-      setCheckoutError(err.message || 'Failed to place order. Please try again.');
-    } finally {
-      setIsCheckingOut(false);
-    }
+    navigate('/checkout');
   }
 
   function scrollToSection(sectionId) {
@@ -277,9 +264,6 @@ export default function Restaurant() {
           onClose={() => setCartOpen(false)}
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
-          checkoutLabel={hasActiveOrder ? 'View my order' : isCheckingOut ? 'Placing order…' : 'Go to checkout'}
-          checkoutLoading={isCheckingOut}
-          error={checkoutError}
         />
       )}
     </div>
