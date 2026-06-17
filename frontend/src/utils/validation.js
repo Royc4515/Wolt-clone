@@ -59,6 +59,16 @@ export const validateRegistration = (userData) => {
         errors.profilePicture = "Profile picture is required";
     }
 
+    // Location validation.
+    const lat = parseFloat(userData.lat);
+    const lng = parseFloat(userData.lng);
+    if (userData.lat === '' || userData.lat === undefined || isNaN(lat) || lat < -90 || lat > 90) {
+        errors.lat = "Latitude must be a number between -90 and 90";
+    }
+    if (userData.lng === '' || userData.lng === undefined || isNaN(lng) || lng < -180 || lng > 180) {
+        errors.lng = "Longitude must be a number between -180 and 180";
+    }
+
     return {
         isValid: Object.keys(errors).length === 0,
         errors

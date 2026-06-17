@@ -29,3 +29,10 @@
   object-fit: cover;
 }
 .avatar-picker .btn--sm { align-self: center; }
+
+/* Location fields — side by side */
+.location-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
