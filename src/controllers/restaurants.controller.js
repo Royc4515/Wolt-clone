@@ -9,7 +9,10 @@ const getRestaurants = (req, res) => {
 
 // Create a new restaurant.
 const createRest = (req, res) => {
-    const { name, description, location, category, phone, openHours, isPromoted, rating, image } = req.body;
+    const { 
+        name, description, location, category, phone, openHours, 
+        isPromoted, rating, image, deliveryFee, deliveryTime
+    } = req.body;
 
     // Validation for mandatory data.
     const missingFields = [];
@@ -32,6 +35,10 @@ const createRest = (req, res) => {
         isPromoted: isPromoted || false,
         rating: rating || 0,
         image: image || "",
+        // Store the base delivery fee (Default: 0).
+        deliveryFee: deliveryFee || 0,       
+        // Store the average delivery time for feed display (Default: 30 mins).
+        deliveryTime: deliveryTime || 30,
         ownerId: req.userId
     };
 
@@ -69,8 +76,9 @@ const updateRest = (req, res) => {
         return res.status(403).json({ error: "Forbidden: Only the owner can update this restaurant" });
     }
 
-    // Update the restaurant.
-    restRepo.update(id, req.body);
+    // Update the restaurant with only the permitted fields.
+    const { ownerId, id: bodyId, ...allowedUpdates } = req.body;
+    restRepo.update(id, allowedUpdates);
     res.status(204).send();
 };
 
