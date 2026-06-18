@@ -233,9 +233,9 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(264px, 1fr));
+  gap: var(--space-4);
 }
 
 /* ── Restaurant banner image ── */
@@ -272,11 +272,13 @@
   flex-direction: column;
   gap: var(--space-2);
   overflow: hidden;
-  transition: box-shadow var(--dur-fast) var(--ease);
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .order-card:hover {
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-pop);
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
 }
 
 .order-card-top {
@@ -395,9 +397,13 @@
 /* ── Cart card action row ── */
 .order-card-actions {
   display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+.order-card-actions > button {
+  flex: 1 1 0;
 }
 
 /* ── Add more items button ── */
@@ -407,7 +413,8 @@
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   font-family: var(--font-sans);
-  padding: 9px 20px;
+  padding: 9px 16px;
+  white-space: nowrap;
   cursor: pointer;
   transition: filter var(--dur-fast) var(--ease), transform 0.1s ease;
 }
@@ -416,6 +423,7 @@
 [data-theme="light"] .order-continue-btn { background: #DCF7FF; color: #145367; }
 
 .order-continue-btn:hover { filter: brightness(1.1); }
+.order-continue-btn:active { transform: scale(0.97); }
 
 /* ── Go to checkout button ── */
 .order-checkout-btn {
@@ -424,10 +432,13 @@
   font-size: var(--text-sm);
   font-weight: var(--weight-extrabold);
   font-family: var(--font-sans);
-  padding: 9px 20px;
+  padding: 9px 16px;
+  white-space: nowrap;
   cursor: pointer;
   transition: filter var(--dur-fast) var(--ease), transform 0.1s ease;
 }
+
+.order-checkout-btn:active:not(:disabled) { transform: scale(0.97); }
 
 [data-theme="dark"]  .order-checkout-btn { background: #66CBF0; color: #08303E; }
 [data-theme="light"] .order-checkout-btn { background: #71D2F6; color: #010F15; }

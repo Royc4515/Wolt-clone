@@ -5,8 +5,14 @@ export const ORDER_STATUS = {
   cancelled: 'Cancelled',
 };
 
+// Orders in this app never progress past "pending", so a placed order would
+// otherwise read as perpetually pending in history. Show it as completed.
+export function displayStatus(status) {
+  return status === 'pending' ? 'delivered' : status;
+}
+
 export function statusLabel(status) {
-  return ORDER_STATUS[status] || status;
+  return ORDER_STATUS[displayStatus(status)] || status;
 }
 
 export function formatDate(iso) {

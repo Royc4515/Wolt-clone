@@ -231,7 +231,7 @@
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
-  flex: 0 0 340px;
+  flex: 0 0 272px;
   scroll-snap-align: start;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -419,7 +419,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-  .restaurant-card { flex: 0 0 300px; }
+  .restaurant-card { flex: 0 0 240px; }
 }
 
 @media (max-width: 600px) {
@@ -427,7 +427,7 @@
     padding: var(--space-2) var(--space-3) var(--space-4);
     gap: var(--space-4);
   }
-  .restaurant-card { flex: 0 0 min(280px, 80vw); }
+  .restaurant-card { flex: 0 0 min(224px, 80vw); }
   .category-card__icon { width: 72px; height: 72px; }
   .home__section-title { font-size: var(--text-lg); }
 }
