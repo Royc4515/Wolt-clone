@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AppBar from '../components/AppBar';
-import { createOrder, cancelOrder, getOrders } from '../api/orders';
+import { cancelOrder } from '../api/orders';
 import { TrashIcon } from '../components/icons';
-import { statusLabel, formatDate } from '../utils/orders';
+import { statusLabel, displayStatus, formatDate } from '../utils/orders';
 import useOrdersData from '../hooks/useOrdersData';
 import '../styles/Orders.css';
 
@@ -14,7 +14,6 @@ const TABS = [
 
 export default function Orders() {
   const navigate = useNavigate();
-  const [checkingOutId, setCheckingOutId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [editSection, setEditSection] = useState(null); // null | 'carts' | 'orders'
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -65,21 +64,10 @@ export default function Orders() {
     }
   }
 
-  async function handleCheckoutCart(cart) {
-    setCheckingOutId(cart.restaurantId);
+  function handleDeleteCart(restaurantId) {
     setActionError('');
-    try {
-      const orderItems = cart.items.map(e => ({ productId: e.item.id, quantity: e.qty }));
-      await createOrder(cart.restaurantId, orderItems);
-      localStorage.removeItem(`cart_${cart.restaurantId}`);
-      setLocalCarts(prev => prev.filter(c => c.restaurantId !== cart.restaurantId));
-      const updated = await getOrders().catch(() => null);
-      if (updated) setOrders(updated);
-    } catch (err) {
-      setActionError(err.message || 'Failed to place order. Please try again.');
-    } finally {
-      setCheckingOutId(null);
-    }
+    localStorage.removeItem(`cart_${restaurantId}`);
+    setLocalCarts(prev => prev.filter(c => c.restaurantId !== restaurantId));
   }
 
   async function handleDelete(id) {
@@ -155,8 +143,8 @@ export default function Orders() {
                       cart={cart}
                       restaurant={restaurants[cart.restaurantId]}
                       onAddMore={() => navigate(`/restaurant/${cart.restaurantId}`)}
-                      onCheckout={() => handleCheckoutCart(cart)}
-                      isCheckingOut={checkingOutId === cart.restaurantId}
+                      onCheckout={() => navigate(`/checkout/${cart.restaurantId}`)}
+                      onDelete={() => handleDeleteCart(cart.restaurantId)}
                       editMode={editSection === 'carts'}
                       isSelected={selectedIds.has(cart.restaurantId)}
                       onToggleSelect={() => toggleSelect(cart.restaurantId)}
@@ -223,7 +211,7 @@ export default function Orders() {
   );
 }
 
-function LocalCartCard({ cart, restaurant, onAddMore, onCheckout, isCheckingOut, editMode, isSelected, onToggleSelect }) {
+function LocalCartCard({ cart, restaurant, onAddMore, onCheckout, onDelete, editMode, isSelected, onToggleSelect }) {
   const restName  = restaurant?.name ?? 'Restaurant';
   const itemCount = cart.items.reduce((sum, e) => sum + e.qty, 0);
   const total     = cart.items.reduce((sum, e) => sum + e.item.price * e.qty, 0).toFixed(2);
@@ -242,12 +230,20 @@ function LocalCartCard({ cart, restaurant, onAddMore, onCheckout, isCheckingOut,
         </button>
         <div className="order-card-top-right">
           {!editMode && <span className="order-status order-status--cart">In Cart</span>}
-          {editMode && (
+          {editMode ? (
             <button
               className={`order-card__checkbox${isSelected ? ' order-card__checkbox--checked' : ''}`}
               onClick={onToggleSelect}
               aria-label={isSelected ? 'Deselect' : 'Select'}
             />
+          ) : (
+            <button
+              className="order-delete-btn"
+              onClick={onDelete}
+              aria-label="Remove cart"
+            >
+              <TrashIcon />
+            </button>
           )}
         </div>
       </div>
@@ -261,10 +257,10 @@ function LocalCartCard({ cart, restaurant, onAddMore, onCheckout, isCheckingOut,
       {!editMode && (
         <div className="order-card-actions">
           <button className="order-continue-btn" onClick={onAddMore}>
-            Add more items
+            Add more
           </button>
-          <button className="order-checkout-btn" onClick={onCheckout} disabled={isCheckingOut}>
-            {isCheckingOut ? 'Placing order…' : 'Go to checkout'}
+          <button className="order-checkout-btn" onClick={onCheckout}>
+            Go to checkout
           </button>
         </div>
       )}
@@ -296,7 +292,7 @@ function OrderCard({ order, restaurant, onDelete, isDeleting, editMode, isSelect
         </button>
         <div className="order-card-top-right">
           {!editMode && (
-            <span className={`order-status order-status--${order.status}`}>
+            <span className={`order-status order-status--${displayStatus(order.status)}`}>
               {statusLabel(order.status)}
             </span>
           )}

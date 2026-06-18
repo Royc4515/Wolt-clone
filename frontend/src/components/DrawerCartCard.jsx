@@ -3,7 +3,7 @@ import { TrashIcon } from './icons';
 
 const MAX_THUMBS = 5;
 
-function DrawerCartCard({ cart, restaurant, onAddMore, onCheckout, onDelete, isCheckingOut, editMode, isSelected, onToggleSelect, onRestaurantClick }) {
+function DrawerCartCard({ cart, restaurant, onAddMore, onCheckout, onDelete, editMode, isSelected, onToggleSelect, onRestaurantClick }) {
   const restName = restaurant?.name ?? 'Restaurant';
   const subtotal = cart.items.reduce((s, e) => s + e.item.price * e.qty, 0).toFixed(2);
   const visible = cart.items.slice(0, MAX_THUMBS);
@@ -60,8 +60,8 @@ function DrawerCartCard({ cart, restaurant, onAddMore, onCheckout, onDelete, isC
           <button className="od-card__btn od-card__btn--secondary" onClick={onAddMore}>
             Add more items
           </button>
-          <button className="od-card__btn od-card__btn--primary" onClick={onCheckout} disabled={isCheckingOut}>
-            {isCheckingOut ? 'Placing…' : 'Go to checkout'}
+          <button className="od-card__btn od-card__btn--primary" onClick={onCheckout}>
+            Go to checkout
           </button>
         </div>
       )}

@@ -20,7 +20,7 @@ export default function useScrollEdges(ref, contentKey) {
       el.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [contentKey]);
+  }, [contentKey, ref]);
 
   return { canLeft, canRight };
 }

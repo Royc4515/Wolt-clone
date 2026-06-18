@@ -29,7 +29,6 @@ export default function Profile() {
   const [serverError, setServerError] = useState('');
   const [errors, setErrors] = useState({});
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!user) return;
     getUser(user.id).then(data => {
@@ -38,6 +37,7 @@ export default function Profile() {
       setLat(data.location?.lat ?? '');
       setLng(data.location?.lng ?? '');
     }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleAvatarClick() { fileInputRef.current?.click(); }

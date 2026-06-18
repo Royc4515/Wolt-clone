@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { XIcon, BackIcon } from './icons';
-import { statusLabel, formatDate } from '../utils/orders';
+import { statusLabel, displayStatus, formatDate } from '../utils/orders';
 import useOutsideClick from '../hooks/useOutsideClick';
 
 export default function OrderDetailView({ order, restaurant, menuMap, onBack, onClose }) {
@@ -26,7 +26,7 @@ export default function OrderDetailView({ order, restaurant, menuMap, onBack, on
           <h2 className="od__detail-title">{restName}</h2>
           <div className="od__detail-meta">
             <span>Order placed: {formatDate(order.createdAt)}</span>
-            <span className={`od__detail-status od__detail-status--${order.status}`}>
+            <span className={`od__detail-status od__detail-status--${displayStatus(order.status)}`}>
               {statusLabel(order.status)}
             </span>
           </div>

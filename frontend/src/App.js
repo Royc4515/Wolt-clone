@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Restaurant from './pages/Restaurant';
+import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import Orders from './pages/Orders';
 import SearchResults from './pages/SearchResults';
@@ -20,6 +21,7 @@ function App() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
         <Route path="/restaurant/:id" element={<Restaurant />} />
+        <Route path="/checkout/:restaurantId" element={<PrivateRoute><Checkout /></PrivateRoute>} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createOrder, cancelOrder, getOrders } from '../api/orders';
+import { cancelOrder } from '../api/orders';
 import { XIcon } from './icons';
 import useOutsideClick from '../hooks/useOutsideClick';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
@@ -20,7 +20,6 @@ export default function OrdersDrawer({ onClose }) {
 
   const [tab, setTab] = useState('carts');
   const [detailOrder, setDetailOrder] = useState(null);
-  const [checkingOutId, setCheckingOutId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -54,20 +53,9 @@ export default function OrdersDrawer({ onClose }) {
     setSelectedIds(allSelected ? new Set() : new Set(currentIds));
   }
 
-  async function handleCheckoutCart(cart) {
-    setCheckingOutId(cart.restaurantId);
-    try {
-      const orderItems = cart.items.map(e => ({ productId: e.item.id, quantity: e.qty }));
-      await createOrder(cart.restaurantId, orderItems);
-      localStorage.removeItem(`cart_${cart.restaurantId}`);
-      setLocalCarts(prev => prev.filter(c => c.restaurantId !== cart.restaurantId));
-      const updated = await getOrders().catch(() => null);
-      if (updated) setOrders(updated);
-    } catch (err) {
-      console.error('Failed to place order', err);
-    } finally {
-      setCheckingOutId(null);
-    }
+  function handleCheckoutCart(cart) {
+    onClose();
+    navigate(`/checkout/${cart.restaurantId}`);
   }
 
   function handleDeleteCart(restaurantId) {
@@ -191,7 +179,6 @@ export default function OrdersDrawer({ onClose }) {
                   onAddMore={() => { onClose(); navigate(`/restaurant/${cart.restaurantId}`); }}
                   onCheckout={() => handleCheckoutCart(cart)}
                   onDelete={() => handleDeleteCart(cart.restaurantId)}
-                  isCheckingOut={checkingOutId === cart.restaurantId}
                   editMode={editMode}
                   isSelected={selectedIds.has(cart.restaurantId)}
                   onToggleSelect={() => toggleSelect(cart.restaurantId)}

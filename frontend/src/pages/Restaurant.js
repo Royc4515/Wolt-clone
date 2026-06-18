@@ -8,8 +8,9 @@ import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import { getRestaurant, getMenu } from '../api/restaurants';
-import { getOrders, createOrder } from '../api/orders';
+import { getOrders } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
+import { readCart, writeCart } from '../utils/cartStorage';
 import { hashColor } from '../utils/colorHash';
 import useTheme from '../hooks/useTheme';
 import woltIcon from '../assets/wolt-logo.png';
@@ -55,9 +56,6 @@ export default function Restaurant() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [hasActiveOrder, setHasActiveOrder] = useState(false);
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
 
   // Prevents the initial items=[] from wiping localStorage before the cart is restored.
   const cartSaveReady = useRef(false);
@@ -68,16 +66,10 @@ export default function Restaurant() {
     let cancelled = false;
     setLoading(true);
     setNotFound(false);
-    setHasActiveOrder(false);
     cartSaveReady.current = false;
 
     // Restore saved shopping cart for this restaurant immediately (before async fetch).
-    try {
-      const saved = localStorage.getItem(`cart_${id}`);
-      restoreItems(saved ? JSON.parse(saved) : []);
-    } catch {
-      restoreItems([]);
-    }
+    restoreItems(readCart(id));
 
     Promise.all([getRestaurant(id), getMenu(id)])
       .then(async ([rest, menuData]) => {
@@ -113,8 +105,6 @@ export default function Restaurant() {
         const activeOrder = orders.find(o => o.restaurantId === id && o.status === 'pending');
         if (!activeOrder) return;
 
-        setHasActiveOrder(true);
-
         // Restore the order items into the cart so the user can see what they ordered.
         const allItems = menuData.flatMap(s => s.items);
         const menuById = new Map(allItems.map(item => [item.id, item]));
@@ -143,11 +133,7 @@ export default function Restaurant() {
       cartSaveReady.current = true;
       return;
     }
-    if (items.length === 0) {
-      localStorage.removeItem(`cart_${id}`);
-    } else {
-      localStorage.setItem(`cart_${id}`, JSON.stringify(items));
-    }
+    writeCart(id, items);
   }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -179,30 +165,14 @@ export default function Restaurant() {
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
 
-  const handleCheckout = useCallback(async () => {
+  const handleCheckout = useCallback(() => {
+    setCartOpen(false);
     if (!isAuthenticated()) {
-      setCartOpen(false);
       navigate('/login');
       return;
     }
-    if (hasActiveOrder) {
-      navigate('/orders');
-      return;
-    }
-    setCheckoutError('');
-    setIsCheckingOut(true);
-    try {
-      const orderItems = items.map(e => ({ productId: e.item.id, quantity: e.qty }));
-      await createOrder(id, orderItems);
-      localStorage.removeItem(`cart_${id}`);
-      setCartOpen(false);
-      navigate('/orders');
-    } catch (err) {
-      setCheckoutError(err.message || 'Failed to place order. Please try again.');
-    } finally {
-      setIsCheckingOut(false);
-    }
-  }, [id, items, hasActiveOrder, navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+    navigate(`/checkout/${id}`);
+  }, [id, navigate]);
 
   function scrollToSection(sectionId) {
     const el = sectionRefs.current[sectionId];
@@ -359,9 +329,7 @@ export default function Restaurant() {
           onCheckout={handleCheckout}
           onUpdateQty={updateQty}
           onItemClick={item => setSelectedItem(item)}
-          checkoutLabel={hasActiveOrder ? 'View Cart' : isCheckingOut ? 'Placing order…' : 'Go to checkout'}
-          checkoutLoading={isCheckingOut}
-          error={checkoutError}
+          checkoutLabel="Go to checkout"
         />
       )}
 
