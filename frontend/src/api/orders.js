@@ -4,8 +4,9 @@ export const getOrders = () => apiFetch('/api/orders', { method: 'GET' });
 
 export const getOrder = (id) => apiFetch(`/api/orders/${id}`, { method: 'GET' });
 
-// POST returns 201 No Content — cannot use apiFetch which always calls .json()
-export const createOrder = async (restaurantId, items) => {
+// POST returns the complete order object with backend-calculated pricing.
+export const createOrder = async (orderPayload) => {
+    // orderPayload should include: restaurantId, items, mode, paymentMethod, cutlery, notes, location, tip.
     const token = localStorage.getItem('jwt_token');
     const response = await fetch('/api/orders', {
         method: 'POST',
@@ -13,7 +14,7 @@ export const createOrder = async (restaurantId, items) => {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ restaurantId, items }),
+        body: JSON.stringify(orderPayload),
     });
     if (response.status === 401) {
         localStorage.removeItem('jwt_token');
@@ -24,25 +25,10 @@ export const createOrder = async (restaurantId, items) => {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || data.message || 'Failed to place order');
     }
+
+    // Return the object from the server to present to user.
+    return await response.json();
 };
 
-// DELETE returns 204 No Content — same reason, cannot use apiFetch
-export const cancelOrder = async (id) => {
-    const token = localStorage.getItem('jwt_token');
-    const response = await fetch(`/api/orders/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
-    if (response.status === 401) {
-        localStorage.removeItem('jwt_token');
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
-    }
-    if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || data.message || 'Failed to cancel order');
-    }
-};
+// DELETE now returns a JSON object from the server, allowing us to use apiFetch safely.
+export const cancelOrder = (id) => apiFetch(`/api/orders/${id}`, { method: 'DELETE' });
