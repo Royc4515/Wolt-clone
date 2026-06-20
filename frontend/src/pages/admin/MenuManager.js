@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppBar from '../../components/AppBar';
-import FormField from '../../components/auth/FormField';
-import ImageUpload from '../../components/admin/ImageUpload';
+import ItemForm from '../../components/admin/ItemForm';
 import { getRestaurant } from '../../api/restaurants';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../../api/products';
 import './admin.css';
 
 const EMPTY_ITEM = { name: '', price: '', section: '', description: '', image: '', isAvailable: true };
-const SECTIONS = ['Starters', 'Mains', 'Burgers', 'Side Dishes', 'Sauces', 'Sweets', 'Drinks', 'Beers'];
 
 export default function MenuManager() {
   const { id } = useParams();
@@ -127,80 +125,61 @@ export default function MenuManager() {
 
         {error && <div className="admin__error" role="alert">{error}</div>}
 
-        {draft && (
-          <form onSubmit={handleSave} noValidate className="admin__form admin__item-form">
-            <h2 className="admin__form-title">{draft.id ? 'Edit item' : 'New item'}</h2>
-            <FormField label="Name" htmlFor="item-name" error={errors.name}>
-              <input id="item-name" className="input" value={draft.name} onChange={(e) => setField('name', e.target.value)} />
-            </FormField>
-            <div className="admin__form-row">
-              <FormField label="Price (₪)" htmlFor="item-price" error={errors.price}>
-                <input id="item-price" className="input" type="number" step="any" value={draft.price} onChange={(e) => setField('price', e.target.value)} />
-              </FormField>
-              <FormField label="Section" htmlFor="item-section" hint="pick or type your own" error={errors.section}>
-                <input id="item-section" className="input" list="admin-sections" value={draft.section} onChange={(e) => setField('section', e.target.value)} />
-                <datalist id="admin-sections">
-                  {SECTIONS.map((s) => <option key={s} value={s} />)}
-                </datalist>
-              </FormField>
-            </div>
-            <FormField label="Description" htmlFor="item-desc">
-              <input id="item-desc" className="input" value={draft.description} onChange={(e) => setField('description', e.target.value)} />
-            </FormField>
-            <FormField label="Image">
-              <ImageUpload value={draft.image} onChange={(v) => setField('image', v)} label="item image" />
-            </FormField>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={draft.isAvailable}
-              className="admin__toggle"
-              onClick={() => setField('isAvailable', !draft.isAvailable)}
-            >
-              <span>Available</span>
-              <span className={`admin__toggle-switch${draft.isAvailable ? ' admin__toggle-switch--on' : ''}`}>
-                <span className="admin__toggle-knob" />
-              </span>
-            </button>
-            <div className="admin__form-actions">
-              <button type="submit" className="admin__primary" disabled={saving}>
-                {saving ? 'Saving…' : draft.id ? 'Save item' : 'Add item'}
-              </button>
-              <button type="button" className="admin__btn" onClick={() => setDraft(null)}>Cancel</button>
-            </div>
-          </form>
+        {/* New-item form sits at the top; edit forms open inline (below). */}
+        {draft && !draft.id && (
+          <ItemForm
+            draft={draft}
+            errors={errors}
+            saving={saving}
+            onField={setField}
+            onSubmit={handleSave}
+            onCancel={() => setDraft(null)}
+          />
         )}
 
         {products.length === 0 ? (
-          <p className="admin__empty">No menu items yet — add your first one.</p>
+          draft ? null : <p className="admin__empty">No menu items yet — add your first one.</p>
         ) : (
           <ul className="admin__list">
             {products.map((p) => (
-              <li key={p.id} className="admin__card">
-                <div className="admin__card-img">
-                  {p.image
-                    ? <img src={p.image} alt={p.name} />
-                    : <span className="admin__card-emoji" aria-hidden="true">🍽</span>}
-                </div>
-                <div className="admin__card-info">
-                  <p className="admin__card-name">
-                    {p.name}
-                    {p.isAvailable === false && <span className="admin__tag">Unavailable</span>}
-                  </p>
-                  <p className="admin__card-meta">{p.section} · ₪{p.price}</p>
-                </div>
-                <div className="admin__card-actions">
-                  <button type="button" className="admin__btn" onClick={() => startEdit(p)}>Edit</button>
-                  <button
-                    type="button"
-                    className="admin__btn admin__btn--danger"
-                    onClick={() => handleDelete(p.id)}
-                    disabled={deletingId === p.id}
-                  >
-                    {deletingId === p.id ? 'Deleting…' : 'Delete'}
-                  </button>
-                </div>
-              </li>
+              draft?.id === p.id ? (
+                <li key={p.id}>
+                  <ItemForm
+                    draft={draft}
+                    errors={errors}
+                    saving={saving}
+                    onField={setField}
+                    onSubmit={handleSave}
+                    onCancel={() => setDraft(null)}
+                  />
+                </li>
+              ) : (
+                <li key={p.id} className="admin__card">
+                  <div className="admin__card-img">
+                    {p.image
+                      ? <img src={p.image} alt={p.name} />
+                      : <span className="admin__card-emoji" aria-hidden="true">🍽</span>}
+                  </div>
+                  <div className="admin__card-info">
+                    <p className="admin__card-name">
+                      {p.name}
+                      {p.isAvailable === false && <span className="admin__tag">Unavailable</span>}
+                    </p>
+                    <p className="admin__card-meta">{p.section} · ₪{p.price}</p>
+                  </div>
+                  <div className="admin__card-actions">
+                    <button type="button" className="admin__btn" onClick={() => startEdit(p)}>Edit</button>
+                    <button
+                      type="button"
+                      className="admin__btn admin__btn--danger"
+                      onClick={() => handleDelete(p.id)}
+                      disabled={deletingId === p.id}
+                    >
+                      {deletingId === p.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </li>
+              )
             ))}
           </ul>
         )}
