@@ -6,7 +6,7 @@ import { getRestaurant } from '../../api/restaurants';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../../api/products';
 import './admin.css';
 
-const EMPTY_ITEM = { name: '', price: '', section: '', description: '', isAvailable: true };
+const EMPTY_ITEM = { name: '', price: '', section: '', description: '', image: '', isAvailable: true };
 
 export default function MenuManager() {
   const { id } = useParams();
@@ -44,11 +44,23 @@ export default function MenuManager() {
   function startAdd() { setErrors({}); setDraft({ ...EMPTY_ITEM }); }
   function startEdit(p) {
     setErrors({});
-    setDraft({ id: p.id, name: p.name || '', price: p.price ?? '', section: p.section || '', description: p.description || '', isAvailable: p.isAvailable !== false });
+    setDraft({ id: p.id, name: p.name || '', price: p.price ?? '', section: p.section || '', description: p.description || '', image: p.image || '', isAvailable: p.isAvailable !== false });
   }
   function setField(field, value) {
     setDraft((d) => ({ ...d, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
+  }
+
+  function handleImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErrors((er) => ({ ...er, image: 'File must be an image' }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => setField('image', ev.target.result);
+    reader.readAsDataURL(file);
   }
 
   function validate() {
@@ -70,6 +82,7 @@ export default function MenuManager() {
       price: parseFloat(draft.price),
       section: draft.section.trim(),
       description: draft.description,
+      image: draft.image,
       isAvailable: draft.isAvailable,
     };
     setSaving(true);
@@ -141,6 +154,12 @@ export default function MenuManager() {
             <FormField label="Description" htmlFor="item-desc">
               <input id="item-desc" className="input" value={draft.description} onChange={(e) => setField('description', e.target.value)} />
             </FormField>
+            <FormField label="Image" htmlFor="item-image" error={errors.image}>
+              <div className="admin__image-field">
+                {draft.image && <img src={draft.image} alt="item" className="admin__image-preview" />}
+                <input id="item-image" type="file" accept="image/*" onChange={handleImage} />
+              </div>
+            </FormField>
             <label className="admin__checkbox">
               <input type="checkbox" checked={draft.isAvailable} onChange={(e) => setField('isAvailable', e.target.checked)} />
               Available
@@ -160,6 +179,11 @@ export default function MenuManager() {
           <ul className="admin__list">
             {products.map((p) => (
               <li key={p.id} className="admin__card">
+                <div className="admin__card-img">
+                  {p.image
+                    ? <img src={p.image} alt={p.name} />
+                    : <span className="admin__card-emoji" aria-hidden="true">🍽</span>}
+                </div>
                 <div className="admin__card-info">
                   <p className="admin__card-name">
                     {p.name}
