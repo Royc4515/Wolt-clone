@@ -127,13 +127,21 @@ const updateUser = (req, res) => {
     }
 
     // Extract only the fields that are allowed to be updated.
-    const { displayName, profilePicture, password, location } = req.body;
+    const { displayName, profilePicture, password, location, role } = req.body;
     
     const updateData = {};
 
     if (displayName) updateData.displayName = displayName;
     if (profilePicture) updateData.profilePicture = profilePicture;
     if (password) updateData.password = password; 
+
+    // Validation for role if it's being updated.
+    if (role) {
+        if (role !== 'admin' && role !== 'customer') {
+            return res.status(400).json({ error: "Invalid role specified. Must be 'admin' or 'customer'" });
+        }
+        updateData.role = role;
+    }
     
     // Validation for location if it's being updated.
     if (location) {
