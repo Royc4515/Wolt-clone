@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppBar from '../../components/AppBar';
 import FormField from '../../components/auth/FormField';
+import ImageUpload from '../../components/admin/ImageUpload';
+import OpenHoursPicker from '../../components/admin/OpenHoursPicker';
 import { getRestaurant, createRestaurant, updateRestaurant } from '../../api/restaurants';
 import './admin.css';
+
+const CATEGORIES = ['Pizza', 'Sushi', 'Burgers', 'Asian', 'Salads', 'Pasta', 'Desserts', 'Mexican', 'Italian', 'Vegan', 'Cafe', 'Bakery'];
+const DELIVERY_TIMES = ['15–25 min', '20–30 min', '25–35 min', '30–40 min', '40–50 min', '50–60 min'];
 
 const EMPTY = {
   name: '', category: '', lat: '', lng: '', deliveryFee: '', deliveryTime: '',
@@ -45,18 +50,6 @@ export default function RestaurantForm() {
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
-  }
-
-  function handleImage(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setErrors((er) => ({ ...er, image: 'File must be an image' }));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => set('image', ev.target.result);
-    reader.readAsDataURL(file);
   }
 
   function validate() {
@@ -130,8 +123,11 @@ export default function RestaurantForm() {
             <input id="name" className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
           </FormField>
 
-          <FormField label="Category" htmlFor="category" hint="e.g. Pizza, Sushi, Burgers" error={errors.category}>
-            <input id="category" className="input" value={form.category} onChange={(e) => set('category', e.target.value)} />
+          <FormField label="Category" htmlFor="category" hint="pick or type your own" error={errors.category}>
+            <input id="category" className="input" list="admin-categories" value={form.category} onChange={(e) => set('category', e.target.value)} />
+            <datalist id="admin-categories">
+              {CATEGORIES.map((c) => <option key={c} value={c} />)}
+            </datalist>
           </FormField>
 
           <div className="admin__form-row">
@@ -147,8 +143,11 @@ export default function RestaurantForm() {
             <FormField label="Delivery fee (₪)" htmlFor="deliveryFee" hint="base fee" error={errors.deliveryFee}>
               <input id="deliveryFee" className="input" type="number" step="any" value={form.deliveryFee} onChange={(e) => set('deliveryFee', e.target.value)} />
             </FormField>
-            <FormField label="Delivery time" htmlFor="deliveryTime" hint="e.g. 25–35 min">
-              <input id="deliveryTime" className="input" value={form.deliveryTime} onChange={(e) => set('deliveryTime', e.target.value)} />
+            <FormField label="Delivery time" htmlFor="deliveryTime" hint="pick or type">
+              <input id="deliveryTime" className="input" list="admin-delivery-times" value={form.deliveryTime} onChange={(e) => set('deliveryTime', e.target.value)} />
+              <datalist id="admin-delivery-times">
+                {DELIVERY_TIMES.map((t) => <option key={t} value={t} />)}
+              </datalist>
             </FormField>
           </div>
 
@@ -160,8 +159,8 @@ export default function RestaurantForm() {
             <FormField label="Phone" htmlFor="phone">
               <input id="phone" className="input" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
             </FormField>
-            <FormField label="Open hours" htmlFor="openHours" hint="e.g. 10:00–23:00">
-              <input id="openHours" className="input" value={form.openHours} onChange={(e) => set('openHours', e.target.value)} />
+            <FormField label="Open hours">
+              <OpenHoursPicker value={form.openHours} onChange={(v) => set('openHours', v)} />
             </FormField>
           </div>
 
@@ -169,17 +168,22 @@ export default function RestaurantForm() {
             <input id="rating" className="input" type="number" step="any" value={form.rating} onChange={(e) => set('rating', e.target.value)} />
           </FormField>
 
-          <FormField label="Image" htmlFor="image" error={errors.image}>
-            <div className="admin__image-field">
-              {form.image && <img src={form.image} alt="restaurant" className="admin__image-preview" />}
-              <input id="image" type="file" accept="image/*" onChange={handleImage} />
-            </div>
+          <FormField label="Image">
+            <ImageUpload value={form.image} onChange={(v) => set('image', v)} label="restaurant image" />
           </FormField>
 
-          <label className="admin__checkbox">
-            <input type="checkbox" checked={form.isPromoted} onChange={(e) => set('isPromoted', e.target.checked)} />
-            Promoted
-          </label>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={form.isPromoted}
+            className="admin__toggle"
+            onClick={() => set('isPromoted', !form.isPromoted)}
+          >
+            <span>Promoted</span>
+            <span className={`admin__toggle-switch${form.isPromoted ? ' admin__toggle-switch--on' : ''}`}>
+              <span className="admin__toggle-knob" />
+            </span>
+          </button>
 
           <button type="submit" className="admin__primary admin__primary--block" disabled={saving}>
             {saving ? 'Saving…' : editing ? 'Save changes' : 'Create restaurant'}

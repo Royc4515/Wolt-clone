@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppBar from '../../components/AppBar';
 import FormField from '../../components/auth/FormField';
+import ImageUpload from '../../components/admin/ImageUpload';
 import { getRestaurant } from '../../api/restaurants';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../../api/products';
 import './admin.css';
 
 const EMPTY_ITEM = { name: '', price: '', section: '', description: '', image: '', isAvailable: true };
+const SECTIONS = ['Starters', 'Mains', 'Burgers', 'Side Dishes', 'Sauces', 'Sweets', 'Drinks', 'Beers'];
 
 export default function MenuManager() {
   const { id } = useParams();
@@ -49,18 +51,6 @@ export default function MenuManager() {
   function setField(field, value) {
     setDraft((d) => ({ ...d, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
-  }
-
-  function handleImage(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setErrors((er) => ({ ...er, image: 'File must be an image' }));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => setField('image', ev.target.result);
-    reader.readAsDataURL(file);
   }
 
   function validate() {
@@ -147,23 +137,31 @@ export default function MenuManager() {
               <FormField label="Price (₪)" htmlFor="item-price" error={errors.price}>
                 <input id="item-price" className="input" type="number" step="any" value={draft.price} onChange={(e) => setField('price', e.target.value)} />
               </FormField>
-              <FormField label="Section" htmlFor="item-section" hint="e.g. Starters, Mains, Drinks" error={errors.section}>
-                <input id="item-section" className="input" value={draft.section} onChange={(e) => setField('section', e.target.value)} />
+              <FormField label="Section" htmlFor="item-section" hint="pick or type your own" error={errors.section}>
+                <input id="item-section" className="input" list="admin-sections" value={draft.section} onChange={(e) => setField('section', e.target.value)} />
+                <datalist id="admin-sections">
+                  {SECTIONS.map((s) => <option key={s} value={s} />)}
+                </datalist>
               </FormField>
             </div>
             <FormField label="Description" htmlFor="item-desc">
               <input id="item-desc" className="input" value={draft.description} onChange={(e) => setField('description', e.target.value)} />
             </FormField>
-            <FormField label="Image" htmlFor="item-image" error={errors.image}>
-              <div className="admin__image-field">
-                {draft.image && <img src={draft.image} alt="item" className="admin__image-preview" />}
-                <input id="item-image" type="file" accept="image/*" onChange={handleImage} />
-              </div>
+            <FormField label="Image">
+              <ImageUpload value={draft.image} onChange={(v) => setField('image', v)} label="item image" />
             </FormField>
-            <label className="admin__checkbox">
-              <input type="checkbox" checked={draft.isAvailable} onChange={(e) => setField('isAvailable', e.target.checked)} />
-              Available
-            </label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={draft.isAvailable}
+              className="admin__toggle"
+              onClick={() => setField('isAvailable', !draft.isAvailable)}
+            >
+              <span>Available</span>
+              <span className={`admin__toggle-switch${draft.isAvailable ? ' admin__toggle-switch--on' : ''}`}>
+                <span className="admin__toggle-knob" />
+              </span>
+            </button>
             <div className="admin__form-actions">
               <button type="submit" className="admin__primary" disabled={saving}>
                 {saving ? 'Saving…' : draft.id ? 'Save item' : 'Add item'}

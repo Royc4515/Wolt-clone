@@ -181,14 +181,103 @@
 }
 .admin__checkbox input { width: 18px; height: 18px; accent-color: var(--accent); }
 
-.admin__image-field { display: flex; align-items: center; gap: var(--space-4); }
-.admin__image-preview {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-md);
-  object-fit: cover;
-  border: 1px solid var(--border);
+/* ── Drag & drop image uploader ── */
+.img-upload {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 150px;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
+.img-upload:hover,
+.img-upload:focus-visible { border-color: var(--accent); }
+.img-upload--over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.img-upload__placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  padding: var(--space-5);
+  pointer-events: none;
+}
+.img-upload__title { margin: var(--space-2) 0 2px; font-weight: var(--weight-semibold); }
+.img-upload__title span { color: var(--accent); }
+.img-upload__hint { margin: 0; font-size: var(--text-xs); color: var(--text-faint); }
+.img-upload__preview {
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  max-height: 240px;
+  object-fit: cover;
+}
+.img-upload__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay);
+  color: #fff;
+  font-weight: var(--weight-bold);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.img-upload:hover .img-upload__overlay,
+.img-upload--over .img-upload__overlay { opacity: 1; }
+
+/* ── Open-hours time range ── */
+.hours-picker { display: flex; align-items: center; gap: var(--space-3); }
+.hours-picker .input { flex: 1 1 0; }
+.hours-picker__sep { color: var(--text-muted); font-size: var(--text-sm); }
+
+/* ── Toggle switch (promoted / available) ── */
+.admin__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  cursor: pointer;
+}
+.admin__toggle-switch {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.admin__toggle-switch--on { background: var(--accent); }
+.admin__toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--dur) var(--ease);
+}
+.admin__toggle-switch--on .admin__toggle-knob { transform: translateX(18px); }
 
 /* ── States ── */
 .admin__error {
