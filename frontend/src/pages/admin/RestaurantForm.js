@@ -125,7 +125,7 @@ export default function RestaurantForm() {
 
         {serverError && <div className="admin__error" role="alert">{serverError}</div>}
 
-        <form onSubmit={handleSubmit} noValidate className="admin__form">
+        <form onSubmit={handleSubmit} noValidate className="admin__form admin__panel">
           <FormField label="Name" htmlFor="name" error={errors.name}>
             <input id="name" className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
           </FormField>
