@@ -13,22 +13,20 @@ import OrderSummary from '../components/checkout/OrderSummary';
 import useCart from '../hooks/useCart';
 import { getRestaurant } from '../api/restaurants';
 import { createOrder } from '../api/orders';
-import { isAuthenticated, USER_LOCATION_KEY } from '../utils/auth';
+import { isAuthenticated } from '../utils/auth';
+import { getUserLocation } from '../utils/location';
 import { readCart, writeCart } from '../utils/cartStorage';
 import { computeTotals, paymentLabel, money } from '../utils/checkout';
 import woltIcon from '../assets/wolt-logo.png';
 import './Checkout.css';
 
-function readUserLocation() {
-  try {
-    const saved = localStorage.getItem(USER_LOCATION_KEY);
-    if (!saved) return null;
-    const loc = JSON.parse(saved);
-    if (typeof loc?.lat === 'number' && typeof loc?.lng === 'number') return loc;
-    return null;
-  } catch {
-    return null;
-  }
+// The server's ETA is numeric for pickup but can come back malformed for
+// delivery (it adds the restaurant's string deliveryTime). Show it only when
+// it's a clean number; otherwise fall back to the restaurant's own estimate.
+function formatEta(estimatedTime, mode, restaurant) {
+  const n = Number(estimatedTime);
+  if (Number.isFinite(n) && n > 0) return `≈ ${Math.round(n)} min`;
+  return mode === 'pickup' ? 'Ready for pickup soon' : (restaurant?.deliveryTime || 'Soon');
 }
 
 export default function Checkout() {
@@ -36,7 +34,7 @@ export default function Checkout() {
   const navigate = useNavigate();
 
   const { items, updateQty, clearCart, restoreItems, total: subtotal } = useCart();
-  const location = useMemo(() => readUserLocation(), []);
+  const location = useMemo(() => getUserLocation(), []);
 
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,13 +105,14 @@ export default function Checkout() {
   // The page may be scrolled down when the order is placed — bring the
   // confirmation into view so it isn't missed.
   useEffect(() => {
-    if (confirmed) window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (confirmed) {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ }
+    }
   }, [confirmed]);
 
-  const deliveryFee = restaurant?.deliveryFee ?? 0;
   const totals = useMemo(
-    () => computeTotals({ subtotal, deliveryFee, tip, mode }),
-    [subtotal, deliveryFee, tip, mode]
+    () => computeTotals({ subtotal, tip, mode, restaurant, userLocation: location }),
+    [subtotal, tip, mode, restaurant, location]
   );
 
   function inc(itemId) {
@@ -129,14 +128,23 @@ export default function Checkout() {
     setError('');
     setPlacing(true);
     try {
-      const orderItems = items.map((e) => ({ productId: e.item.id, quantity: e.qty }));
-      await createOrder(restaurantId, orderItems);
-      // Snapshot the order details before clearing the cart, so the
-      // confirmation screen can show a receipt.
+      const payload = {
+        restaurantId,
+        items: items.map((e) => ({ productId: e.item.id, quantity: e.qty })),
+        mode,
+        paymentMethod: method,
+        cutlery: cutlery ? 1 : 0,
+        notes: note,
+        tip: mode === 'delivery' ? tip : 0,
+        ...(mode === 'delivery' && location ? { location } : {}),
+      };
+      // The server returns the full order with the authoritative pricing.
+      const order = await createOrder(payload);
       setPlaced({
         count: items.reduce((sum, e) => sum + e.qty, 0),
-        total: totals.total,
-        eta: mode === 'pickup' ? 'Ready for pickup soon' : (restaurant.deliveryTime || '10–15 min'),
+        pricing: order?.pricing ?? null,
+        total: order?.pricing?.total ?? totals.total,
+        eta: formatEta(order?.estimatedTime, mode, restaurant),
         mode,
       });
       clearCart();
@@ -194,6 +202,30 @@ export default function Checkout() {
                   <span>{placed.mode === 'pickup' ? 'Pickup' : 'Delivery'}</span>
                   <span>{placed.eta}</span>
                 </div>
+                {placed.pricing && (
+                  <>
+                    <div className="checkout__receipt-row">
+                      <span>Subtotal</span>
+                      <span>{money(placed.pricing.subtotal)}</span>
+                    </div>
+                    <div className="checkout__receipt-row">
+                      <span>Service fee</span>
+                      <span>{money(placed.pricing.serviceFee)}</span>
+                    </div>
+                    {placed.mode === 'delivery' && (
+                      <div className="checkout__receipt-row">
+                        <span>Delivery</span>
+                        <span>{placed.pricing.deliveryFee === 0 ? 'Free' : money(placed.pricing.deliveryFee)}</span>
+                      </div>
+                    )}
+                    {placed.pricing.finalTip > 0 && (
+                      <div className="checkout__receipt-row">
+                        <span>Courier tip</span>
+                        <span>{money(placed.pricing.finalTip)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="checkout__receipt-row checkout__receipt-row--total">
                   <span>Total paid</span>
                   <span>{money(placed.total)}</span>
@@ -213,7 +245,9 @@ export default function Checkout() {
     );
   }
 
-  const canPlace = !placing && items.length > 0;
+  // Server requires a location for delivery — block until one is set.
+  const needsLocation = mode === 'delivery' && !location;
+  const canPlace = !placing && items.length > 0 && !needsLocation;
   const orderLabel = `Order with ${paymentLabel(method)}`;
 
   return (
@@ -267,6 +301,15 @@ export default function Checkout() {
           <PaymentSection method={method} onChange={setMethod} />
 
           {mode === 'delivery' && <TipSection tip={tip} onChange={setTip} />}
+
+          {needsLocation && (
+            <div className="checkout__notice" role="alert">
+              Add a delivery location in your profile to place a delivery order, or{' '}
+              <button type="button" className="checkout__inline-link" onClick={() => setMode('pickup')}>
+                switch to Pickup
+              </button>.
+            </div>
+          )}
 
           {error && <div className="checkout__error" role="alert">{error}</div>}
         </main>

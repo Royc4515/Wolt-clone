@@ -12,6 +12,8 @@ import { getOrders } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { readCart, writeCart } from '../utils/cartStorage';
 import { hashColor } from '../utils/colorHash';
+import { realDeliveryFee } from '../utils/checkout';
+import { getUserLocation } from '../utils/location';
 import useTheme from '../hooks/useTheme';
 import woltIcon from '../assets/wolt-logo.png';
 import './Restaurant.css';
@@ -202,6 +204,7 @@ export default function Restaurant() {
   }
 
   const bgColor = hashColor(restaurant.name);
+  const deliveryFee = realDeliveryFee(restaurant, getUserLocation());
 
   return (
     <div className="restaurant">
@@ -243,7 +246,7 @@ export default function Restaurant() {
             <span className="restaurant__dot" aria-hidden="true">·</span>
             <span className="restaurant__fee">
               <BikeIcon />
-              {restaurant.deliveryFee === 0 ? 'Free delivery' : `₪${restaurant.deliveryFee}`}
+              {deliveryFee === 0 ? 'Free delivery' : `₪${deliveryFee}`}
             </span>
           </div>
         </div>

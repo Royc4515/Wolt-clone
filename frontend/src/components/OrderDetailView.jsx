@@ -5,7 +5,7 @@ import useOutsideClick from '../hooks/useOutsideClick';
 
 export default function OrderDetailView({ order, restaurant, menuMap, onBack, onClose }) {
   const restName = restaurant?.name ?? 'Restaurant';
-  const total = typeof order.totalPrice === 'number' ? order.totalPrice.toFixed(2) : '—';
+  const total = typeof order.pricing?.total === 'number' ? order.pricing.total.toFixed(2) : '—';
   const panelRef = useRef(null);
   useOutsideClick(panelRef, true, onClose, onClose);
 

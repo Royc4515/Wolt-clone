@@ -36,15 +36,13 @@ export default function OrderSummary({
       {feesOpen && (
         <p className="checkout-summary__fees-note">
           The service fee helps us run the platform; the delivery fee depends on the
-          distance to you. Pickup orders have neither.
+          distance to you. Pickup orders have no delivery fee.
         </p>
       )}
 
       <div className="checkout-summary__rows">
         <Row label="Item subtotal" value={money(totals.subtotal)} testid="checkout-subtotal" />
-        {isDelivery && (
-          <Row label="Service fee" value={money(totals.serviceFee)} testid="checkout-service-fee" />
-        )}
+        <Row label="Service fee" value={money(totals.serviceFee)} testid="checkout-service-fee" />
         {isDelivery && (
           <Row
             label="Delivery"
@@ -52,7 +50,7 @@ export default function OrderSummary({
             testid="checkout-delivery-fee"
           />
         )}
-        {isDelivery && totals.tip > 0 && (
+        {totals.tip > 0 && (
           <Row label="Courier tip" value={money(totals.tip)} testid="checkout-tip" />
         )}
       </div>

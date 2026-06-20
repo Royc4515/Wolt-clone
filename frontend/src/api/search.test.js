@@ -53,7 +53,8 @@ describe('searchAll', () => {
       Promise.resolve(url === '/api/restaurants' ? mockData.restaurants : mockData)
     );
     const result = await searchAll('burger');
-    expect(result.restaurants).toEqual(mockData.restaurants);
+    // Restaurants are enriched with a computed (distance-based) delivery fee.
+    expect(result.restaurants).toMatchObject(mockData.restaurants);
     // Original product fields are preserved, enriched with restaurant metadata.
     expect(result.products[0]).toMatchObject({ id: 'p1', name: 'Cheeseburger', restId: 'r1' });
     expect(result.products[0].restaurantName).toBe('Burger Bar');
