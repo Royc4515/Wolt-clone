@@ -1,4 +1,7 @@
-import { computeTotals, money, paymentLabel, SERVICE_FEE } from './checkout';
+import { computeTotals, calcAerialDistance, money, paymentLabel, SERVICE_FEE } from './checkout';
+
+const REST = { deliveryFee: 9, location: { lat: 32.0, lng: 34.0 } };
+const USER = { lat: 32.0, lng: 34.0 }; // same point → distance 0
 
 describe('checkout — money', () => {
   test('formats with two decimals and shekel sign', () => {
@@ -17,27 +20,49 @@ describe('checkout — paymentLabel', () => {
   });
 });
 
+describe('checkout — calcAerialDistance', () => {
+  test('is zero for the same point', () => {
+    expect(calcAerialDistance(32, 34, 32, 34)).toBe(0);
+  });
+  test('is positive for different points', () => {
+    expect(calcAerialDistance(32, 34, 32.1, 34)).toBeGreaterThan(0);
+  });
+});
+
 describe('checkout — computeTotals (delivery)', () => {
-  test('adds service fee, delivery fee and tip', () => {
-    const t = computeTotals({ subtotal: 110, deliveryFee: 9, tip: 10, mode: 'delivery' });
+  test('service fee is ₪2 and applies on top of subtotal + delivery + tip', () => {
+    const t = computeTotals({ subtotal: 110, tip: 10, mode: 'delivery', restaurant: REST, userLocation: USER });
     expect(t.serviceFee).toBe(SERVICE_FEE);
+    expect(SERVICE_FEE).toBe(2);
+    // distance 0 → deliveryFee = base (9) + 0
     expect(t.deliveryFee).toBe(9);
     expect(t.tip).toBe(10);
-    expect(t.total).toBeCloseTo(110 + SERVICE_FEE + 9 + 10);
+    expect(t.total).toBeCloseTo(110 + 2 + 9 + 10);
   });
 
-  test('free delivery still charges the service fee', () => {
-    const t = computeTotals({ subtotal: 110, deliveryFee: 0, mode: 'delivery' });
-    expect(t.total).toBeCloseTo(110 + SERVICE_FEE);
+  test('delivery fee grows with distance (₪2 per km)', () => {
+    const near = computeTotals({ subtotal: 100, mode: 'delivery', restaurant: REST, userLocation: USER });
+    const far = computeTotals({
+      subtotal: 100,
+      mode: 'delivery',
+      restaurant: REST,
+      userLocation: { lat: 32.2, lng: 34.0 },
+    });
+    expect(far.deliveryFee).toBeGreaterThan(near.deliveryFee);
+  });
+
+  test('falls back to base delivery fee when no user location', () => {
+    const t = computeTotals({ subtotal: 100, mode: 'delivery', restaurant: REST, userLocation: null });
+    expect(t.deliveryFee).toBe(9);
   });
 });
 
 describe('checkout — computeTotals (pickup)', () => {
-  test('drops service fee, delivery and tip', () => {
-    const t = computeTotals({ subtotal: 110, deliveryFee: 9, tip: 10, mode: 'pickup' });
-    expect(t.serviceFee).toBe(0);
+  test('keeps the service fee but has no delivery fee', () => {
+    const t = computeTotals({ subtotal: 110, tip: 10, mode: 'pickup', restaurant: REST, userLocation: USER });
+    expect(t.serviceFee).toBe(SERVICE_FEE);
     expect(t.deliveryFee).toBe(0);
-    expect(t.tip).toBe(0);
-    expect(t.total).toBe(110);
+    // total = subtotal + service fee + tip
+    expect(t.total).toBeCloseTo(110 + 2 + 10);
   });
 });

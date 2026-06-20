@@ -272,7 +272,7 @@ function OrderCard({ order, restaurant, onDelete, isDeleting, editMode, isSelect
   const navigate  = useNavigate();
   const restName  = restaurant?.name ?? 'Restaurant';
   const itemCount = order.items?.length ?? 0;
-  const total     = typeof order.totalPrice === 'number' ? order.totalPrice.toFixed(2) : '—';
+  const total     = typeof order.pricing?.total === 'number' ? order.pricing.total.toFixed(2) : '—';
 
   function handleOrderAgain() {
     navigate(`/restaurant/${order.restaurantId}`, { state: { reorderItems: order.items } });

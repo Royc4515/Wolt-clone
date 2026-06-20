@@ -6,7 +6,7 @@ const MAX_THUMBS = 5;
 
 function DrawerOrderCard({ order, restaurant, menuMap, onViewDetails, onOrderAgain, onDelete, isDeleting, editMode, isSelected, onToggleSelect, onRestaurantClick }) {
   const restName = restaurant?.name ?? 'Restaurant';
-  const total = typeof order.totalPrice === 'number' ? order.totalPrice.toFixed(2) : '—';
+  const total = typeof order.pricing?.total === 'number' ? order.pricing.total.toFixed(2) : '—';
 
   const itemsWithData = (order.items || [])
     .map(({ productId, quantity }) => ({ item: menuMap?.get(productId), qty: quantity }))

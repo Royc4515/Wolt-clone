@@ -1,4 +1,6 @@
 import { apiFetch } from './api';
+import { realDeliveryFee } from '../utils/checkout';
+import { getUserLocation } from '../utils/location';
 
 export const searchAll = async (query) => {
     if (!query || query.trim() === '') return { restaurants: [], products: [] };
@@ -8,8 +10,12 @@ export const searchAll = async (query) => {
         apiFetch('/api/restaurants', { method: 'GET' }).catch(() => null),
     ]);
 
-    const restaurants = searchData.restaurants || searchData.Restaurants || [];
-    const rawProducts = searchData.products    || searchData.Products    || [];
+    const userLoc = getUserLocation();
+    const rawRestaurants = searchData.restaurants || searchData.Restaurants || [];
+    const rawProducts    = searchData.products    || searchData.Products    || [];
+
+    // Show the real, distance-based delivery fee (falls back to base fee).
+    const restaurants = rawRestaurants.map(r => ({ ...r, deliveryFee: realDeliveryFee(r, userLoc) }));
 
     // Build lookup from all restaurants (full list) so every product's restId resolves
     const allRestsArray = Array.isArray(allRestsData)
@@ -27,7 +33,7 @@ export const searchAll = async (query) => {
             ...p,
             restaurantName:  rest.name        ?? p.restaurantName ?? null,
             restaurantCoords,
-            deliveryFee:     rest.deliveryFee  ?? null,
+            deliveryFee:     rest.id ? realDeliveryFee(rest, userLoc) : (rest.deliveryFee ?? null),
             deliveryTime:    rest.deliveryTime ?? null,
             rating:          rest.rating       ?? null,
         };

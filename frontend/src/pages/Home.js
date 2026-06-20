@@ -4,6 +4,8 @@ import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
 import ScrollSection from '../components/shared/ScrollSection';
 import { getRestaurants } from '../api/restaurants';
+import { realDeliveryFee } from '../utils/checkout';
+import { getUserLocation } from '../utils/location';
 import './Home.css';
 
 const CATEGORY_META = {
@@ -47,6 +49,10 @@ export default function Home() {
 
   const promoted = useMemo(() => restaurants.filter(r => r.isPromoted), [restaurants]);
 
+  // Real, distance-based delivery fee for the logged-in user (falls back to the
+  // restaurant's base fee for guests / missing locations).
+  const userLocation = useMemo(() => getUserLocation(), []);
+
   return (
     <div className="home">
       <AppBar logoLinkDisabled />
@@ -60,12 +66,16 @@ export default function Home() {
 
         {!activeCategory && promoted.length > 0 && (
           <ScrollSection classPrefix="home" title="Promoted">
-            {promoted.map(r => <RestaurantCard key={r.id} {...r} />)}
+            {promoted.map(r => (
+              <RestaurantCard key={r.id} {...r} deliveryFee={realDeliveryFee(r, userLocation)} />
+            ))}
           </ScrollSection>
         )}
 
         <ScrollSection classPrefix="home" title={activeCategory || 'All Restaurants'}>
-          {restaurants.map(r => <RestaurantCard key={r.id} {...r} />)}
+          {restaurants.map(r => (
+            <RestaurantCard key={r.id} {...r} deliveryFee={realDeliveryFee(r, userLocation)} />
+          ))}
         </ScrollSection>
       </main>
     </div>

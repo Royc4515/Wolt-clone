@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Checkout from './Checkout';
 import { getRestaurant } from '../api/restaurants';
 import { createOrder } from '../api/orders';
-import { isAuthenticated } from '../utils/auth';
+import { isAuthenticated, getCurrentUser } from '../utils/auth';
 
 const mockNavigate = jest.fn();
 
@@ -15,17 +15,27 @@ jest.mock('react-router-dom', () => ({
 jest.mock('../api/restaurants', () => ({ getRestaurant: jest.fn() }));
 
 jest.mock('../api/orders', () => ({
-  createOrder: jest.fn(() => Promise.resolve()),
+  createOrder: jest.fn(),
 }));
 
 jest.mock('../utils/auth', () => ({
   isAuthenticated: jest.fn(() => true),
+  getCurrentUser: jest.fn(() => null),
   USER_LOCATION_KEY: 'user_location',
 }));
 
 jest.mock('../components/AppBar', () => () => <div data-testid="appbar" />);
 
+// RESTAURANT has no `location`, so the client distance is 0 and the delivery
+// fee equals the base fee (deterministic for tests).
 const RESTAURANT = { id: '1', name: 'Pizza Roma', deliveryFee: 9, deliveryTime: '25–35 min' };
+
+// What Dana's server returns from createOrder (authoritative pricing).
+const SERVER_ORDER = {
+  id: 'o1',
+  pricing: { subtotal: 110, serviceFee: 2, deliveryFee: 9, finalTip: 0, total: 121 },
+  estimatedTime: 30,
+};
 
 const CART = [
   { item: { id: 'i1', name: 'Garlic Bread', price: 24, image: '', maxQty: 5 }, qty: 2 },
@@ -37,7 +47,7 @@ const seedLocation = () => localStorage.setItem('user_location', JSON.stringify(
 
 beforeEach(() => {
   getRestaurant.mockResolvedValue(RESTAURANT);
-  createOrder.mockResolvedValue();
+  createOrder.mockResolvedValue(SERVER_ORDER);
   isAuthenticated.mockReturnValue(true);
   seedLocation();
 });
@@ -61,7 +71,7 @@ describe('Checkout — guards', () => {
   });
 });
 
-describe('Checkout — summary & totals', () => {
+describe('Checkout — summary & totals (mirrors server)', () => {
   test('renders each item with its unit price', async () => {
     seedCart();
     render(<Checkout />);
@@ -71,15 +81,15 @@ describe('Checkout — summary & totals', () => {
     expect(screen.getByText('₪62.00')).toBeInTheDocument();
   });
 
-  test('breaks down subtotal, service fee, delivery and total', async () => {
+  test('breaks down subtotal, ₪2 service fee, delivery and total', async () => {
     seedCart();
     render(<Checkout />);
     await screen.findByText('Garlic Bread');
     expect(screen.getByTestId('checkout-subtotal')).toHaveTextContent('₪110.00');
-    expect(screen.getByTestId('checkout-service-fee')).toHaveTextContent('₪5.90');
+    expect(screen.getByTestId('checkout-service-fee')).toHaveTextContent('₪2.00');
     expect(screen.getByTestId('checkout-delivery-fee')).toHaveTextContent('₪9.00');
-    // 110 + 5.90 + 9 = 124.90
-    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪124.90');
+    // 110 + 2 + 9 = 121
+    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪121.00');
   });
 
   test('shows Free when deliveryFee is 0', async () => {
@@ -92,14 +102,15 @@ describe('Checkout — summary & totals', () => {
 });
 
 describe('Checkout — fulfillment', () => {
-  test('pickup drops service & delivery fees, total equals subtotal', async () => {
+  test('pickup keeps the service fee but drops delivery; total = subtotal + service', async () => {
     seedCart();
     render(<Checkout />);
     await screen.findByText('Garlic Bread');
     fireEvent.click(screen.getByRole('tab', { name: /pickup/i }));
     expect(screen.queryByTestId('checkout-delivery-fee')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('checkout-service-fee')).not.toBeInTheDocument();
-    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪110.00');
+    expect(screen.getByTestId('checkout-service-fee')).toHaveTextContent('₪2.00');
+    // 110 + 2 = 112
+    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪112.00');
   });
 });
 
@@ -110,8 +121,8 @@ describe('Checkout — tip', () => {
     await screen.findByText('Garlic Bread');
     fireEvent.click(screen.getByRole('button', { name: '₪10' }));
     expect(screen.getByTestId('checkout-tip')).toHaveTextContent('₪10.00');
-    // 124.90 + 10 = 134.90
-    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪134.90');
+    // 121 + 10 = 131
+    expect(screen.getByTestId('checkout-total')).toHaveTextContent('₪131.00');
   });
 });
 
@@ -139,12 +150,30 @@ describe('Checkout — editing items', () => {
 });
 
 describe('Checkout — delivery location', () => {
-  test('prompts to set a location but still allows placing the order', async () => {
+  test('blocks placing and offers pickup when no location on delivery', async () => {
     localStorage.removeItem('user_location');
     seedCart();
     render(<Checkout />);
     await screen.findByText('Garlic Bread');
-    expect(screen.getByText(/add a delivery location/i)).toBeInTheDocument();
+    expect(screen.getByTestId('place-order-btn')).toBeDisabled();
+    expect(screen.getByRole('button', { name: /switch to pickup/i })).toBeInTheDocument();
+  });
+
+  test('reads the delivery location from the JWT (no local cache needed)', async () => {
+    localStorage.removeItem('user_location');
+    getCurrentUser.mockReturnValue({ location: { lat: 32.1, lng: 34.8 } });
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+    expect(screen.getByTestId('place-order-btn')).not.toBeDisabled();
+  });
+
+  test('switching to pickup enables placing without a location', async () => {
+    localStorage.removeItem('user_location');
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+    fireEvent.click(screen.getByRole('tab', { name: /pickup/i }));
     expect(screen.getByTestId('place-order-btn')).not.toBeDisabled();
   });
 });
@@ -180,20 +209,31 @@ describe('Checkout — interactive extras', () => {
 });
 
 describe('Checkout — place order', () => {
-  test('creates the order, clears the cart and shows confirmation', async () => {
+  test('sends the full payload, clears the cart and shows the server receipt', async () => {
     seedCart();
     render(<Checkout />);
     await screen.findByText('Garlic Bread');
     fireEvent.click(screen.getByTestId('place-order-btn'));
 
     await waitFor(() =>
-      expect(createOrder).toHaveBeenCalledWith('1', [
-        { productId: 'i1', quantity: 2 },
-        { productId: 'i2', quantity: 1 },
-      ])
+      expect(createOrder).toHaveBeenCalledWith(
+        expect.objectContaining({
+          restaurantId: '1',
+          items: [
+            { productId: 'i1', quantity: 2 },
+            { productId: 'i2', quantity: 1 },
+          ],
+          mode: 'delivery',
+          paymentMethod: 'card',
+          cutlery: 0,
+          location: { lat: 32.08, lng: 34.78 },
+        })
+      )
     );
     await waitFor(() => expect(localStorage.getItem('cart_1')).toBeNull());
     expect(await screen.findByText(/order accepted/i)).toBeInTheDocument();
+    // Receipt shows the server-calculated total, not a client guess.
+    expect(screen.getByText('₪121.00')).toBeInTheDocument();
   });
 
   test('confirmation button navigates to /orders', async () => {
@@ -226,7 +266,7 @@ describe('Checkout — place order', () => {
     const btn = screen.getByTestId('place-order-btn');
     fireEvent.click(btn);
     await waitFor(() => expect(btn).toBeDisabled());
-    resolveOrder();
+    resolveOrder(SERVER_ORDER);
     await screen.findByText(/order accepted/i);
   });
 });
