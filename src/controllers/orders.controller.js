@@ -197,10 +197,49 @@ const deleteOrder = (req, res) => {
     });
 };
 
+// Update the status of an existing order (Restaurant Admin only).
+const updateOrderStatus = (req, res) => {
+    const userId = req.userId;
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate input.
+    if (!status) {
+        return res.status(400).json({ error: "Status field is required" });
+    }
+
+    // Check if the order exists.
+    const order = ordersRepo.findById(id);
+    if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Verify that the user attempting to update the status is the owner of the restaurant.
+    const restaurant = restRepo.findById(order.restaurantId);
+    if (!restaurant) {
+        return res.status(404).json({ error: "Associated restaurant not found" });
+    }
+
+    if (restaurant.ownerId !== userId) {
+        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update order statuses" });
+    }
+
+    // Update the status in the database.
+    const updatedOrder = ordersRepo.update(id, { status });
+
+    if (!updatedOrder) {
+         return res.status(500).json({ error: "Failed to update order status" });
+    }
+
+    // Return 200 and the updated status upon successful update.
+    res.status(200).json(updatedOrder);
+};
+
 module.exports = {
     createOrder,
     getAllOrders,
     getOrder,
     updateOrder,
-    deleteOrder
+    deleteOrder,
+    updateOrderStatus
 };
