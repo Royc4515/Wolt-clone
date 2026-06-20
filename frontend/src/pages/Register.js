@@ -17,6 +17,7 @@ export default function Register() {
   const [profilePicture, setProfilePicture] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [role, setRole] = useState('customer');
   const [isLoading, setIsLoading] = useState(false);
   const { errors, serverError, setErrors, setServerError, clearFieldError } = useFormErrors();
 
@@ -66,7 +67,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register({ username, password, confirmPassword, displayName, profilePicture, location: { lat: parseFloat(lat), lng: parseFloat(lng) } });
+      await register({ username, password, confirmPassword, displayName, profilePicture, location: { lat: parseFloat(lat), lng: parseFloat(lng) }, role });
       navigate('/login');
     } catch (err) {
       setServerError(err.message || 'Registration failed. Please try again.');
@@ -187,6 +188,30 @@ export default function Register() {
             />
           </FormField>
         </div>
+
+        <FormField label="Account type" htmlFor="role" hint="Admins can manage restaurants and menus">
+          <div className="register-role" role="radiogroup" aria-label="Account type">
+            <button
+              id="role"
+              type="button"
+              role="radio"
+              aria-checked={role === 'customer'}
+              className={`register-role__btn${role === 'customer' ? ' register-role__btn--active' : ''}`}
+              onClick={() => setRole('customer')}
+            >
+              Customer
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={role === 'admin'}
+              className={`register-role__btn${role === 'admin' ? ' register-role__btn--active' : ''}`}
+              onClick={() => setRole('admin')}
+            >
+              Admin
+            </button>
+          </div>
+        </FormField>
 
         <button
           className="btn btn--soft btn--pill btn--block btn--lg"

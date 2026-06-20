@@ -8,8 +8,12 @@ import Checkout from './pages/Checkout';
 import Profile from './pages/Profile';
 import Orders from './pages/Orders';
 import SearchResults from './pages/SearchResults';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import RestaurantForm from './pages/admin/RestaurantForm';
+import MenuManager from './pages/admin/MenuManager';
 import PublicRoute from './components/PublicRoute';
 import PrivateRoute from './components/PrivateRoute';
+import AdminRoute from './components/AdminRoute';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -25,6 +29,13 @@ function App() {
         <Route path="/search" element={<SearchResults />} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+
+        {/* ── Admin ── */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/restaurants/new" element={<AdminRoute><RestaurantForm /></AdminRoute>} />
+        <Route path="/admin/restaurants/:id/edit" element={<AdminRoute><RestaurantForm /></AdminRoute>} />
+        <Route path="/admin/restaurants/:id/menu" element={<AdminRoute><MenuManager /></AdminRoute>} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

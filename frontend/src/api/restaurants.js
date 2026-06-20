@@ -1,4 +1,4 @@
-import { apiFetch } from './api';
+import { apiFetch, apiMutate } from './api';
 
 /**
  * Fetches the list of all restaurants.
@@ -35,10 +35,22 @@ export const searchRestaurants = async (query) => {
 
 /**
  * Fetches the full menu (all products) for a specific restaurant by its ID.
- * Target: GET /api/restaurants/:id/products
+ * Target: GET /api/restaurants/:id/menu
  */
 export const getMenu = async (restaurantId) => {
     return await apiFetch(`/api/restaurants/${restaurantId}/menu`, {
         method: 'GET',
     });
 };
+
+/* ── Admin: restaurant management (require admin + ownership) ── */
+
+// Create a restaurant. Returns { id } of the new restaurant.
+export const createRestaurant = (data) =>
+    apiMutate('/api/restaurants', { method: 'POST', body: JSON.stringify(data) });
+
+export const updateRestaurant = (id, data) =>
+    apiMutate(`/api/restaurants/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const deleteRestaurant = (id) =>
+    apiMutate(`/api/restaurants/${id}`, { method: 'DELETE' });
