@@ -4,7 +4,7 @@ import AnimatedLogo from './AnimatedLogo';
 import ThemeToggle from './shared/ThemeToggle';
 import OrdersDrawer from './OrdersDrawer';
 import { XIcon } from './icons';
-import { getAuthState, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
+import { getAuthState, isAdmin, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
 import useOutsideClick from '../hooks/useOutsideClick';
@@ -401,6 +401,16 @@ export default function AppBar({ cartCount = 0, cartTotal = 0, onShowCart, trans
                     >
                       My Orders
                     </Link>
+                    {isAdmin() && (
+                      <Link
+                        to="/admin"
+                        className="appbar__avatar-menu-item appbar__avatar-menu-item--accent"
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        Admin
+                      </Link>
+                    )}
                     <button
                       className="appbar__avatar-menu-item appbar__avatar-menu-item--danger"
                       role="menuitem"

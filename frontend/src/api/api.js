@@ -48,3 +48,36 @@ export const apiFetch = async (endpoint, options = {}) => {
         throw error;
     }
 };
+
+// Like apiFetch, but tolerates empty bodies (201 Created / 204 No Content) that
+// the restaurant & product write endpoints return. On a 201 with no body, the
+// created resource id is surfaced from the Location header as { id }.
+export const apiMutate = async (endpoint, options = {}) => {
+    const token = localStorage.getItem('jwt_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers,
+    };
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, { ...options, headers });
+
+    if (response.status === 401) {
+        localStorage.removeItem('jwt_token');
+        window.location.href = '/login';
+        throw new Error('Unauthorized');
+    }
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!response.ok) {
+        throw new Error((data && (data.error || data.message)) || 'Request failed');
+    }
+
+    if (!data && response.status === 201) {
+        const location = response.headers.get('Location');
+        return location ? { id: location.split('/').pop() } : null;
+    }
+    return data;
+};

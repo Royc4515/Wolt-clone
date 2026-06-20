@@ -19,3 +19,7 @@ export function isAuthenticated() {
 export function getCurrentUser() {
   return getAuthState().user;
 }
+
+export function isAdmin() {
+  return getCurrentUser()?.role === 'admin';
+}

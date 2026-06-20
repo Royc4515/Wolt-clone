@@ -24,6 +24,7 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [role, setRole] = useState('customer');
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [serverError, setServerError] = useState('');
@@ -36,6 +37,7 @@ export default function Profile() {
       setProfilePicture(data.profilePicture || '');
       setLat(data.location?.lat ?? '');
       setLng(data.location?.lng ?? '');
+      setRole(data.role || 'customer');
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,6 +86,7 @@ export default function Profile() {
       displayName,
       profilePicture,
       location: { lat: parseFloat(lat), lng: parseFloat(lng) },
+      role,
     };
     if (password) updateData.password = password;
 
@@ -254,6 +257,23 @@ export default function Profile() {
                 onChange={e => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: undefined })); }}
               />
               {errors.confirmPassword && <span className="profile-row-error">{errors.confirmPassword}</span>}
+            </div>
+          </div>
+
+          {/* Account type row */}
+          <div className="profile-row">
+            <label className="profile-row-label" htmlFor="role">Account type</label>
+            <div className="profile-row-control">
+              <select
+                id="role"
+                className="profile-input"
+                value={role}
+                onChange={e => setRole(e.target.value)}
+              >
+                <option value="customer">Customer</option>
+                <option value="admin">Admin</option>
+              </select>
+              <span className="profile-hint">Admins can manage restaurants and menus.</span>
             </div>
           </div>
 
