@@ -3,6 +3,7 @@
 const express = require('express');
 const ordersController = require('../controllers/orders.controller');
 const { requireAuth } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -14,5 +15,8 @@ router.get('/', requireAuth, ordersController.getAllOrders);
 router.get('/:id', requireAuth, ordersController.getOrder);
 router.patch('/:id', requireAuth, ordersController.updateOrder);
 router.delete('/:id', requireAuth, ordersController.deleteOrder);
+
+// Endpoint to update order status (protected by authentication AND admin role).
+router.patch('/:id/status', requireAuth, requireAdmin, ordersController.updateOrderStatus);
 
 module.exports = router;
