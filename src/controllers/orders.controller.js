@@ -3,7 +3,7 @@ const restRepo = require('../services/repositories/restaurants.repository');
 const prodRepo = require('../services/repositories/products.repository');
 const { calcAerialDistance } = require('../services/distance');
 
-// Create a new order with secure backend calculations.
+// Create a new order with secure backend calculations and radius limitation.
 const createOrder = (req, res) => {
     const userId = req.userId;
     const { 
@@ -61,6 +61,16 @@ const createOrder = (req, res) => {
             restaurant.location.lat, restaurant.location.lng,
             location.lat, location.lng
         );
+
+        // Define the maximum allowed delivery distance in kilometers.
+        const MAX_DELIVERY_RADIUS_KM = 15; 
+        
+        // Block the order if the distance exceeds the maximum radius.
+        if (distanceKm > MAX_DELIVERY_RADIUS_KM) {
+            return res.status(400).json({ 
+                error: `Delivery address is too far. Maximum delivery distance is ${MAX_DELIVERY_RADIUS_KM}km. (Your distance: ${distanceKm.toFixed(1)}km)` 
+            });
+        }
 
         finalDeliveryFee = restaurant.deliveryFee + (distanceKm * 2); // 2 ILS per km.
         estimatedTime = restaurant.deliveryTime + (totalItemsCount * 2) + Math.round(distanceKm * 3); // Restaurant's base time + 2 min per item + 3 min per km.
@@ -235,11 +245,38 @@ const updateOrderStatus = (req, res) => {
     res.status(200).json(updatedOrder);
 };
 
+// Fetch all orders for a specific restaurant (Restaurant Admin only).
+const getRestaurantOrders = (req, res) => {
+    const userId = req.userId;
+    const { restaurantId } = req.params;
+
+    // Verify that the restaurant exists in the DB.
+    const restaurant = restRepo.findById(restaurantId);
+    if (!restaurant) {
+        return res.status(404).json({ error: "Restaurant not found" });
+    }
+
+    // Security check: Ensure the requesting user is the actual owner of this restaurant.
+    if (restaurant.ownerId !== userId) {
+        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can view these orders" });
+    }
+
+    // Fetch all orders from the DB.
+    const allOrders = ordersRepo.findAll();
+
+    // Filter orders to include ONLY those belonging to this specific restaurant.
+    const restaurantOrders = allOrders.filter(order => order.restaurantId === restaurantId);
+
+    // Return the filtered list of orders to the admin.
+    res.status(200).json(restaurantOrders);
+};
+
 module.exports = {
     createOrder,
     getAllOrders,
     getOrder,
     updateOrder,
     deleteOrder,
-    updateOrderStatus
+    updateOrderStatus,
+    getRestaurantOrders
 };

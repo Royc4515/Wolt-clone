@@ -18,5 +18,7 @@ router.delete('/:id', requireAuth, ordersController.deleteOrder);
 
 // Endpoint to update order status (protected by authentication AND admin role).
 router.patch('/:id/status', requireAuth, requireAdmin, ordersController.updateOrderStatus);
+// Endpoint to get all orders for a specific restaurant (protected by auth AND admin role)
+router.get('/restaurant/:restaurantId', requireAuth, requireAdmin, ordersController.getRestaurantOrders);
 
 module.exports = router;

@@ -1,9 +1,29 @@
 const restRepo = require('../services/repositories/restaurants.repository');
 const productsRepo = require('../services/repositories/products.repository');
+const { calcAerialDistance } = require('../services/distance');
 
-// Extract all restaurants from the DB.
+// Fetch all restaurants, with optional radius filtering based on user coordinates.
 const getRestaurants = (req, res) => {
-    const restaurants = restRepo.findAll();
+    // Fetch all restaurants from the database initially.
+    let restaurants = restRepo.findAll();
+
+    // Extract coordinates from the query string.
+    const { lat, lng } = req.query;
+
+    // If both latitude and longitude are provided in the request, filter the results.
+    if (lat && lng) {
+        const userLat = parseFloat(lat);
+        const userLng = parseFloat(lng);
+        const MAX_RADIUS_KM = 15; // Ensure this matches the order radius logic.
+
+        // Filter out restaurants that are beyond the maximum delivery radius.
+        restaurants = restaurants.filter(rest => {
+            const dist = calcAerialDistance(userLat, userLng, rest.location.lat, rest.location.lng);
+            return dist <= MAX_RADIUS_KM;
+        });
+    }
+
+    // Return the filtered (or unfiltered) list of restaurants.
     res.status(200).json(restaurants);
 };
 
