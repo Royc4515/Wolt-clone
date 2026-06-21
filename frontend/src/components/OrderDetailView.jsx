@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { XIcon, BackIcon } from './icons';
 import { statusLabel, displayStatus, formatDate } from '../utils/orders';
 import useOutsideClick from '../hooks/useOutsideClick';
+import './OrdersDrawer.css';
 
 export default function OrderDetailView({ order, restaurant, menuMap, onBack, onClose }) {
   const restName = restaurant?.name ?? 'Restaurant';

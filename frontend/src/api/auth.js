@@ -40,6 +40,11 @@ export const register = async (userData) => {
  */
 export const logout = () => {
     localStorage.removeItem('jwt_token');
+    // Clear per-restaurant shopping carts so they don't leak to the next user
+    // who logs in on the same browser.
+    Object.keys(localStorage)
+        .filter((k) => k.startsWith('cart_'))
+        .forEach((k) => localStorage.removeItem(k));
 };
 
 /**

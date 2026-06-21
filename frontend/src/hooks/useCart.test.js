@@ -69,6 +69,15 @@ describe('useCart', () => {
     expect(result.current.items[0].qty).toBe(3);
   });
 
+  test('updateQty does not produce NaN for items without maxQty (admin-created)', () => {
+    const NO_MAX = { id: 'a1', name: 'New Dish', price: 30 }; // no maxQty
+    const { result } = renderHook(() => useCart());
+    act(() => { result.current.addItem(NO_MAX); });
+    act(() => { result.current.updateQty('a1', 3); });
+    expect(result.current.items[0].qty).toBe(3);
+    expect(Number.isNaN(result.current.items[0].qty)).toBe(false);
+  });
+
   test('updateQty with qty < 1 removes the item', () => {
     const { result } = renderHook(() => useCart());
     act(() => { result.current.addItem(PIZZA); });
