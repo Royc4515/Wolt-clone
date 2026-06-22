@@ -371,14 +371,35 @@
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.admin-order__status-btn:hover:not(:disabled) { color: var(--text); }
+.admin-order__status-btn:hover:not(:disabled):not(.admin-order__status-btn--active) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+/* Active pill — glossy gradient + soft accent glow so it reads as "lit". */
 .admin-order__status-btn--active {
-  background: var(--accent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #fff), var(--accent) 78%);
   color: var(--accent-contrast);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 8px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+/* Dark mode: sink the track and brighten the glow so the pill really shines. */
+[data-theme="dark"] .admin-order__status {
+  background: var(--surface-sunken);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+[data-theme="dark"] .admin-order__status-btn--active {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 3px 14px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .admin-order__status-btn:disabled { cursor: default; }
+/* The current step is disabled but must stay fully lit — beat the global
+   `button:disabled { opacity: .35 }` reset so the selected pill isn't washed out. */
+.admin-order__status-btn--active:disabled { opacity: 1; }
 .admin-order__status-btn:not(.admin-order__status-btn--active):disabled { opacity: 0.55; }
 
 /* ── States ── */

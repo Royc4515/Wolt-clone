@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppBar from '../components/AppBar';
-import { BackIcon, PinIcon } from '../components/icons';
+import { BackIcon, PinIcon, AlertIcon } from '../components/icons';
 import FulfillmentToggle from '../components/checkout/FulfillmentToggle';
 import WhereSection from '../components/checkout/WhereSection';
 import WhenSection from '../components/checkout/WhenSection';
@@ -319,12 +319,18 @@ export default function Checkout() {
           )}
 
           {tooFar && (
-            <div className="checkout__notice" role="alert">
-              This address is {distanceKm.toFixed(1)} km from {restaurant.name} — beyond our{' '}
-              {MAX_DELIVERY_RADIUS_KM} km delivery range. Try{' '}
-              <button type="button" className="checkout__inline-link" onClick={() => setMode('pickup')}>
-                switch to Pickup
-              </button>.
+            <div className="checkout__too-far" role="alert">
+              <span className="checkout__too-far-icon" aria-hidden="true"><AlertIcon size={24} /></span>
+              <div className="checkout__too-far-body">
+                <p className="checkout__too-far-title">Delivery isn't available here</p>
+                <p className="checkout__too-far-text">
+                  {restaurant.name} is {distanceKm.toFixed(1)} km away — beyond our{' '}
+                  {MAX_DELIVERY_RADIUS_KM} km delivery range.
+                </p>
+              </div>
+              <button type="button" className="checkout__too-far-btn" onClick={() => setMode('pickup')}>
+                Switch to Pickup
+              </button>
             </div>
           )}
 
