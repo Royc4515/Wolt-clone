@@ -1,6 +1,7 @@
-import { CutleryIcon, PlusIcon } from '../icons';
+import { CutleryIcon, PlusIcon, MinusIcon } from '../icons';
 
-export default function CutleryRow({ value, onToggle }) {
+// Cutlery is a quantity (number of sets), not a yes/no — the server accepts any count.
+export default function CutleryRow({ value, onChange }) {
   return (
     <section className="checkout-section">
       <div className="checkout-card">
@@ -9,19 +10,27 @@ export default function CutleryRow({ value, onToggle }) {
           <div className="checkout-row__main">
             <p className="checkout-row__label">Add cutlery (+₪0.00)</p>
             <p className="checkout-row__sub">
-              Let's reduce waste — request cutlery only if you really need them.
+              Let's reduce waste — request only as many sets as you need.
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={value}
-            aria-label="Add cutlery"
-            className={`checkout-pluschip${value ? ' checkout-pluschip--on' : ''}`}
-            onClick={onToggle}
-          >
-            <PlusIcon size={18} />
-          </button>
+          <div className="checkout-item__stepper">
+            <button
+              type="button"
+              onClick={() => onChange(Math.max(0, value - 1))}
+              disabled={value <= 0}
+              aria-label="Fewer cutlery sets"
+            >
+              <MinusIcon size={16} />
+            </button>
+            <span className="checkout-item__qty">{value}</span>
+            <button
+              type="button"
+              onClick={() => onChange(value + 1)}
+              aria-label="More cutlery sets"
+            >
+              <PlusIcon size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </section>

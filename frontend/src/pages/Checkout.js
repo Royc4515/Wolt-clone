@@ -47,7 +47,7 @@ export default function Checkout() {
   const [tip, setTip] = useState(0);
   const [method, setMethod] = useState('card');
   const [leaveAtDoor, setLeaveAtDoor] = useState(false);
-  const [cutlery, setCutlery] = useState(false);
+  const [cutlery, setCutlery] = useState(0);
   const [note, setNote] = useState('');
 
   const [placing, setPlacing] = useState(false);
@@ -133,7 +133,7 @@ export default function Checkout() {
         items: items.map((e) => ({ productId: e.item.id, quantity: e.qty })),
         mode,
         paymentMethod: method,
-        cutlery: cutlery ? 1 : 0,
+        cutlery,
         notes: note,
         tip: mode === 'delivery' ? tip : 0,
         ...(mode === 'delivery' && location ? { location } : {}),
@@ -296,7 +296,7 @@ export default function Checkout() {
             onAddMore={() => navigate(`/restaurant/${restaurantId}`)}
           />
 
-          <CutleryRow value={cutlery} onToggle={() => setCutlery((v) => !v)} />
+          <CutleryRow value={cutlery} onChange={setCutlery} />
 
           <PaymentSection method={method} onChange={setMethod} />
 

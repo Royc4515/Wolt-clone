@@ -7,7 +7,7 @@ export default function useCart() {
     setItems(prev => {
       const existing = prev.find(e => e.item.id === item.id);
       if (existing) {
-        if (existing.qty >= item.maxQty) return prev;
+        if (existing.qty >= (item.maxQty ?? Infinity)) return prev;
         return prev.map(e =>
           e.item.id === item.id ? { ...e, qty: e.qty + 1 } : e
         );
@@ -28,7 +28,7 @@ export default function useCart() {
     setItems(prev =>
       prev.map(e => {
         if (e.item.id !== itemId) return e;
-        const capped = Math.min(qty, e.item.maxQty);
+        const capped = Math.min(qty, e.item.maxQty ?? Infinity);
         return { ...e, qty: capped };
       })
     );

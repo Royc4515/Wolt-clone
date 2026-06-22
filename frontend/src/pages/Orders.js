@@ -5,6 +5,7 @@ import { cancelOrder } from '../api/orders';
 import { TrashIcon } from '../components/icons';
 import { statusLabel, displayStatus, formatDate } from '../utils/orders';
 import useOrdersData from '../hooks/useOrdersData';
+import OrderDetailView from '../components/OrderDetailView';
 import '../styles/Orders.css';
 
 const TABS = [
@@ -17,9 +18,10 @@ export default function Orders() {
   const [deletingId, setDeletingId] = useState(null);
   const [editSection, setEditSection] = useState(null); // null | 'carts' | 'orders'
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [detailOrder, setDetailOrder] = useState(null);
 
-  const { localCarts, orders, restaurants, loading, error: loadError, setLocalCarts, setOrders } =
-    useOrdersData();
+  const { localCarts, orders, restaurants, menuMaps, loading, error: loadError, setLocalCarts, setOrders } =
+    useOrdersData({ withMenus: true });
 
   const [actionError, setActionError] = useState('');
   const error = loadError || actionError;
@@ -187,6 +189,7 @@ export default function Orders() {
                       editMode={editSection === 'orders'}
                       isSelected={selectedIds.has(order.id)}
                       onToggleSelect={() => toggleSelect(order.id)}
+                      onViewDetails={() => setDetailOrder(order)}
                     />
                   ))}
                 </ul>
@@ -206,6 +209,16 @@ export default function Orders() {
             {deletingId === 'bulk' ? 'Deleting…' : `Delete (${selectedIds.size})`}
           </button>
         </div>
+      )}
+
+      {detailOrder && (
+        <OrderDetailView
+          order={detailOrder}
+          restaurant={restaurants[detailOrder.restaurantId]}
+          menuMap={menuMaps[detailOrder.restaurantId]}
+          onBack={() => setDetailOrder(null)}
+          onClose={() => setDetailOrder(null)}
+        />
       )}
     </div>
   );
@@ -268,7 +281,7 @@ function LocalCartCard({ cart, restaurant, onAddMore, onCheckout, onDelete, edit
   );
 }
 
-function OrderCard({ order, restaurant, onDelete, isDeleting, editMode, isSelected, onToggleSelect }) {
+function OrderCard({ order, restaurant, onDelete, isDeleting, editMode, isSelected, onToggleSelect, onViewDetails }) {
   const navigate  = useNavigate();
   const restName  = restaurant?.name ?? 'Restaurant';
   const itemCount = order.items?.length ?? 0;
@@ -325,6 +338,9 @@ function OrderCard({ order, restaurant, onDelete, isDeleting, editMode, isSelect
 
       {!editMode && (
         <div className="order-card-actions">
+          <button className="order-continue-btn" onClick={onViewDetails}>
+            Details
+          </button>
           <button className="order-checkout-btn" onClick={handleOrderAgain}>
             Order again
           </button>

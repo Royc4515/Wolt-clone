@@ -236,6 +236,19 @@ describe('Checkout — place order', () => {
     expect(screen.getByText('₪121.00')).toBeInTheDocument();
   });
 
+  test('cutlery is sent as a quantity, not a boolean', async () => {
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+    const more = screen.getByRole('button', { name: /more cutlery sets/i });
+    fireEvent.click(more);
+    fireEvent.click(more); // 2 sets
+    fireEvent.click(screen.getByTestId('place-order-btn'));
+    await waitFor(() =>
+      expect(createOrder).toHaveBeenCalledWith(expect.objectContaining({ cutlery: 2 }))
+    );
+  });
+
   test('confirmation button navigates to /orders', async () => {
     seedCart();
     render(<Checkout />);
