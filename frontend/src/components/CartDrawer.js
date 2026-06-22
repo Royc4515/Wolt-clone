@@ -4,7 +4,7 @@ import './CartDrawer.css';
 
 const SCROLL_THRESHOLD_PX = 20;
 
-export default function CartDrawer({ items, count, total, onClose, onCheckout, onUpdateQty, onItemClick, checkoutLabel = 'Go to checkout', checkoutLoading = false, error }) {
+export default function CartDrawer({ items, count, total, onClose, onCheckout, onUpdateQty, onItemClick, checkoutLabel = 'Go to checkout', checkoutLoading = false, error, suggestions = [], onAddSuggestion }) {
   const [expandedId, setExpandedId] = useState(null);
   const [bodyScrolled, setBodyScrolled] = useState(false);
   const bodyRef = useRef(null);
@@ -102,6 +102,34 @@ export default function CartDrawer({ items, count, total, onClose, onCheckout, o
               </div>
             );
           })}
+
+          {/* Suggested add-ons — additive product recommendations the user
+              hasn't added yet. Rendered only when the host passes suggestions. */}
+          {suggestions.length > 0 && (
+            <div className="cart-drawer__suggestions">
+              <h3 className="cart-drawer__suggestions-title">Suggested add-ons</h3>
+              {suggestions.map(item => (
+                <div key={item.id} className="cart-drawer__suggestion">
+                  <div className="cart-drawer__item-img">
+                    {item.image
+                      ? <img src={item.image} alt={item.name} />
+                      : <span className="cart-drawer__item-emoji" aria-hidden="true">🍽</span>
+                    }
+                  </div>
+                  <div className="cart-drawer__item-info">
+                    <p className="cart-drawer__item-name">{item.name}</p>
+                    <p className="cart-drawer__item-price">₪{item.price.toFixed(0)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="cart-drawer__qty-badge"
+                    onClick={() => onAddSuggestion && onAddSuggestion(item)}
+                    aria-label={`Add ${item.name}`}
+                  >+</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="cart-drawer__footer">

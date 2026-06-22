@@ -34,6 +34,20 @@ export const getRestaurant = async (id) => {
 };
 
 /**
+ * Fetches personalized restaurant recommendations for the logged-in user.
+ * Target: GET /api/restaurants/recommended (requires auth)
+ *
+ * Returns up to 5 restaurant objects (same shape as getRestaurants), derived
+ * from the user's order history. The caller MUST be authenticated before
+ * calling this: the endpoint is auth-only and apiFetch force-logs-out on 401.
+ */
+export const getRecommendedRestaurants = async () => {
+    return await apiFetch('/api/restaurants/recommended', {
+        method: 'GET',
+    });
+};
+
+/**
  * Searches for restaurants or products based on a text query.
  * Target: GET /api/search/:query
  */

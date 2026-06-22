@@ -2,6 +2,8 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import Restaurant from './Restaurant';
 import { getRestaurant, getMenu } from '../api/restaurants';
+import { getRecommendedProducts } from '../api/products';
+import { getOrders } from '../api/orders';
 
 const mockUseParams = jest.fn(() => ({ id: '1' }));
 const mockNavigate = jest.fn();
@@ -22,6 +24,19 @@ jest.mock('../api/orders', () => ({
   getOrders: jest.fn(() => Promise.resolve([])),
   createOrder: jest.fn(),
 }));
+
+jest.mock('../api/products', () => ({
+  getRecommendedProducts: jest.fn(() => Promise.resolve([])),
+}));
+
+// A structurally-valid JWT whose payload decodes to a user — enough for
+// isAuthenticated() to treat the session as logged in.
+const FAKE_JWT = `x.${btoa(JSON.stringify({ id: 'u1' }))}.y`;
+const login = () => localStorage.setItem('jwt_token', FAKE_JWT);
+
+const RECOMMENDED_PRODUCTS = [
+  { id: 'rec1', name: 'Tiramisu', description: 'Coffee dessert', price: 30, image: '' },
+];
 
 jest.mock('../components/AppBar', () =>
   ({ cartCount = 0, cartTotal = 0, onShowCart }) =>
@@ -57,6 +72,10 @@ beforeEach(() => {
   mockUseParams.mockReturnValue({ id: '1' });
   getRestaurant.mockResolvedValue(RESTAURANT);
   getMenu.mockResolvedValue(MENU);
+  getRecommendedProducts.mockResolvedValue([]);
+  // CRA's jest preset resets mock implementations before each test, so re-arm
+  // getOrders here (the authed branch of the page calls it).
+  getOrders.mockResolvedValue([]);
   window.IntersectionObserver = jest.fn((cb) => {
     intersectionCallback = cb;
     return { observe: jest.fn(), disconnect: jest.fn() };
@@ -251,5 +270,59 @@ describe('Restaurant page — in-restaurant search', () => {
     simulateHeroScrolledPast();
     userEvent.type(screen.getByPlaceholderText(/search menu/i), 'GARLIC');
     await waitFor(() => expect(screen.getByText('Garlic Bread')).toBeInTheDocument());
+  });
+});
+
+describe('Restaurant page — You might also like', () => {
+  test('renders the suggestions row for a logged-in user when products exist', async () => {
+    login();
+    getRecommendedProducts.mockResolvedValue(RECOMMENDED_PRODUCTS);
+    render(<Restaurant />);
+    expect(await screen.findByRole('heading', { name: /you might also like/i })).toBeInTheDocument();
+    expect(screen.getByText('Tiramisu')).toBeInTheDocument();
+    expect(getRecommendedProducts).toHaveBeenCalledWith('1');
+  });
+
+  test('adding a suggested item puts it in the cart', async () => {
+    login();
+    getRecommendedProducts.mockResolvedValue(RECOMMENDED_PRODUCTS);
+    render(<Restaurant />);
+    fireEvent.click(await screen.findByRole('button', { name: /add tiramisu/i }));
+    expect(screen.getByText(/show items/i).closest('button')).toHaveTextContent('₪30');
+  });
+
+  test('does not call the endpoint or render the row for guests', async () => {
+    render(<Restaurant />);
+    await screen.findByText('Garlic Bread');
+    expect(getRecommendedProducts).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: /you might also like/i })).not.toBeInTheDocument();
+  });
+
+  test('hides the row when the endpoint returns an empty list', async () => {
+    login();
+    getRecommendedProducts.mockResolvedValue([]);
+    render(<Restaurant />);
+    await screen.findByText('Garlic Bread');
+    expect(screen.queryByRole('heading', { name: /you might also like/i })).not.toBeInTheDocument();
+  });
+
+  test('hides the row (no crash) when the fetch fails', async () => {
+    login();
+    getRecommendedProducts.mockRejectedValue(new Error('500'));
+    render(<Restaurant />);
+    await screen.findByText('Garlic Bread');
+    expect(screen.queryByRole('heading', { name: /you might also like/i })).not.toBeInTheDocument();
+  });
+
+  test('hides the suggestions row while the menu is being searched', async () => {
+    login();
+    getRecommendedProducts.mockResolvedValue(RECOMMENDED_PRODUCTS);
+    render(<Restaurant />);
+    await screen.findByRole('heading', { name: /you might also like/i });
+    simulateHeroScrolledPast();
+    userEvent.type(screen.getByPlaceholderText(/search menu/i), 'garlic');
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: /you might also like/i })).not.toBeInTheDocument();
+    });
   });
 });

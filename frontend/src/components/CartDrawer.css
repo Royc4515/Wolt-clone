@@ -296,6 +296,35 @@
   cursor: default;
 }
 
+/* ── Suggested add-ons ── */
+.cart-drawer__suggestions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.cart-drawer__suggestions-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: #052834;
+  margin: 0 0 var(--space-2);
+}
+
+[data-theme="dark"] .cart-drawer__suggestions-title { color: #E3DEDA; }
+
+.cart-drawer__suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-md);
+  margin: 0 calc(-1 * var(--space-2));
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.cart-drawer__suggestion:hover { background: var(--surface-2); }
+[data-theme="light"] .cart-drawer__suggestion:hover { background: #f5f7fa; }
+
 /* ── Footer ── */
 .cart-drawer__footer {
   padding: var(--space-4) var(--space-5) var(--space-6);

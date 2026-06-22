@@ -8,6 +8,7 @@ import ScrollSection from '../components/shared/ScrollSection';
 import useCart from '../hooks/useCart';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import { getRestaurant, getMenu } from '../api/restaurants';
+import { getRecommendedProducts } from '../api/products';
 import { getOrders } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { readCart, writeCart } from '../utils/cartStorage';
@@ -58,6 +59,11 @@ export default function Restaurant() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Personalized product suggestions for this restaurant (logged-in users only).
+  // Stays [] for guests and on empty/failed fetch, so the row is just hidden —
+  // suggestions are additive and must never surface an error.
+  const [recommended, setRecommended] = useState([]);
 
   // Prevents the initial items=[] from wiping localStorage before the cart is restored.
   const cartSaveReady = useRef(false);
@@ -138,6 +144,19 @@ export default function Restaurant() {
     writeCart(id, items);
   }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Load product suggestions for this restaurant. Guests skip the auth-only
+  // endpoint (apiFetch force-logs-out on 401); reset on restaurant change so
+  // stale suggestions never leak between restaurants.
+  useEffect(() => {
+    setRecommended([]);
+    if (!isAuthenticated()) return;
+    let cancelled = false;
+    getRecommendedProducts(id)
+      .then(list => { if (!cancelled) setRecommended(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setRecommended([]); });
+    return () => { cancelled = true; };
+  }, [id]);
+
   useEffect(() => {
     const el = heroRef.current;
     if (!el) return;
@@ -166,6 +185,12 @@ export default function Restaurant() {
 
   const cartMap = useMemo(() => new Map(items.map(e => [e.item.id, e.qty])), [items]);
   const getQty = useCallback((itemId) => cartMap.get(itemId) ?? 0, [cartMap]);
+
+  // Drawer add-ons: suggested products the user hasn't already put in the cart.
+  const cartSuggestions = useMemo(
+    () => recommended.filter(p => !cartMap.has(p.id)),
+    [recommended, cartMap]
+  );
 
   const handleCheckout = useCallback(() => {
     setCartOpen(false);
@@ -281,6 +306,22 @@ export default function Restaurant() {
 
       {/* ── Menu ── */}
       <main className="restaurant__menu">
+        {/* Personalized suggestions — hidden while searching to keep results clean */}
+        {!menuSearch.trim() && recommended.length > 0 && (
+          <ScrollSection classPrefix="restaurant" title="You might also like">
+            {recommended.map(item => (
+              <MenuItemCard
+                key={item.id}
+                item={item}
+                qty={getQty(item.id)}
+                onAdd={() => addItem(item)}
+                onRemove={() => updateQty(item.id, getQty(item.id) - 1)}
+                onCardClick={() => setSelectedItem(item)}
+              />
+            ))}
+          </ScrollSection>
+        )}
+
         {filteredMenu.length === 0 && menuSearch.trim() && (
           <p className="restaurant__search-empty">No items found for "{menuSearch}"</p>
         )}
@@ -333,6 +374,8 @@ export default function Restaurant() {
           onUpdateQty={updateQty}
           onItemClick={item => setSelectedItem(item)}
           checkoutLabel="Go to checkout"
+          suggestions={cartSuggestions}
+          onAddSuggestion={addItem}
         />
       )}
 

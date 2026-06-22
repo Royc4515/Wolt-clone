@@ -1,7 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import Home from './Home';
-import { getRestaurants } from '../api/restaurants';
+import { getRestaurants, getRecommendedRestaurants } from '../api/restaurants';
 
 jest.mock('../api/restaurants');
 jest.mock('../components/AppBar', () => () => <div data-testid="appbar" />);
@@ -15,8 +14,18 @@ const RESTAURANTS = [
   { id: '3', name: 'Burger King',   category: 'Burgers', isPromoted: false, image: '' },
 ];
 
+const RECOMMENDED = [
+  { id: '9', name: 'Recommended Spot', category: 'Pizza', isPromoted: false, image: '' },
+];
+
+// A structurally-valid JWT (header.payload.signature) whose payload decodes to a
+// user object — enough for isAuthenticated() to treat the session as logged in.
+const FAKE_JWT = `x.${btoa(JSON.stringify({ id: 'u1' }))}.y`;
+const login = () => localStorage.setItem('jwt_token', FAKE_JWT);
+
 beforeEach(() => {
   getRestaurants.mockResolvedValue(RESTAURANTS);
+  getRecommendedRestaurants.mockResolvedValue([]);
 });
 afterEach(() => {
   jest.clearAllMocks();
@@ -97,4 +106,48 @@ test('requests the full list (no coords) when there is no saved location', async
   render(<Home />);
   await screen.findByRole('heading', { name: 'All Restaurants' });
   expect(getRestaurants).toHaveBeenCalledWith(undefined);
+});
+
+describe('Recommended for you', () => {
+  test('renders the carousel for a logged-in user when recommendations exist', async () => {
+    login();
+    getRecommendedRestaurants.mockResolvedValue(RECOMMENDED);
+    render(<Home />);
+    expect(await screen.findByRole('heading', { name: 'Recommended for you' })).toBeInTheDocument();
+    expect(screen.getByText('Recommended Spot')).toBeInTheDocument();
+  });
+
+  test('does not call the endpoint or render the section for guests', async () => {
+    render(<Home />);
+    await screen.findByRole('heading', { name: 'All Restaurants' });
+    expect(getRecommendedRestaurants).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Recommended for you' })).not.toBeInTheDocument();
+  });
+
+  test('hides the section when the endpoint returns an empty list', async () => {
+    login();
+    getRecommendedRestaurants.mockResolvedValue([]);
+    render(<Home />);
+    await screen.findByRole('heading', { name: 'All Restaurants' });
+    expect(screen.queryByRole('heading', { name: 'Recommended for you' })).not.toBeInTheDocument();
+  });
+
+  test('hides the section (no crash) when the fetch fails', async () => {
+    login();
+    getRecommendedRestaurants.mockRejectedValue(new Error('500'));
+    render(<Home />);
+    await screen.findByRole('heading', { name: 'All Restaurants' });
+    expect(screen.queryByRole('heading', { name: 'Recommended for you' })).not.toBeInTheDocument();
+  });
+
+  test('hides the section while a category filter is active', async () => {
+    login();
+    getRecommendedRestaurants.mockResolvedValue(RECOMMENDED);
+    render(<Home />);
+    await screen.findByRole('heading', { name: 'Recommended for you' });
+    fireEvent.click(screen.getByRole('button', { name: 'Sushi' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Recommended for you' })).not.toBeInTheDocument();
+    });
+  });
 });
