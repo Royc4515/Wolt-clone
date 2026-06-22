@@ -1,6 +1,8 @@
 const productsRepo = require('../services/repositories/products.repository');
 const restRepo = require('../services/repositories/restaurants.repository');
+const ordersRepo = require('../services/repositories/orders.repository');
 const { recordView } = require('../services/tcpClient');
+const { getRecommendations } = require('../services/tcpClient');
 const jwt = require('jsonwebtoken');
 
 // --- Helper Function: Calculate Section Order ---
@@ -167,10 +169,60 @@ const deleteProduct = (req, res) => {
     res.status(204).send();
 };
 
+// Fetch recommended products specific to a requested restaurant.
+const getRecomProds = async (req, res) => {
+    const userId = req.userId;
+    const restaurantId = req.params.id; // The restaurant the user is currently viewing
+
+    // 1. Find the last product the user ordered across all orders.
+    const allOrders = ordersRepo.findAll();
+    const userOrders = allOrders.filter(o => o.userId === userId);
+    
+    // Fallback if the user has no history: return popular products of this restaurant.
+    if (userOrders.length === 0) {
+        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        return res.status(200).json(restProducts.slice(0, 5));
+    }
+
+    // Extract the first item from the last order as the "target product".
+    const lastOrder = userOrders[userOrders.length - 1];
+    const targetProductId = lastOrder.items[0]?.productId;
+
+    if (!targetProductId) {
+        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        return res.status(200).json(restProducts.slice(0, 5));
+    }
+
+    try {
+        // 2. Fetch recommendations from the Ex2 C++ server.
+        const recommendedIds = await getRecommendations(userId, targetProductId);
+
+        // 3. Map IDs to product objects.
+        const recomProds = recommendedIds
+            .map(id => prodRepo.findById(id))
+            .filter(prod => prod != null);
+
+        // 4. Filter the recommendations to ONLY include products from the CURRENT restaurant.
+        const filteredByRest = recomProds.filter(prod => String(prod.restId) === String(restaurantId));
+
+        if (filteredByRest.length === 0) {
+             const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+             return res.status(200).json(restProducts.slice(0, 5));
+        }
+
+        res.status(200).json(filteredByRest.slice(0, 5));
+    } catch (error) {
+        console.error('Error fetching product recommendations:', error);
+        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        res.status(200).json(restProducts.slice(0, 5));
+    }
+};
+
 module.exports = {
     getAllProducts,
     createProduct,
     getProduct,
     updateProduct,
-    deleteProduct
+    deleteProduct,
+    getRecomProds
 }

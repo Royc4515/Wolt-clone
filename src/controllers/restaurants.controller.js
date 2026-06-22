@@ -1,6 +1,8 @@
 const restRepo = require('../services/repositories/restaurants.repository');
 const productsRepo = require('../services/repositories/products.repository');
 const { calcAerialDistance } = require('../services/distance');
+const { getRecommendations } = require('../services/tcpClient'); 
+const ordersRepo = require('../services/repositories/orders.repository');
 
 // Fetch all restaurants, with optional radius filtering based on user coordinates.
 const getRestaurants = (req, res) => {
@@ -153,6 +155,49 @@ const getMenu = (req, res) => {
     res.status(200).json(sections);
 };
 
+// Fetch recommended restaurants using the legacy Ex2 TCP client.
+const getRecomRests = async (req, res) => {
+    const userId = req.userId;
+
+    // 1. Find the target restaurant (the last one the user ordered from).
+    const allOrders = ordersRepo.findAll();
+    const userOrders = allOrders.filter(o => o.userId === userId);
+    
+    // Fallback if the user has no order history.
+    if (userOrders.length === 0) {
+        const allRestaurants = restRepo.findAll();
+        return res.status(200).json(allRestaurants.slice(0, 5));
+    }
+
+    // Get the ID of the last restaurant the user ordered from.
+    const lastOrder = userOrders[userOrders.length - 1];
+    const targetRestaurantId = lastOrder.restaurantId;
+
+    try {
+        // 2. Fetch recommendations using the TCP client.
+        const recommendedIds = await getRecommendations(userId, targetRestaurantId);
+
+        // 3. Fetch the full restaurant objects from the DB using the returned IDs.
+        const recomRests = recommendedIds
+            .map(id => restRepo.findById(id))
+            .filter(rest => rest != null);
+
+        // 4. Fallback if the algorithm returned an empty array.
+        if (recomRests.length === 0) {
+            const allRestaurants = restRepo.findAll();
+            return res.status(200).json(allRestaurants.slice(0, 5));
+        }
+
+        // Return the successfully recommended restaurants.
+        res.status(200).json(recomRests.slice(0, 5));
+    } catch (error) {
+        // Safe fallback in case of unexpected errors.
+        console.error('Error fetching recommendations:', error);
+        const allRestaurants = restRepo.findAll();
+        res.status(200).json(allRestaurants.slice(0, 5));
+    }
+};
+
 // Export controller functions for the router.
 module.exports = {
     getRestaurants,
@@ -161,4 +206,5 @@ module.exports = {
     updateRest,
     deleteRest,
     getMenu,
+    getRecomRests,
 };

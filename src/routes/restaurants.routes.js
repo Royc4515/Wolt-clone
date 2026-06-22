@@ -8,6 +8,7 @@ const router = express.Router();
 // Collection routes (No specific ID needed).
 router.get('/', restController.getRestaurants); // Fetch all.
 router.post('/', requireAuth, requireAdmin, restController.createRest);    // Create new (protected).
+router.get('/recommended', requireAuth, restController.getRecomRests);
 
 // Item-specific routes (Require a dynamic :id parameter).
 router.get('/:id', restController.getRest);                      // Fetch one.

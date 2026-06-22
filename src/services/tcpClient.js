@@ -28,6 +28,7 @@ const MAX_REPLY_BYTES = 1024;
 // Exact status codes from the Ex2 protocol (src/Commands/*.cpp).
 const STATUS_CREATED = 201; // POST: new user created.
 const STATUS_NO_CONTENT = 204; // PATCH: existing user updated.
+const STATUS_OK = 200;         // GET: successful retrieval.
 
 /**
  * Validates a single id per spec §6.1.
@@ -154,7 +155,77 @@ function createRecommendationClient({ host, port, timeoutMs = DEFAULT_TIMEOUT_MS
     });
   }
 
-  return { recordView };
+  /**
+   * Fetches recommendations from the legacy Ex2 C++ Server using the GET protocol.
+   * @param {string|number} userId 
+   * @param {string|number} productId 
+   * @returns {Promise<number[]>} Array of recommended product IDs.
+   */
+  function getRecommendations(userId, productId) {
+    if (!isValidId(userId) || !isValidId(productId)) {
+      return Promise.resolve([]);
+    }
+
+    return new Promise((resolve) => {
+      const socket = net.createConnection({ host, port });
+      let settled = false;
+      let buffer = '';
+
+      const settle = (result) => {
+        if (settled) return;
+        settled = true;
+        socket.destroy();
+        resolve(result);
+      };
+
+      socket.setTimeout(timeoutMs);
+
+      socket.once('connect', () => {
+        // Send the GET command to trigger the Recommender logic in C++.
+        socket.write(`GET ${userId} ${productId}\n`);
+      });
+
+      socket.on('data', (chunk) => {
+        if (settled) return;
+
+        buffer += chunk.toString();
+        
+        // Prevent buffer overflow.
+        if (buffer.length > MAX_REPLY_BYTES) {
+          settle([]); 
+          return;
+        }
+
+        // The Ex2 server returns "200 Ok\n\n1 4 5\n". We look for the double newline divider.
+        const splitIndex = buffer.indexOf('\n\n');
+        if (splitIndex === -1) return; 
+
+        const resultPart = buffer.slice(splitIndex + 2);
+        
+        // Ensure the results segment is fully received.
+        if (resultPart.indexOf('\n') === -1) return; 
+
+        const statusLine = buffer.slice(0, splitIndex);
+        const status = parseStatus(statusLine);
+
+        if (status === STATUS_OK) {
+          // Parse the space-separated string into an array of integers.
+          const recommendedIds = resultPart.trim().split(' ').map(Number).filter(id => !isNaN(id));
+          settle(recommendedIds);
+        } else {
+          // Fallback to empty array if user/product not found (e.g., 404).
+          settle([]);
+        }
+      });
+
+      // Always resolve with an empty array on failures to prevent server crashes.
+      socket.on('timeout', () => settle([]));
+      socket.on('error', () => settle([]));
+      socket.on('close', () => settle([]));
+    });
+  }
+
+  return { recordView, getRecommendations };
 }
 
 // Default client bound to the configured Ex2 server, for production use by
@@ -167,4 +238,5 @@ const defaultClient = createRecommendationClient({
 module.exports = {
   createRecommendationClient,
   recordView: defaultClient.recordView,
+  getRecommendations: defaultClient.getRecommendations,
 };
