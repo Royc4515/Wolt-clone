@@ -178,6 +178,41 @@ describe('Checkout — delivery location', () => {
   });
 });
 
+describe('Checkout — delivery radius', () => {
+  test('blocks delivery and offers pickup when the address is beyond 15 km', async () => {
+    // User location is Tel Aviv (seeded); this restaurant is ~280 km away.
+    getRestaurant.mockResolvedValue({ ...RESTAURANT, location: { lat: 29.55, lng: 34.95 } });
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+
+    expect(screen.getByTestId('place-order-btn')).toBeDisabled();
+    expect(screen.getByText(/beyond our 15 km delivery range/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /switch to pickup/i }));
+    expect(screen.getByTestId('place-order-btn')).not.toBeDisabled();
+  });
+
+  test('allows delivery when the restaurant has no location to measure against', async () => {
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+    expect(screen.getByTestId('place-order-btn')).not.toBeDisabled();
+    expect(screen.queryByText(/delivery range/i)).not.toBeInTheDocument();
+  });
+
+  test('surfaces the server "too far" 400 in the error banner', async () => {
+    createOrder.mockRejectedValue(
+      new Error('Delivery address is too far. Maximum delivery distance is 15km. (Your distance: 42.0km)')
+    );
+    seedCart();
+    render(<Checkout />);
+    await screen.findByText('Garlic Bread');
+    fireEvent.click(screen.getByTestId('place-order-btn'));
+    expect(await screen.findByText(/maximum delivery distance is 15km/i)).toBeInTheDocument();
+  });
+});
+
 describe('Checkout — interactive extras', () => {
   test('promo code is typeable and always reported invalid', async () => {
     seedCart();

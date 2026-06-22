@@ -18,7 +18,10 @@ const RESTAURANTS = [
 beforeEach(() => {
   getRestaurants.mockResolvedValue(RESTAURANTS);
 });
-afterEach(() => jest.clearAllMocks());
+afterEach(() => {
+  jest.clearAllMocks();
+  localStorage.clear();
+});
 
 test('renders AppBar', () => {
   render(<Home />);
@@ -81,4 +84,17 @@ test('category buttons are rendered for each unique category', async () => {
   expect(await screen.findByRole('button', { name: 'Pizza' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Sushi' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Burgers' })).toBeInTheDocument();
+});
+
+test('passes the saved user location as coords to getRestaurants', async () => {
+  localStorage.setItem('user_location', JSON.stringify({ lat: 32.08, lng: 34.78 }));
+  render(<Home />);
+  await screen.findByRole('heading', { name: 'All Restaurants' });
+  expect(getRestaurants).toHaveBeenCalledWith({ lat: 32.08, lng: 34.78 });
+});
+
+test('requests the full list (no coords) when there is no saved location', async () => {
+  render(<Home />);
+  await screen.findByRole('heading', { name: 'All Restaurants' });
+  expect(getRestaurants).toHaveBeenCalledWith(undefined);
 });

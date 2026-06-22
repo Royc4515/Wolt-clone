@@ -6,6 +6,11 @@
 
 export const SERVICE_FEE = 2.0; // matches the server's SERVICE_FEE
 
+// Maximum aerial delivery distance, in km. Mirrors the server's
+// MAX_DELIVERY_RADIUS_KM so the client can pre-empt the server's 400 and the
+// Home feed filter agree on the same limit.
+export const MAX_DELIVERY_RADIUS_KM = 15;
+
 export const TIP_OPTIONS = [0, 5, 10, 15];
 
 export const PAYMENT_METHODS = [
