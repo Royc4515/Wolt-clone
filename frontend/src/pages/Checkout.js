@@ -16,7 +16,7 @@ import { createOrder } from '../api/orders';
 import { isAuthenticated } from '../utils/auth';
 import { getUserLocation } from '../utils/location';
 import { readCart, writeCart } from '../utils/cartStorage';
-import { computeTotals, paymentLabel, money } from '../utils/checkout';
+import { computeTotals, paymentLabel, money, calcAerialDistance, MAX_DELIVERY_RADIUS_KM } from '../utils/checkout';
 import woltIcon from '../assets/wolt-logo.png';
 import './Checkout.css';
 
@@ -247,7 +247,14 @@ export default function Checkout() {
 
   // Server requires a location for delivery — block until one is set.
   const needsLocation = mode === 'delivery' && !location;
-  const canPlace = !placing && items.length > 0 && !needsLocation;
+  // Client-side mirror of the server's 15 km delivery radius: pre-empt the 400
+  // so the user gets immediate, actionable feedback instead of a failed order.
+  const distanceKm =
+    mode === 'delivery' && location && restaurant?.location
+      ? calcAerialDistance(restaurant.location.lat, restaurant.location.lng, location.lat, location.lng)
+      : null;
+  const tooFar = distanceKm != null && distanceKm > MAX_DELIVERY_RADIUS_KM;
+  const canPlace = !placing && items.length > 0 && !needsLocation && !tooFar;
   const orderLabel = `Order with ${paymentLabel(method)}`;
 
   return (
@@ -305,6 +312,16 @@ export default function Checkout() {
           {needsLocation && (
             <div className="checkout__notice" role="alert">
               Add a delivery location in your profile to place a delivery order, or{' '}
+              <button type="button" className="checkout__inline-link" onClick={() => setMode('pickup')}>
+                switch to Pickup
+              </button>.
+            </div>
+          )}
+
+          {tooFar && (
+            <div className="checkout__notice" role="alert">
+              This address is {distanceKm.toFixed(1)} km from {restaurant.name} — beyond our{' '}
+              {MAX_DELIVERY_RADIUS_KM} km delivery range. Try{' '}
               <button type="button" className="checkout__inline-link" onClick={() => setMode('pickup')}>
                 switch to Pickup
               </button>.

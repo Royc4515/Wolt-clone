@@ -23,9 +23,17 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState(null);
   const [allRestaurants, setAllRestaurants] = useState([]);
 
+  // The logged-in user's saved location (null for guests / no saved location).
+  // Drives both the distance-based delivery fee and the radius-filtered feed.
+  const userLocation = useMemo(() => getUserLocation(), []);
+
   useEffect(() => {
-    getRestaurants().then(setAllRestaurants).catch(err => console.error('Failed to load restaurants', err));
-  }, []);
+    // Pass coords so the server returns only restaurants within delivery range;
+    // without a location we ask for the full list.
+    getRestaurants(userLocation ?? undefined)
+      .then(setAllRestaurants)
+      .catch(err => console.error('Failed to load restaurants', err));
+  }, [userLocation]);
 
   const categories = useMemo(() => {
     const seen = new Map();
@@ -48,10 +56,6 @@ export default function Home() {
   }, [allRestaurants, activeCategory]);
 
   const promoted = useMemo(() => restaurants.filter(r => r.isPromoted), [restaurants]);
-
-  // Real, distance-based delivery fee for the logged-in user (falls back to the
-  // restaurant's base fee for guests / missing locations).
-  const userLocation = useMemo(() => getUserLocation(), []);
 
   return (
     <div className="home">

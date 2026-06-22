@@ -32,3 +32,17 @@ export const createOrder = async (orderPayload) => {
 
 // DELETE now returns a JSON object from the server, allowing us to use apiFetch safely.
 export const cancelOrder = (id) => apiFetch(`/api/orders/${id}`, { method: 'DELETE' });
+
+/* ── Admin: restaurant order management (auth + admin + owner on the server) ── */
+
+// All orders for a restaurant the admin owns. Target: GET /api/orders/restaurant/:restaurantId
+export const getRestaurantOrders = (restaurantId) =>
+    apiFetch(`/api/orders/restaurant/${restaurantId}`, { method: 'GET' });
+
+// Update an order's status. Returns the full updated order.
+// Target: PATCH /api/orders/:id/status
+export const updateOrderStatus = (id, status) =>
+    apiFetch(`/api/orders/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+    });

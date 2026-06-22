@@ -87,6 +87,7 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <div className="admin__card-actions">
+                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/orders`)}>Orders</button>
                   <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/menu`)}>Menu</button>
                   <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/edit`)}>Edit</button>
                   <button

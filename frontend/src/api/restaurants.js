@@ -1,11 +1,24 @@
 import { apiFetch, apiMutate } from './api';
 
 /**
- * Fetches the list of all restaurants.
- * Target: GET /api/restaurants
+ * Fetches the list of restaurants.
+ * Target: GET /api/restaurants (optionally ?lat=&lng=)
+ *
+ * When valid coordinates are supplied, the server filters the feed to
+ * restaurants within the delivery radius. Called without coords (guests /
+ * users with no saved location), it returns every restaurant.
+ *
+ * @param {{ lat?: number, lng?: number }} [coords]
  */
-export const getRestaurants = async () => {
-    return await apiFetch('/api/restaurants', {
+export const getRestaurants = async (coords) => {
+    const lat = coords?.lat;
+    const lng = coords?.lng;
+    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
+    const query = hasCoords
+        ? `?${new URLSearchParams({ lat, lng }).toString()}`
+        : '';
+
+    return await apiFetch(`/api/restaurants${query}`, {
         method: 'GET',
     });
 };

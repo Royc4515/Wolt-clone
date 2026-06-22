@@ -35,6 +35,13 @@ describe('AdminDashboard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/admin/restaurants/new');
   });
 
+  test('Orders navigates to the restaurant orders page', async () => {
+    render(<AdminDashboard />);
+    await screen.findByText('My Pizza');
+    fireEvent.click(screen.getByRole('button', { name: /orders/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/restaurants/r1/orders');
+  });
+
   test('deleting a restaurant removes it from the list', async () => {
     render(<AdminDashboard />);
     await screen.findByText('My Pizza');

@@ -11,6 +11,7 @@ import SearchResults from './pages/SearchResults';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import RestaurantForm from './pages/admin/RestaurantForm';
 import MenuManager from './pages/admin/MenuManager';
+import RestaurantOrders from './pages/admin/RestaurantOrders';
 import PublicRoute from './components/PublicRoute';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
@@ -35,6 +36,7 @@ function App() {
         <Route path="/admin/restaurants/new" element={<AdminRoute><RestaurantForm /></AdminRoute>} />
         <Route path="/admin/restaurants/:id/edit" element={<AdminRoute><RestaurantForm /></AdminRoute>} />
         <Route path="/admin/restaurants/:id/menu" element={<AdminRoute><MenuManager /></AdminRoute>} />
+        <Route path="/admin/restaurants/:id/orders" element={<AdminRoute><RestaurantOrders /></AdminRoute>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
