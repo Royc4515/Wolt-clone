@@ -284,6 +284,22 @@ export default function Checkout() {
         <main className="checkout__col">
           <FulfillmentToggle mode={mode} onChange={setMode} />
 
+          {tooFar && (
+            <div className="checkout__too-far" role="alert">
+              <span className="checkout__too-far-icon" aria-hidden="true"><AlertIcon size={24} /></span>
+              <div className="checkout__too-far-body">
+                <p className="checkout__too-far-title">Delivery isn't available here</p>
+                <p className="checkout__too-far-text">
+                  {restaurant.name} is {distanceKm.toFixed(1)} km away — beyond our{' '}
+                  {MAX_DELIVERY_RADIUS_KM} km delivery range.
+                </p>
+              </div>
+              <button type="button" className="checkout__too-far-btn" onClick={() => setMode('pickup')}>
+                Switch to Pickup
+              </button>
+            </div>
+          )}
+
           <WhereSection
             mode={mode}
             location={location}
@@ -315,22 +331,6 @@ export default function Checkout() {
               <button type="button" className="checkout__inline-link" onClick={() => setMode('pickup')}>
                 switch to Pickup
               </button>.
-            </div>
-          )}
-
-          {tooFar && (
-            <div className="checkout__too-far" role="alert">
-              <span className="checkout__too-far-icon" aria-hidden="true"><AlertIcon size={24} /></span>
-              <div className="checkout__too-far-body">
-                <p className="checkout__too-far-title">Delivery isn't available here</p>
-                <p className="checkout__too-far-text">
-                  {restaurant.name} is {distanceKm.toFixed(1)} km away — beyond our{' '}
-                  {MAX_DELIVERY_RADIUS_KM} km delivery range.
-                </p>
-              </div>
-              <button type="button" className="checkout__too-far-btn" onClick={() => setMode('pickup')}>
-                Switch to Pickup
-              </button>
             </div>
           )}
 
