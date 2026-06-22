@@ -180,7 +180,7 @@ const getRecomProds = async (req, res) => {
     
     // Fallback if the user has no history: return popular products of this restaurant.
     if (userOrders.length === 0) {
-        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
         return res.status(200).json(restProducts.slice(0, 5));
     }
 
@@ -189,7 +189,7 @@ const getRecomProds = async (req, res) => {
     const targetProductId = lastOrder.items[0]?.productId;
 
     if (!targetProductId) {
-        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
         return res.status(200).json(restProducts.slice(0, 5));
     }
 
@@ -199,21 +199,21 @@ const getRecomProds = async (req, res) => {
 
         // 3. Map IDs to product objects.
         const recomProds = recommendedIds
-            .map(id => prodRepo.findById(id))
+            .map(id => productsRepo.findById(id))
             .filter(prod => prod != null);
 
         // 4. Filter the recommendations to ONLY include products from the CURRENT restaurant.
         const filteredByRest = recomProds.filter(prod => String(prod.restId) === String(restaurantId));
 
         if (filteredByRest.length === 0) {
-             const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+             const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
              return res.status(200).json(restProducts.slice(0, 5));
         }
 
         res.status(200).json(filteredByRest.slice(0, 5));
     } catch (error) {
         console.error('Error fetching product recommendations:', error);
-        const restProducts = prodRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
+        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
         res.status(200).json(restProducts.slice(0, 5));
     }
 };
