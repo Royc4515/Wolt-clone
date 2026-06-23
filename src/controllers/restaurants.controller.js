@@ -4,26 +4,36 @@ const { calcAerialDistance } = require('../services/distance');
 const { getRecommendations } = require('../services/tcpClient'); 
 const ordersRepo = require('../services/repositories/orders.repository');
 
-// Fetch all restaurants, with optional radius filtering based on user coordinates.
-const getRestaurants = (req, res) => {
-    // Fetch all restaurants from the database initially.
-    let restaurants = restRepo.findAll();
+// --- Helper Function: Fetch and Filter Restaurants by Radius ---
+// Fetches all restaurants, optionally filters them by a 15km radius, and optionally limits the results.
+const fetchAndFilterRestaurants = (lat, lng, limit = null, sourceList = null) => {
+    let restaurants = sourceList ? sourceList : restRepo.findAll();
 
-    // Extract coordinates from the query string.
-    const { lat, lng } = req.query;
-
-    // If both latitude and longitude are provided in the request, filter the results.
     if (lat && lng) {
         const userLat = parseFloat(lat);
         const userLng = parseFloat(lng);
-        const MAX_RADIUS_KM = 15; // Ensure this matches the order radius logic.
+        const MAX_RADIUS_KM = 15;
 
-        // Filter out restaurants that are beyond the maximum delivery radius.
         restaurants = restaurants.filter(rest => {
             const dist = calcAerialDistance(userLat, userLng, rest.location.lat, rest.location.lng);
             return dist <= MAX_RADIUS_KM;
         });
     }
+
+    if (limit) {
+        return restaurants.slice(0, limit);
+    }
+    
+    return restaurants;
+};
+
+// Fetch all restaurants, with optional radius filtering based on user coordinates.
+const getRestaurants = (req, res) => {
+    // Extract coordinates from the query string.
+    const { lat, lng } = req.query;
+
+    // Use the helper function to fetch and filter the restaurants.
+    const restaurants = fetchAndFilterRestaurants(lat, lng);
 
     // Return the filtered (or unfiltered) list of restaurants.
     res.status(200).json(restaurants);
@@ -155,9 +165,10 @@ const getMenu = (req, res) => {
     res.status(200).json(sections);
 };
 
-// Fetch recommended restaurants using the legacy Ex2 TCP client.
+// Fetch recommended restaurants using the legacy Ex2 TCP client, filtered by delivery radius.
 const getRecomRests = async (req, res) => {
     const userId = req.userId;
+    const { lat, lng } = req.query;
 
     // 1. Find the target restaurant (the last one the user ordered from).
     const allOrders = ordersRepo.findAll();
@@ -165,8 +176,7 @@ const getRecomRests = async (req, res) => {
     
     // Fallback if the user has no order history.
     if (userOrders.length === 0) {
-        const allRestaurants = restRepo.findAll();
-        return res.status(200).json(allRestaurants.slice(0, 5));
+        return res.status(200).json(fetchAndFilterRestaurants(lat, lng, 5));
     }
 
     // Get the ID of the last restaurant the user ordered from.
@@ -178,23 +188,26 @@ const getRecomRests = async (req, res) => {
         const recommendedIds = await getRecommendations(userId, targetRestaurantId);
 
         // 3. Fetch the full restaurant objects from the DB using the returned IDs.
-        const recomRests = recommendedIds
+        let recomRests = recommendedIds
             .map(id => restRepo.findById(id))
             .filter(rest => rest != null);
 
+        // Using the helper function to filter by distance.
+        recomRests = fetchAndFilterRestaurants(lat, lng, 5, recomRests);
+
         // 4. Fallback if the algorithm returned an empty array.
         if (recomRests.length === 0) {
-            const allRestaurants = restRepo.findAll();
-            return res.status(200).json(allRestaurants.slice(0, 5));
+            // Using the helper for this fallback.
+            return res.status(200).json(fetchAndFilterRestaurants(lat, lng, 5));
         }
 
         // Return the successfully recommended restaurants.
-        res.status(200).json(recomRests.slice(0, 5));
+        res.status(200).json(recomRests);
     } catch (error) {
         // Safe fallback in case of unexpected errors.
         console.error('Error fetching recommendations:', error);
-        const allRestaurants = restRepo.findAll();
-        res.status(200).json(allRestaurants.slice(0, 5));
+        // Using the helper for this fallback.
+        res.status(200).json(fetchAndFilterRestaurants(lat, lng, 5));
     }
 };
 
