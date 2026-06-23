@@ -3,6 +3,7 @@ import Checkout from './Checkout';
 import { getRestaurant } from '../api/restaurants';
 import { createOrder } from '../api/orders';
 import { isAuthenticated, getCurrentUser } from '../utils/auth';
+import { cartKey } from '../utils/cartStorage';
 
 const mockNavigate = jest.fn();
 
@@ -20,7 +21,10 @@ jest.mock('../api/orders', () => ({
 
 jest.mock('../utils/auth', () => ({
   isAuthenticated: jest.fn(() => true),
-  getCurrentUser: jest.fn(() => null),
+  // A logged-in user (no location field) so cart keys resolve to the user scope
+  // (cart_u1_<restId>) — getUserLocation still falls back to the seeded
+  // localStorage location for the delivery-fee math.
+  getCurrentUser: jest.fn(() => ({ id: 'u1' })),
   USER_LOCATION_KEY: 'user_location',
 }));
 
@@ -42,7 +46,7 @@ const CART = [
   { item: { id: 'i2', name: 'Margherita', price: 62, image: '', maxQty: 5 }, qty: 1 },
 ];
 
-const seedCart = (items = CART) => localStorage.setItem('cart_1', JSON.stringify(items));
+const seedCart = (items = CART) => localStorage.setItem(cartKey('1'), JSON.stringify(items));
 const seedLocation = () => localStorage.setItem('user_location', JSON.stringify({ lat: 32.08, lng: 34.78 }));
 
 beforeEach(() => {
@@ -135,7 +139,7 @@ describe('Checkout — editing items', () => {
     // 24*3 + 62 = 134
     expect(screen.getByTestId('checkout-subtotal')).toHaveTextContent('₪134.00');
     await waitFor(() => {
-      const saved = JSON.parse(localStorage.getItem('cart_1'));
+      const saved = JSON.parse(localStorage.getItem(cartKey('1')));
       expect(saved.find((e) => e.item.id === 'i1').qty).toBe(3);
     });
   });
@@ -265,7 +269,7 @@ describe('Checkout — place order', () => {
         })
       )
     );
-    await waitFor(() => expect(localStorage.getItem('cart_1')).toBeNull());
+    await waitFor(() => expect(localStorage.getItem(cartKey('1'))).toBeNull());
     expect(await screen.findByText(/order accepted/i)).toBeInTheDocument();
     // Receipt shows the server-calculated total, not a client guess.
     expect(screen.getByText('₪121.00')).toBeInTheDocument();
@@ -301,7 +305,7 @@ describe('Checkout — place order', () => {
     fireEvent.click(screen.getByTestId('place-order-btn'));
 
     expect(await screen.findByText(/server exploded/i)).toBeInTheDocument();
-    expect(localStorage.getItem('cart_1')).not.toBeNull();
+    expect(localStorage.getItem(cartKey('1'))).not.toBeNull();
     expect(mockNavigate).not.toHaveBeenCalledWith('/orders');
   });
 

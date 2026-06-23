@@ -1,5 +1,15 @@
 import { apiFetch, apiMutate } from './api';
 
+// Build a `?lat=&lng=` query from coords, or '' when either is missing/invalid.
+// Shared by the feed and the recommendations request so both honour the radius.
+const coordsQuery = (coords) => {
+    const lat = coords?.lat;
+    const lng = coords?.lng;
+    return Number.isFinite(lat) && Number.isFinite(lng)
+        ? `?${new URLSearchParams({ lat, lng }).toString()}`
+        : '';
+};
+
 /**
  * Fetches the list of restaurants.
  * Target: GET /api/restaurants (optionally ?lat=&lng=)
@@ -11,14 +21,7 @@ import { apiFetch, apiMutate } from './api';
  * @param {{ lat?: number, lng?: number }} [coords]
  */
 export const getRestaurants = async (coords) => {
-    const lat = coords?.lat;
-    const lng = coords?.lng;
-    const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);
-    const query = hasCoords
-        ? `?${new URLSearchParams({ lat, lng }).toString()}`
-        : '';
-
-    return await apiFetch(`/api/restaurants${query}`, {
+    return await apiFetch(`/api/restaurants${coordsQuery(coords)}`, {
         method: 'GET',
     });
 };
@@ -35,14 +38,18 @@ export const getRestaurant = async (id) => {
 
 /**
  * Fetches personalized restaurant recommendations for the logged-in user.
- * Target: GET /api/restaurants/recommended (requires auth)
+ * Target: GET /api/restaurants/recommended (optionally ?lat=&lng=)
  *
- * Returns up to 5 restaurant objects (same shape as getRestaurants), derived
- * from the user's order history. The caller MUST be authenticated before
- * calling this: the endpoint is auth-only and apiFetch force-logs-out on 401.
+ * Coordinates are forwarded just like getRestaurants so the server can apply
+ * the same 15 km delivery radius to the recommendations (it falls back to
+ * nearby defaults when needed). Returns up to 5 restaurant objects (same shape
+ * as getRestaurants). The caller MUST be authenticated before calling this:
+ * the endpoint is auth-only and apiFetch force-logs-out on 401.
+ *
+ * @param {{ lat?: number, lng?: number }} [coords]
  */
-export const getRecommendedRestaurants = async () => {
-    return await apiFetch('/api/restaurants/recommended', {
+export const getRecommendedRestaurants = async (coords) => {
+    return await apiFetch(`/api/restaurants/recommended${coordsQuery(coords)}`, {
         method: 'GET',
     });
 };

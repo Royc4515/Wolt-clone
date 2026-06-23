@@ -4,6 +4,7 @@ import AppBar from '../components/AppBar';
 import { cancelOrder } from '../api/orders';
 import { TrashIcon } from '../components/icons';
 import { statusLabel, displayStatus, formatDate } from '../utils/orders';
+import { clearCart } from '../utils/cartStorage';
 import useOrdersData from '../hooks/useOrdersData';
 import OrderDetailView from '../components/OrderDetailView';
 import '../styles/Orders.css';
@@ -49,7 +50,7 @@ export default function Orders() {
   async function handleDeleteSelected() {
     setActionError('');
     if (editSection === 'carts') {
-      selectedIds.forEach(restId => localStorage.removeItem(`cart_${restId}`));
+      selectedIds.forEach(restId => clearCart(restId));
       setLocalCarts(prev => prev.filter(c => !selectedIds.has(c.restaurantId)));
       cancelEdit();
     } else {
@@ -68,7 +69,7 @@ export default function Orders() {
 
   function handleDeleteCart(restaurantId) {
     setActionError('');
-    localStorage.removeItem(`cart_${restaurantId}`);
+    clearCart(restaurantId);
     setLocalCarts(prev => prev.filter(c => c.restaurantId !== restaurantId));
   }
 

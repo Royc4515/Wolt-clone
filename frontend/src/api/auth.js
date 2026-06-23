@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { adoptGuestCarts } from "../utils/cartStorage";
 
 /**
  * Login function
@@ -14,6 +15,9 @@ export const login = async (username, password) => {
     // The server should return an object containing the token. Save it locally.
     if (data && data.token) {
         localStorage.setItem('jwt_token', data.token);
+        // Fold any in-progress guest cart into the now-authenticated user's
+        // scope so nothing the user added before logging in is lost.
+        adoptGuestCarts();
     }
 
     return data;
@@ -39,12 +43,11 @@ export const register = async (userData) => {
  * Removes the JWT from local storage so the user is no longer authenticated in future requests.
  */
 export const logout = () => {
+    // Carts are namespaced per user (cart_<userId>_<restId>) and persist across
+    // sessions, so we only drop the auth token here: the user's saved carts
+    // remain for their next login, and another user logging in on the same
+    // browser only ever sees their own scope.
     localStorage.removeItem('jwt_token');
-    // Clear per-restaurant shopping carts so they don't leak to the next user
-    // who logs in on the same browser.
-    Object.keys(localStorage)
-        .filter((k) => k.startsWith('cart_'))
-        .forEach((k) => localStorage.removeItem(k));
 };
 
 /**

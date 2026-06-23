@@ -5,6 +5,8 @@ import ThemeToggle from './shared/ThemeToggle';
 import OrdersDrawer from './OrdersDrawer';
 import { XIcon } from './icons';
 import { getAuthState, isAdmin, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
+import { cartScopePrefix } from '../utils/cartStorage';
+import { notifyLocationChanged } from '../utils/location';
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
 import useOutsideClick from '../hooks/useOutsideClick';
@@ -53,9 +55,10 @@ const BagIcon = () => (
 
 function getLocalCartCount() {
   let n = 0;
+  const prefix = cartScopePrefix();
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k?.startsWith('cart_')) n++;
+    if (k?.startsWith(prefix)) n++;
   }
   return n;
 }
@@ -155,6 +158,8 @@ export default function AppBar({ cartCount = 0, cartTotal = 0, onShowCart, trans
       // TODO(dana): once PATCH /api/users/:id re-issues the JWT, store the new token here
       // via localStorage.setItem('jwt_token', response.token) and remove this localStorage cache line.
       localStorage.setItem(USER_LOCATION_KEY, JSON.stringify({ lat, lng }));
+      // Let the Home feed + recommendations re-read the new location immediately.
+      notifyLocationChanged();
       setLocationMenuOpen(false);
     } catch {
       setLocationError('Failed to save location');

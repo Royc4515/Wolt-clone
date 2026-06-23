@@ -5,6 +5,7 @@ import { XIcon } from './icons';
 import useOutsideClick from '../hooks/useOutsideClick';
 import useBodyScrollLock from '../hooks/useBodyScrollLock';
 import useOrdersData from '../hooks/useOrdersData';
+import { clearCart } from '../utils/cartStorage';
 import DrawerCartCard from './DrawerCartCard';
 import DrawerOrderCard from './DrawerOrderCard';
 import OrderDetailView from './OrderDetailView';
@@ -59,7 +60,7 @@ export default function OrdersDrawer({ onClose }) {
   }
 
   function handleDeleteCart(restaurantId) {
-    localStorage.removeItem(`cart_${restaurantId}`);
+    clearCart(restaurantId);
     setLocalCarts(prev => prev.filter(c => c.restaurantId !== restaurantId));
   }
 
@@ -77,7 +78,7 @@ export default function OrdersDrawer({ onClose }) {
 
   async function handleDeleteSelected() {
     if (tab === 'carts') {
-      selectedIds.forEach(restId => localStorage.removeItem(`cart_${restId}`));
+      selectedIds.forEach(restId => clearCart(restId));
       setLocalCarts(prev => prev.filter(c => !selectedIds.has(c.restaurantId)));
       setSelectedIds(new Set());
       setEditMode(false);
