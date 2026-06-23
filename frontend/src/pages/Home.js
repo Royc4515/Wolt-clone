@@ -3,9 +3,10 @@ import AppBar from '../components/AppBar';
 import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
 import ScrollSection from '../components/shared/ScrollSection';
-import { getRestaurants } from '../api/restaurants';
+import { getRestaurants, getRecommendedRestaurants } from '../api/restaurants';
 import { realDeliveryFee } from '../utils/checkout';
 import { getUserLocation } from '../utils/location';
+import { isAuthenticated } from '../utils/auth';
 import './Home.css';
 
 const CATEGORY_META = {
@@ -27,6 +28,11 @@ export default function Home() {
   // Drives both the distance-based delivery fee and the radius-filtered feed.
   const userLocation = useMemo(() => getUserLocation(), []);
 
+  // Personalized restaurant recommendations (logged-in users only). Stays []
+  // for guests and on empty/failed fetch, so the section is simply hidden —
+  // recommendations are additive and must never surface an error.
+  const [recommended, setRecommended] = useState([]);
+
   useEffect(() => {
     // Pass coords so the server returns only restaurants within delivery range;
     // without a location we ask for the full list.
@@ -34,6 +40,16 @@ export default function Home() {
       .then(setAllRestaurants)
       .catch(err => console.error('Failed to load restaurants', err));
   }, [userLocation]);
+
+  useEffect(() => {
+    // Guests must not hit the auth-only endpoint: apiFetch force-logs-out on 401.
+    if (!isAuthenticated()) return;
+    let cancelled = false;
+    getRecommendedRestaurants()
+      .then(list => { if (!cancelled) setRecommended(Array.isArray(list) ? list : []); })
+      .catch(() => { if (!cancelled) setRecommended([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   const categories = useMemo(() => {
     const seen = new Map();
@@ -67,6 +83,14 @@ export default function Home() {
           active={activeCategory}
           onSelect={setActiveCategory}
         />
+
+        {!activeCategory && recommended.length > 0 && (
+          <ScrollSection classPrefix="home" title="Recommended for you">
+            {recommended.map(r => (
+              <RestaurantCard key={r.id} {...r} deliveryFee={realDeliveryFee(r, userLocation)} />
+            ))}
+          </ScrollSection>
+        )}
 
         {!activeCategory && promoted.length > 0 && (
           <ScrollSection classPrefix="home" title="Promoted">

@@ -1,4 +1,4 @@
-import { getRestaurants } from './restaurants';
+import { getRestaurants, getRecommendedRestaurants } from './restaurants';
 import { apiFetch } from './api';
 
 jest.mock('./api');
@@ -22,5 +22,24 @@ describe('getRestaurants', () => {
     apiFetch.mockResolvedValue([]);
     await getRestaurants({ lat: 32.08 });
     expect(apiFetch).toHaveBeenCalledWith('/api/restaurants', { method: 'GET' });
+  });
+});
+
+describe('getRecommendedRestaurants', () => {
+  test('requests the recommended endpoint', async () => {
+    apiFetch.mockResolvedValue([]);
+    await getRecommendedRestaurants();
+    expect(apiFetch).toHaveBeenCalledWith('/api/restaurants/recommended', { method: 'GET' });
+  });
+
+  test('returns the array the API resolves with', async () => {
+    const recs = [{ id: 'r1' }, { id: 'r2' }];
+    apiFetch.mockResolvedValue(recs);
+    await expect(getRecommendedRestaurants()).resolves.toEqual(recs);
+  });
+
+  test('propagates errors so callers can hide the section', async () => {
+    apiFetch.mockRejectedValue(new Error('500'));
+    await expect(getRecommendedRestaurants()).rejects.toThrow('500');
   });
 });
