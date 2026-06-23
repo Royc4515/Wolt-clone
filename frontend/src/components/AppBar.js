@@ -5,6 +5,7 @@ import ThemeToggle from './shared/ThemeToggle';
 import OrdersDrawer from './OrdersDrawer';
 import { XIcon } from './icons';
 import { getAuthState, isAdmin, USER_LOCATION_KEY, USER_DISPLAYNAME_KEY } from '../utils/auth';
+import { cartScopePrefix } from '../utils/cartStorage';
 import { getUser } from '../api/users';
 import { logout, updateUserProfile } from '../api/auth';
 import useOutsideClick from '../hooks/useOutsideClick';
@@ -53,9 +54,10 @@ const BagIcon = () => (
 
 function getLocalCartCount() {
   let n = 0;
+  const prefix = cartScopePrefix();
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k?.startsWith('cart_')) n++;
+    if (k?.startsWith(prefix)) n++;
   }
   return n;
 }

@@ -1,3 +1,5 @@
+import { cartScopePrefix } from './cartStorage';
+
 export const ORDER_STATUS = {
   pending: 'Pending',
   preparing: 'Preparing',
@@ -32,15 +34,18 @@ export function formatDate(iso) {
   });
 }
 
+// Active carts for the *current* user (or guest). Scoped to the user's cart
+// keys so one user never sees another's in-progress carts on a shared browser.
 export function readLocalCarts() {
   const carts = [];
+  const prefix = cartScopePrefix();
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key?.startsWith('cart_')) continue;
+    if (!key?.startsWith(prefix)) continue;
     try {
       const items = JSON.parse(localStorage.getItem(key));
       if (Array.isArray(items) && items.length > 0) {
-        carts.push({ restaurantId: key.slice('cart_'.length), items });
+        carts.push({ restaurantId: key.slice(prefix.length), items });
       }
     } catch (err) {
       console.error('Failed to parse cart for key', key, err);
