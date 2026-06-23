@@ -16,3 +16,13 @@ export function getUserLocation() {
     return null;
   }
 }
+
+// Broadcast that the saved location changed so same-tab listeners (e.g. the Home
+// feed and recommendations) can re-read it without a manual refresh. The native
+// `storage` event only fires across tabs, so we use a custom event for same-tab
+// updates.
+export const LOCATION_CHANGED_EVENT = 'user-location-changed';
+
+export function notifyLocationChanged() {
+  window.dispatchEvent(new Event(LOCATION_CHANGED_EVENT));
+}

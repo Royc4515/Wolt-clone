@@ -4,8 +4,8 @@ import RestaurantCard from '../components/RestaurantCard';
 import CategoryFilter from '../components/CategoryFilter';
 import ScrollSection from '../components/shared/ScrollSection';
 import { getRestaurants, getRecommendedRestaurants } from '../api/restaurants';
-import { realDeliveryFee } from '../utils/checkout';
-import { getUserLocation } from '../utils/location';
+import { realDeliveryFee, calcAerialDistance, MAX_DELIVERY_RADIUS_KM } from '../utils/checkout';
+import { getUserLocation, LOCATION_CHANGED_EVENT } from '../utils/location';
 import { isAuthenticated } from '../utils/auth';
 import './Home.css';
 
@@ -26,7 +26,14 @@ export default function Home() {
 
   // The logged-in user's saved location (null for guests / no saved location).
   // Drives both the distance-based delivery fee and the radius-filtered feed.
-  const userLocation = useMemo(() => getUserLocation(), []);
+  // Re-read on the location-changed event so editing it in the top bar updates
+  // the feed + recommendations live, without a manual refresh.
+  const [userLocation, setUserLocation] = useState(getUserLocation);
+  useEffect(() => {
+    const onChange = () => setUserLocation(getUserLocation());
+    window.addEventListener(LOCATION_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(LOCATION_CHANGED_EVENT, onChange);
+  }, []);
 
   // Personalized restaurant recommendations (logged-in users only). Stays []
   // for guests and on empty/failed fetch, so the section is simply hidden —
@@ -74,6 +81,18 @@ export default function Home() {
 
   const promoted = useMemo(() => restaurants.filter(r => r.isPromoted), [restaurants]);
 
+  // Belt-and-suspenders: the server already filters recommendations by the 15 km
+  // radius when coords are sent, but guard on the client too so an out-of-range
+  // restaurant can never appear. With no saved location we can't measure distance,
+  // so we show whatever the server returned.
+  const recommendedInRange = useMemo(() => {
+    if (!userLocation) return recommended;
+    return recommended.filter(r =>
+      r.location &&
+      calcAerialDistance(r.location.lat, r.location.lng, userLocation.lat, userLocation.lng) <= MAX_DELIVERY_RADIUS_KM
+    );
+  }, [recommended, userLocation]);
+
   return (
     <div className="home">
       <AppBar logoLinkDisabled />
@@ -85,9 +104,9 @@ export default function Home() {
           onSelect={setActiveCategory}
         />
 
-        {!activeCategory && recommended.length > 0 && (
+        {!activeCategory && recommendedInRange.length > 0 && (
           <ScrollSection classPrefix="home" title="Recommended for you">
-            {recommended.map(r => (
+            {recommendedInRange.map(r => (
               <RestaurantCard key={r.id} {...r} deliveryFee={realDeliveryFee(r, userLocation)} />
             ))}
           </ScrollSection>

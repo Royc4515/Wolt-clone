@@ -1,6 +1,7 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import Home from './Home';
 import { getRestaurants, getRecommendedRestaurants } from '../api/restaurants';
+import { LOCATION_CHANGED_EVENT } from '../utils/location';
 
 jest.mock('../api/restaurants');
 jest.mock('../components/AppBar', () => () => <div data-testid="appbar" />);
@@ -15,8 +16,10 @@ const RESTAURANTS = [
 ];
 
 const RECOMMENDED = [
-  { id: '9', name: 'Recommended Spot', category: 'Pizza', isPromoted: false, image: '' },
+  { id: '9', name: 'Recommended Spot', category: 'Pizza', isPromoted: false, image: '', location: { lat: 32.08, lng: 34.78 } },
 ];
+
+const TLV = { lat: 32.08, lng: 34.78 };
 
 // A structurally-valid JWT (header.payload.signature) whose payload decodes to a
 // user object — enough for isAuthenticated() to treat the session as logged in.
@@ -108,6 +111,18 @@ test('requests the full list (no coords) when there is no saved location', async
   expect(getRestaurants).toHaveBeenCalledWith(undefined);
 });
 
+test('re-reads the location and re-fetches when it changes in the top bar', async () => {
+  render(<Home />);
+  await screen.findByRole('heading', { name: 'All Restaurants' });
+  expect(getRestaurants).toHaveBeenLastCalledWith(undefined);
+
+  // Simulate the top bar saving a new location and broadcasting the change.
+  localStorage.setItem('user_location', JSON.stringify(TLV));
+  act(() => { window.dispatchEvent(new Event(LOCATION_CHANGED_EVENT)); });
+
+  await waitFor(() => expect(getRestaurants).toHaveBeenLastCalledWith(TLV));
+});
+
 describe('Recommended for you', () => {
   test('renders the carousel for a logged-in user when recommendations exist', async () => {
     login();
@@ -119,11 +134,23 @@ describe('Recommended for you', () => {
 
   test('forwards the saved location so recommendations honour the delivery radius', async () => {
     login();
-    localStorage.setItem('user_location', JSON.stringify({ lat: 32.08, lng: 34.78 }));
+    localStorage.setItem('user_location', JSON.stringify(TLV));
     getRecommendedRestaurants.mockResolvedValue(RECOMMENDED);
     render(<Home />);
     await screen.findByRole('heading', { name: 'Recommended for you' });
-    expect(getRecommendedRestaurants).toHaveBeenCalledWith({ lat: 32.08, lng: 34.78 });
+    expect(getRecommendedRestaurants).toHaveBeenCalledWith(TLV);
+  });
+
+  test('hides any recommendation outside the delivery radius', async () => {
+    login();
+    localStorage.setItem('user_location', JSON.stringify(TLV));
+    getRecommendedRestaurants.mockResolvedValue([
+      { id: 'in',  name: 'Nearby Eats',    category: 'Pizza', location: TLV },
+      { id: 'out', name: 'Faraway Diner',  category: 'Pizza', location: { lat: 0, lng: 0 } },
+    ]);
+    render(<Home />);
+    expect(await screen.findByText('Nearby Eats')).toBeInTheDocument();
+    expect(screen.queryByText('Faraway Diner')).not.toBeInTheDocument();
   });
 
   test('does not call the endpoint or render the section for guests', async () => {
