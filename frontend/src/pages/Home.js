@@ -45,11 +45,12 @@ export default function Home() {
     // Guests must not hit the auth-only endpoint: apiFetch force-logs-out on 401.
     if (!isAuthenticated()) return;
     let cancelled = false;
-    getRecommendedRestaurants()
+    // Forward coords so recommendations honour the same 15 km radius as the feed.
+    getRecommendedRestaurants(userLocation ?? undefined)
       .then(list => { if (!cancelled) setRecommended(Array.isArray(list) ? list : []); })
       .catch(() => { if (!cancelled) setRecommended([]); });
     return () => { cancelled = true; };
-  }, []);
+  }, [userLocation]);
 
   const categories = useMemo(() => {
     const seen = new Map();

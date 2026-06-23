@@ -26,9 +26,21 @@ describe('getRestaurants', () => {
 });
 
 describe('getRecommendedRestaurants', () => {
-  test('requests the recommended endpoint', async () => {
+  test('requests the recommended endpoint with no coords', async () => {
     apiFetch.mockResolvedValue([]);
     await getRecommendedRestaurants();
+    expect(apiFetch).toHaveBeenCalledWith('/api/restaurants/recommended', { method: 'GET' });
+  });
+
+  test('appends lat & lng so the server can apply the delivery radius', async () => {
+    apiFetch.mockResolvedValue([]);
+    await getRecommendedRestaurants({ lat: 32.08, lng: 34.78 });
+    expect(apiFetch).toHaveBeenCalledWith('/api/restaurants/recommended?lat=32.08&lng=34.78', { method: 'GET' });
+  });
+
+  test('ignores partial coords (lat without lng)', async () => {
+    apiFetch.mockResolvedValue([]);
+    await getRecommendedRestaurants({ lat: 32.08 });
     expect(apiFetch).toHaveBeenCalledWith('/api/restaurants/recommended', { method: 'GET' });
   });
 

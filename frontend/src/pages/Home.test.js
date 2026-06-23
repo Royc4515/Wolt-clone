@@ -117,6 +117,15 @@ describe('Recommended for you', () => {
     expect(screen.getByText('Recommended Spot')).toBeInTheDocument();
   });
 
+  test('forwards the saved location so recommendations honour the delivery radius', async () => {
+    login();
+    localStorage.setItem('user_location', JSON.stringify({ lat: 32.08, lng: 34.78 }));
+    getRecommendedRestaurants.mockResolvedValue(RECOMMENDED);
+    render(<Home />);
+    await screen.findByRole('heading', { name: 'Recommended for you' });
+    expect(getRecommendedRestaurants).toHaveBeenCalledWith({ lat: 32.08, lng: 34.78 });
+  });
+
   test('does not call the endpoint or render the section for guests', async () => {
     render(<Home />);
     await screen.findByRole('heading', { name: 'All Restaurants' });
