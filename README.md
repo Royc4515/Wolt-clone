@@ -172,7 +172,7 @@ http://localhost:3000
 ```
 
 You should see the home screen with the seeded restaurants loaded from the
-server.
+server. See it in action under [Demo & Screenshots](#demo--screenshots).
 
 ### 3. Verify it's up
 
@@ -289,16 +289,41 @@ Base URL: `http://localhost:3000/api` — every response is JSON.
 
 ---
 
-## Screenshots
+## Demo & Screenshots
 
-### Login — light & dark theme
+> **📂 Media placeholders:** the items below point at files in `screenshots/`.
+> The login/register shots already exist; the rest are **placeholders** — drop
+> your captured images/videos into `screenshots/` using the filenames shown (or
+> rename the references to match your files) and they will render here.
+> *(GitHub also lets you drag-and-drop a video straight into the PR description
+> for inline playback if you prefer that over committing the file.)*
+
+### 🎥 Demo videos
+
+| Demo | File to add |
+| :--- | :--- |
+| Full order flow — browse → restaurant → cart → checkout → orders | [`screenshots/demo-order.mp4`](screenshots/demo-order.mp4) |
+| Auth — register (with validation) → login → protected pages | [`screenshots/demo-auth.mp4`](screenshots/demo-auth.mp4) |
+| Admin — manage restaurants, menus & incoming orders | [`screenshots/demo-admin.mp4`](screenshots/demo-admin.mp4) |
+
+<!-- Optional inline players (GitHub renders <video>; replace src with your file):
+<video src="screenshots/demo-order.mp4" controls width="720"></video>
+-->
+
+### 🖥️ Running with Docker
+
+`docker compose up --build` bringing the full stack up:
+
+![docker compose up — all three services build and start](screenshots/compose-up.png)
+
+### 🔐 Login — light & dark theme
 The top-bar toggle re-themes the entire app.
 
 | Light | Dark |
 | :---: | :---: |
 | ![Login (light)](screenshots/login-light.png) | ![Login (dark)](screenshots/login-dark.png) |
 
-### Register — with validation
+### 📝 Register — with validation
 Required fields, password rules, profile picture and location, with clear inline
 feedback.
 
@@ -306,16 +331,32 @@ feedback.
 | :---: | :---: |
 | ![Register (top)](screenshots/register-dark-top.png) | ![Register (bottom)](screenshots/register-dark-bottom.png) |
 
-<!--
-  📸 To capture before submission (the app is running at http://localhost:3000):
-  drop the PNGs into screenshots/ and they'll render here.
-  - screenshots/compose-up.png      → terminal: `docker compose up --build`
-  - screenshots/home.png            → home screen (nearby + recommended rows)
-  - screenshots/restaurant.png      → a restaurant menu page
-  - screenshots/cart-checkout.png   → cart drawer / checkout
-  - screenshots/orders.png          → orders page
-  - screenshots/admin.png           → admin dashboard
--->
+### 🏠 Home — nearby, promoted & recommended
+Restaurant feed with category filters and the personalized "Recommended for you" row.
+
+![Home screen](screenshots/home.png)
+
+### 🍽️ Restaurant — full menu
+Menu grouped into sections, item modal and add-to-cart.
+
+![Restaurant menu page](screenshots/restaurant.png)
+
+### 🛒 Cart & checkout
+The per-user cart drawer and the checkout that places a real order.
+
+| Cart | Checkout |
+| :---: | :---: |
+| ![Cart drawer](screenshots/cart.png) | ![Checkout](screenshots/checkout.png) |
+
+### 📦 Orders
+Past and current orders for the logged-in user.
+
+![Orders page](screenshots/orders.png)
+
+### 🛠️ Admin area
+Create/edit restaurants, manage menus and view restaurant orders.
+
+![Admin dashboard](screenshots/admin.png)
 
 ---
 
