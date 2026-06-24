@@ -43,6 +43,11 @@ services:
       - PORT=3000
       - EX2_HOST=ex2-server   # resolves to the C++ container on the wolt network
       - EX2_PORT=8080
+      # Secret used to sign/verify JWTs. Taken from the host environment (or a
+      # local .env, which is gitignored) when present; otherwise falls back to a
+      # throwaway demo value so `docker compose up` works out of the box. This is
+      # NOT a real secret — override JWT_SECRET for any non-demo use.
+      - JWT_SECRET=${JWT_SECRET:-wolt-clone-demo-jwt-secret}
     depends_on:
       ex2-server:
         condition: service_healthy   # wait until the C++ server actually accepts TCP
