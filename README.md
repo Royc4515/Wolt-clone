@@ -403,8 +403,11 @@ cd frontend && npm install && npm start
 ## Tests
 
 ```bash
-npm test                 # backend — node:test suites (repositories, app, TCP bridge)
-cd frontend && npm test  # frontend — React Testing Library / Jest component tests
+# Backend — node:test (repositories, app, TCP bridge)
+npm test
+
+# Frontend — React Testing Library / Jest (watch mode; prefix CI=true to run once)
+cd frontend && CI=true npm test
 ```
 
 ---
