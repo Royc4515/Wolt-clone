@@ -336,25 +336,45 @@ Base URL: `http://localhost:3000/api` — every response is JSON.
 [`happy-flow.mp4`](screenshots/happy-flow.mp4)
 <!-- ⬇ drag happy-flow.mp4 onto the line below this comment to embed an inline player -->
 
+https://github.com/user-attachments/assets/9ff6c47c-feea-4fc3-b908-873d04f29cad
+
+
+
 **▶ Top bar** — live search, dark/light theme toggle, live location
 
 [`top-bar.mp4`](screenshots/top-bar.mp4)
 <!-- ⬇ drag top-bar.mp4 here -->
+
+https://github.com/user-attachments/assets/ec7de667-5697-42f2-8200-e58ed8ba570a
+
+
 
 **▶ Register + create a restaurant** (admin)
 
 [`admin-register-restaurant.mp4`](screenshots/admin-register-restaurant.mp4)
 <!-- ⬇ drag admin-register-restaurant.mp4 here -->
 
+https://github.com/user-attachments/assets/752a0366-0608-428a-98b5-f0e0211d23d7
+
+
+
 **▶ Admin features** — manage menus & restaurant orders
 
 [`admin-features.mp4`](screenshots/admin-features.mp4)
 <!-- ⬇ drag admin-features.mp4 here -->
 
+https://github.com/user-attachments/assets/a3c95300-cd66-4a4d-a8d8-52a7f990ccac
+
+
+
 **▶ Promote a customer to admin**
 
 [`customer-to-admin.mp4`](screenshots/customer-to-admin.mp4)
 <!-- ⬇ drag customer-to-admin.mp4 here -->
+
+https://github.com/user-attachments/assets/a095bb96-02e4-4b0e-b634-0b9c5c842c10
+
+
 
 ### 🖥️ Running with Docker
 
