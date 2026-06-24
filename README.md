@@ -329,15 +329,32 @@ Base URL: `http://localhost:3000/api` — every response is JSON.
 ### 🎥 Demo videos
 
 > [!TIP]
-> Click a video to open it in GitHub's player. (For inline autoplay, a file can instead be drag-and-dropped into the PR description — GitHub then hosts it with a native player.)
+> **To embed inline players:** edit this file on **github.com** (the ✏️ button) and drag each `.mp4` from your local `screenshots/` folder onto the empty line under its heading. GitHub uploads it and inserts a `user-attachments` URL that renders a native, playable video. The links below are the meanwhile-fallback (click → GitHub's player).
 
-| Demo | Watch |
-| :--- | :--- |
-| **Happy flow** — browse restaurants, build a cart, checkout, see the order | [`happy-flow.mp4`](screenshots/happy-flow.mp4) |
-| **Top bar** — live search, dark/light theme toggle, live location | [`top-bar.mp4`](screenshots/top-bar.mp4) |
-| **Register + create a restaurant** (admin) | [`admin-register-restaurant.mp4`](screenshots/admin-register-restaurant.mp4) |
-| **Admin features** — manage menus & restaurant orders | [`admin-features.mp4`](screenshots/admin-features.mp4) |
-| **Promote a customer to admin** | [`customer-to-admin.mp4`](screenshots/customer-to-admin.mp4) |
+**▶ Happy flow** — browse restaurants → build a cart → checkout → see the order
+
+[`happy-flow.mp4`](screenshots/happy-flow.mp4)
+<!-- ⬇ drag happy-flow.mp4 onto the line below this comment to embed an inline player -->
+
+**▶ Top bar** — live search, dark/light theme toggle, live location
+
+[`top-bar.mp4`](screenshots/top-bar.mp4)
+<!-- ⬇ drag top-bar.mp4 here -->
+
+**▶ Register + create a restaurant** (admin)
+
+[`admin-register-restaurant.mp4`](screenshots/admin-register-restaurant.mp4)
+<!-- ⬇ drag admin-register-restaurant.mp4 here -->
+
+**▶ Admin features** — manage menus & restaurant orders
+
+[`admin-features.mp4`](screenshots/admin-features.mp4)
+<!-- ⬇ drag admin-features.mp4 here -->
+
+**▶ Promote a customer to admin**
+
+[`customer-to-admin.mp4`](screenshots/customer-to-admin.mp4)
+<!-- ⬇ drag customer-to-admin.mp4 here -->
 
 ### 🖥️ Running with Docker
 
