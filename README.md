@@ -23,7 +23,7 @@ A **Wolt-style food-delivery application**. The UI is a **React single-page app*
 Everything the UI shows — restaurants, menus, orders, search results, recommendations — is **fetched live from the server**; nothing is hard-coded in the client. Registering a user, creating a restaurant, or placing an order all go through the API.
 
 > [!NOTE]
-> **Project history:** the backend is the **Ex3 Node/Express API** (sources in `src/`). Earlier stages: [Ex2 — C++ server + Python client](Ex2_README.md) · [Ex1 — CLI recommender](Ex1_README.md).
+> **Project history:** [Ex3 — Node/Express API server (MVC)](Ex3_README.md) — this app's backend, sources in `src/` · [Ex2 — C++ server + Python client](Ex2_README.md) · [Ex1 — CLI recommender](Ex1_README.md).
 
 ### Team
 
