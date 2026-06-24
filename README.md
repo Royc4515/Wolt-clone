@@ -324,7 +324,7 @@ Base URL: `http://localhost:3000/api` — every response is JSON.
 ## Demo & Screenshots
 
 > [!NOTE]
-> The **demo videos** and the **login/register** shots are included. The remaining still screenshots (home, restaurant, cart, checkout, orders, admin, `compose-up`) are **placeholders** — drop the captured images into `screenshots/` using the filenames shown and they render automatically.
+> The **demo videos** below are real screen recordings of the running app. The still images show the Docker run and key screens; the cart, checkout, orders and admin flows are demonstrated in the videos.
 
 ### 🎥 Demo videos
 
@@ -365,17 +365,8 @@ Required fields, password rules, profile picture and location, with clear inline
 | :---: | :---: |
 | <img src="screenshots/home.png" width="380" alt="Home screen"> | <img src="screenshots/restaurant.png" width="380" alt="Restaurant menu"> |
 
-### 🛒 Cart & checkout · 📦 Orders
-
-| Cart | Checkout | Orders |
-| :---: | :---: | :---: |
-| <img src="screenshots/cart.png" width="250" alt="Cart drawer"> | <img src="screenshots/checkout.png" width="250" alt="Checkout"> | <img src="screenshots/orders.png" width="250" alt="Orders"> |
-
-### 🛠️ Admin area
-
-Create/edit restaurants, manage menus and view restaurant orders.
-
-<img src="screenshots/admin.png" width="720" alt="Admin dashboard">
+> [!TIP]
+> Cart & checkout, orders, and the full admin area (manage restaurants, menus & orders) are shown end-to-end in the **demo videos** above.
 
 <p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
