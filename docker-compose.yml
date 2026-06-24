@@ -1,15 +1,16 @@
 # Ex4 — runs the full Wolt-clone stack, each part in its own container:
 #   * ex2-server : legacy Ex2 C++ recommendation server (TCP, internal :8080)
-#   * web        : Node.js + Express web/API server (HTTP API, :3000)
-#   * frontend   : React single-page app served by nginx (container :80 -> host :8080)
+#   * web        : Node.js + Express web/API server (internal :3000)
+#   * frontend   : React single-page app served by nginx (container :80 -> host :3000)
 #
-# Request flow from the browser:
-#   http://localhost:8080            -> nginx (frontend) -> static React bundle
-#   http://localhost:8080/api/...    -> nginx proxies to web:3000 -> ex2-server:8080
+# Single origin — everything is reached through nginx on host :3000:
+#   http://localhost:3000            -> nginx (frontend) -> static React bundle
+#   http://localhost:3000/api/...    -> nginx proxies to web:3000 -> ex2-server:8080
+#   http://localhost:3000/images/... -> nginx proxies to web:3000
 #
 # Run:  docker compose up --build
-#   * App : http://localhost:8080
-#   * API : http://localhost:3000/api   (published for direct testing)
+#   * App : http://localhost:3000
+#   * API : http://localhost:3000/api
 
 services:
   # Legacy Ex2 C++ recommendation server. Internal only: reached by `web` over the
@@ -32,13 +33,14 @@ services:
     networks:
       - wolt
 
-  # Node.js + Express web/API server (the app's backend).
+  # Node.js + Express web/API server (the app's backend). Internal only:
+  # the frontend (nginx) proxies /api and /images to it over the wolt network.
   web:
     build:
       context: .
       dockerfile: Dockerfile.web
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - PORT=3000
       - EX2_HOST=ex2-server   # resolves to the C++ container on the wolt network
@@ -54,14 +56,15 @@ services:
     networks:
       - wolt
 
-  # React single-page app: built by Node, served by nginx. nginx also
-  # reverse-proxies /api and /images to the web service (see frontend/nginx.conf).
+  # React single-page app: built by Node, served by nginx on host :3000. nginx is
+  # the single entry point and reverse-proxies /api and /images to the web service
+  # over the wolt network (see frontend/nginx.conf).
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "8080:80"
+      - "3000:80"
     depends_on:
       - web
     networks:
