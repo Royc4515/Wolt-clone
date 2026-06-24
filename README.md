@@ -1,104 +1,254 @@
-# Wolt-Clone — Ex3: Node.js + Express Web Server (MVC)
+<div align="center">
 
-[![Node.js](https://img.shields.io/badge/Runtime-Node.js%20%E2%89%A518-green.svg)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Framework-Express%204-black.svg)](https://expressjs.com/)
-[![Docker](https://img.shields.io/badge/Run-Docker%20Compose-blue.svg)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/Tests-node%3Atest-brightgreen.svg)](https://nodejs.org/api/test.html)
+<img src="frontend/public/wolt-logo.png" width="110" alt="Wolt-Clone logo">
 
-A RESTful food-delivery web server (Wolt-style) built in **Node.js + Express**
-with an **MVC** architecture. It exposes the application's core API — users,
-authentication, restaurants, menus, orders, and search — and also acts as a
-**TCP client to the legacy Ex2 C++ recommendation server**, logging product
-views so the recommender can learn from them.
+# Wolt-Clone
 
-All `/api/*` endpoints return **JSON** (this is a web service, not an HTML app).
-Data is kept **in memory** — restarting the server clears everything.
+**A full-stack food-delivery web app — React UI · Express API · C++ recommender, all in one `docker compose up`.**
 
-> **Project history:** [Ex2 — C++ server + Python client](Ex2_README.md) ·
-> [Ex1 — CLI recommender](Ex1_README.md).
+[![React](https://img.shields.io/badge/UI-React%2019-61dafb.svg?style=flat-square)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/API-Node.js%20%E2%89%A518-green.svg?style=flat-square)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Server-Express-black.svg?style=flat-square)](https://expressjs.com/)
+[![nginx](https://img.shields.io/badge/Serve-nginx-009639.svg?style=flat-square)](https://nginx.org/)
+[![Docker](https://img.shields.io/badge/Run-Docker%20Compose-2496ed.svg?style=flat-square)](https://www.docker.com/)
+
+[Quick Start](#quick-start-docker-compose) · [Features](#features) · [Architecture](#architecture) · [API](#api-reference) · [Demo](#demo--screenshots)
+
+</div>
 
 ---
 
-## Team Members
+A **Wolt-style food-delivery application**. The UI is a **React single-page app** that talks to our **Node.js + Express** server (Ex3), which in turn bridges to the legacy **Ex2 C++ recommendation server** for personalized recommendations. The whole stack runs together with one command.
 
-| Name |
-| :--- |
-| **Dana Sela** |
-| **Roy Carmelli** |
+Everything the UI shows — restaurants, menus, orders, search results, recommendations — is **fetched live from the server**; nothing is hard-coded in the client. Registering a user, creating a restaurant, or placing an order all go through the API.
+
+> [!NOTE]
+> **Project history:** [Ex3 — Node/Express API server (MVC)](Ex3_README.md) — this app's backend, sources in `src/` · [Ex2 — C++ server + Python client](Ex2_README.md) · [Ex1 — CLI recommender](Ex1_README.md).
+
+### Team
+
+| Dana Sela | Roy Carmelli |
+| :---: | :---: |
+
+---
+
+## Table of Contents
+
+1. [Features](#features)
+2. [Architecture](#architecture)
+3. [Tech Stack](#tech-stack)
+4. [Project Structure](#project-structure)
+5. [Quick Start (Docker Compose)](#quick-start-docker-compose)
+6. [Using the App](#using-the-app)
+7. [API Reference](#api-reference)
+8. [Demo & Screenshots](#demo--screenshots)
+9. [Running Without Docker](#running-without-docker)
+10. [Tests](#tests)
+11. [Work Process & Project Management](#work-process--project-management)
+12. [Notes & Limitations](#notes--limitations)
+
+---
+
+## Features
+
+- **Authentication** — register & login with **client- and server-side validation**. On login the server returns a **JWT**, which the client attaches to every protected request (`Authorization: Bearer <token>`).
+- **Protected pages** — checkout, profile, orders and the whole admin area are guarded by route guards on the client and JWT checks on the server; visiting them logged-out redirects to login.
+- **Home screen** — nearby restaurants, promoted restaurants, and a **personalized "Recommended for you"** row (in-range restaurants ranked by the Ex2 C++ recommender), plus category filters.
+- **Live search** — search restaurants and dishes from the top bar, with a dropdown and a full results page.
+- **Restaurant page** — full menu grouped into sections, an item modal, and add-to-cart.
+- **Cart & checkout** — a cart **persisted per user** across sessions, then a checkout that places a real order.
+- **Orders** — view your past and current orders.
+- **Profile** — view/update display name, picture and location.
+- **Dark / light theme** — a top-bar toggle re-themes the whole app.
+- **Admin area** — `admin` users can create/edit restaurants, manage menus, and view/update their restaurants' orders.
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
 ## Architecture
 
-The server follows **MVC** with **loose coupling** and **SOLID** in mind, so new
-endpoints and the future swap of the in-memory store for a database plug in as
-*extensions* rather than rewrites.
+The app runs as **three containers** on a private Docker network. Only the frontend is published to your machine — it is the **single entry point** and reverse-proxies API and image traffic to the backend internally.
 
-```text
-HTTP client (curl / Postman / browser)
-      │  JSON over HTTP  (:3000)
-      ▼
-Express app  (src/app.js)
-      ▼
-Routes  (src/routes/*)            ── URL → controller mapping
-      ▼
-Middleware  (src/middleware/*)    ── auth (x-user-id), JSON errors, 404
-      ▼
-Controllers  (src/controllers/*)  ── request handling, status codes
-      ▼
-Services / Repositories           ── in-memory data (src/services/*)
-      │
-      └──► TCP bridge  (src/services/tcpClient.js)
-                 │  newline TCP protocol  (:8080)
-                 ▼
-           Ex2 C++ recommendation server   (separate process/container)
+```mermaid
+flowchart TD
+    Browser["🌐 Browser"] -->|"http://localhost:3000"| nginx
+
+    subgraph net["Docker network · wolt"]
+        nginx["frontend · nginx :80<br/>(single entry point)"]
+        web["web · Express API :3000"]
+        cpp["ex2-server · C++ recommender :8080"]
+    end
+
+    nginx -->|"/ (static)"| spa["React SPA bundle"]
+    nginx -->|"/api/*"| web
+    nginx -->|"/images/*"| web
+    web -->|"TCP bridge"| cpp
 ```
 
-**Layers**
+| Container | Role | Listens (internal) | Published to host |
+| :--- | :--- | :---: | :---: |
+| `frontend` | React build served by **nginx** (single entry point) | `80` | **`3000` → `80`** |
+| `web` | **Node.js + Express** API server (Ex3) | `3000` | — (internal) |
+| `ex2-server` | Legacy **Ex2 C++** recommendation server (TCP) | `8080` | — (internal) |
 
-- **Routes** (`src/routes/`) — map each URL + method to a controller; attach the
-  `requireAuth` middleware to protected routes.
-- **Middleware** (`src/middleware/`) — `auth.js` enforces the `x-user-id` header
-  on protected routes; `errorHandler.js` / `notFound.js` keep every response a
-  clean JSON envelope.
-- **Controllers** (`src/controllers/`) — validate input, call the data layer,
-  return the correct HTTP status.
-- **Services / Repositories** (`src/services/`) — the in-memory store behind a
-  small repository interface (`baseRepository.js`), so the storage backend can be
-  swapped without touching controllers.
-- **Bridge** (`src/services/tcpClient.js`) — a thin, resilient `node:net` client
-  to the Ex2 C++ server. It never throws/rejects: if that server is down or slow,
-  the web request is unaffected (see [Ex2 integration](#ex2-integration)).
+Because the React client uses **relative URLs** (`/api/...`), the whole app is **single-origin** at `http://localhost:3000`: the home page returns the React app, and the API lives behind it at `/api`. nginx forwards `/api` and `/images` to `web`, and `web` reaches the C++ server as host `ex2-server`.
+
+<details>
+<summary><b>Request lifecycle — login then a protected call (sequence diagram)</b></summary>
+
+```mermaid
+sequenceDiagram
+    participant U as Browser (React)
+    participant N as nginx (frontend)
+    participant W as Express (web)
+    U->>N: POST /api/tokens {username, password}
+    N->>W: proxy → web:3000
+    W-->>N: 200 { token (JWT) }
+    N-->>U: 200 { token }
+    Note over U: stores JWT, attaches Authorization:<br/>Bearer on subsequent requests
+    U->>N: GET /api/orders (Bearer JWT)
+    N->>W: proxy → web:3000
+    W-->>U: 200 [orders] (requireAuth verifies the JWT)
+```
+
+</details>
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
-## Project Structure (Ex3 web server)
+## Tech Stack
+
+- **Frontend:** React 19, React Router 7, Bootstrap 5, Create-React-App build.
+- **Backend:** Node.js + Express (MVC), JSON Web Tokens, in-memory data store.
+- **Recommender:** C++ TCP server (Ex2), reached over a `node:net` bridge.
+- **Serving / orchestration:** nginx (static + reverse proxy), Docker Compose.
+
+---
+
+## Project Structure
+
+<details>
+<summary>Repository layout</summary>
 
 ```text
-src/
-├── server.js              # Boots the HTTP server (reads PORT)
-├── app.js                 # Express app: JSON parsing, routes, error handling
-├── config/
-│   └── env.js             # PORT, EX2_HOST, EX2_PORT (from environment)
-├── routes/                # users, tokens, restaurants, products, orders, search
-├── middleware/
-│   ├── auth.js            # requireAuth — validates the x-user-id header
-│   ├── errorHandler.js
-│   └── notFound.js
-├── controllers/           # one controller per resource
-├── services/
-│   ├── repositories/      # in-memory CRUD (baseRepository + per-entity repos)
-│   ├── tcpClient.js       # TCP bridge to the Ex2 C++ server
-│   └── *.service.js       # cross-entity orchestration (e.g. cascading deletes)
-└── models/                # input validation helpers
-web-tests/                 # node:test unit tests (repositories, app, tcpClient)
-Dockerfile.web             # Node web-server image
-Dockerfile.server          # Ex2 C++ server image (see Ex2_README.md)
-docker-compose.yml         # Runs web + ex2-server together
+.
+├── docker-compose.yml         # Orchestrates all three containers (Ex4 entry point)
+├── Dockerfile.web             # Node/Express API image
+├── Dockerfile.server          # Ex2 C++ server image
+├── frontend/                  # React single-page app
+│   ├── Dockerfile             #   multi-stage: build with Node → serve with nginx
+│   ├── nginx.conf             #   SPA fallback + /api and /images reverse proxy
+│   └── src/
+│       ├── App.js             #   routes (React Router)
+│       ├── pages/             #   Home, Login, Register, Restaurant, Checkout,
+│       │   └── admin/         #     Orders, Profile, SearchResults, + admin pages
+│       ├── components/        #   AppBar, CartDrawer, route guards, cards, …
+│       ├── api/               #   fetch wrappers (apiFetch attaches the JWT)
+│       ├── hooks/ utils/      #   theme, cart storage, auth helpers, …
+│       └── styles/ assets/
+└── src/                       # Ex3 Node/Express server (backend)
+    ├── app.js / server.js     #   Express app + bootstrap
+    ├── routes/ controllers/   #   REST endpoints (users, tokens, restaurants,
+    │                          #     products, orders, search)
+    ├── middleware/auth.js     #   requireAuth / requireAdmin (JWT)
+    ├── services/              #   in-memory repositories + TCP bridge to Ex2
+    └── seed.js                #   seeds 8 restaurants with full menus on startup
 ```
 
-The **Ex2 C++ server** sources live in the same repo (`src/Server`, `src/Commands`,
-`src/Logic`, …, `cpp-tests/`) and are documented in **[Ex2_README.md](Ex2_README.md)**.
+The **Ex2 C++ server** sources live in the same repo (`src/Server`, `src/Logic`, …, `cpp-tests/`) and are documented in **[Ex2_README.md](Ex2_README.md)**.
+
+</details>
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
+
+---
+
+## Quick Start (Docker Compose)
+
+This is the required way to run the project — one command builds and starts the whole stack.
+
+> [!IMPORTANT]
+> **Prerequisite:** **Docker Desktop** (or Docker Engine + Compose v2) installed and **running**. Nothing else is needed — Node, the C++ toolchain and nginx all live inside the images.
+
+### 1. Build & start everything
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+This single command **compiles all the code that needs compiling and starts all the servers**:
+
+1. **`ex2-server`** — compiles the **C++** recommendation server with CMake/`make` inside the image, then runs it (TCP `:8080`, internal).
+2. **`web`** — installs backend dependencies and starts the **Node/Express** API (`:3000`, internal). It waits until the C++ server is **healthy** before starting.
+3. **`frontend`** — builds the **React** production bundle with Node, then serves it with **nginx**, published on **host `:3000`**.
+
+> [!TIP]
+> Add `-d` to run it detached (in the background): `docker compose up --build -d`.
+
+### 2. Open the app
+
+> **http://localhost:3000**
+
+You should see the home screen with the seeded restaurants loaded from the server. See it in action under [Demo & Screenshots](#demo--screenshots).
+
+### 3. Verify it's up
+
+```bash
+docker compose ps
+```
+
+```text
+NAME                          SERVICE      STATUS                       PORTS
+wolt-clone-ex2-ex2-server-1   ex2-server   Up (healthy)                 8080/tcp
+wolt-clone-ex2-frontend-1     frontend     Up                           0.0.0.0:3000->80/tcp
+wolt-clone-ex2-web-1          web          Up                           3000/tcp
+```
+
+Only `frontend` is published to the host; `web` and `ex2-server` are reachable only inside the Docker network. Quick endpoint checks:
+
+```bash
+curl -i http://localhost:3000/                       # 200 → the React app (index.html)
+curl    http://localhost:3000/api/restaurants        # JSON list of restaurants (via nginx → web)
+curl -I http://localhost:3000/images/restaurants/pizza-roma.jpg   # 200 image/jpeg (proxied)
+```
+
+### 4. Stop it
+
+```bash
+docker compose down
+```
+
+<details>
+<summary><b>Configuration (environment variables)</b></summary>
+
+| Variable | Used by | Default | Notes |
+| :--- | :--- | :--- | :--- |
+| `JWT_SECRET` | `web` | `wolt-clone-demo-jwt-secret` | Signs/verifies JWTs. Sourced from the host env / a local (gitignored) `.env` when present; otherwise the **non-sensitive demo** default is used so the stack runs out of the box. |
+| `PORT` | `web` | `3000` | Internal API port. |
+| `EX2_HOST` / `EX2_PORT` | `web` | `ex2-server` / `8080` | How the API reaches the C++ server on the Docker network. |
+
+> [!CAUTION]
+> No real secrets are committed. `JWT_SECRET` is only a local signing key for a demo with throwaway data — override it via your environment for any non-demo use.
+
+</details>
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
+
+---
+
+## Using the App
+
+1. **Browse without logging in** — the home screen, search, and restaurant menus are public.
+2. **Register** (`/register`) — pick a username, password, display name, profile picture and a location. Fields are validated both in the browser and on the server (a missing field or an existing username is rejected with a clear message).
+3. **Log in** (`/login`) — on success you receive a JWT and gain access to the cart/checkout, orders and profile pages.
+4. **Order** — open a restaurant, add items to the cart, and check out.
+5. **Admin** — a user whose role is `admin` also sees the admin area (`/admin`) to manage restaurants, menus and incoming orders. New users default to `customer`.
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
@@ -106,239 +256,199 @@ The **Ex2 C++ server** sources live in the same repo (`src/Server`, `src/Command
 
 Base URL: `http://localhost:3000/api` — every response is JSON.
 
-**Authentication:** some actions require a logged-in user. Pass the user's id as
-the **`x-user-id`** HTTP header on protected routes (marked 🔒). Missing it
-returns `401 Unauthorized`.
+> [!NOTE]
+> **Auth:** routes marked 🔒 require the JWT from `POST /api/tokens`, sent as `Authorization: Bearer <token>`. Routes marked 👑 additionally require the `admin` role. Missing/invalid tokens → `401`; non-admins on admin routes → `403`.
 
-### Users & authentication
+<details>
+<summary><b>Users & authentication</b></summary>
+
 | Method | Path | Auth | Description |
 | :--- | :--- | :--: | :--- |
-| `POST` | `/api/users` | — | Register a user — `name, phone, address, email, password` (all required) → `201 {id}` |
-| `GET` | `/api/users/:id` | — | Get a user's details (password is never returned) |
-| `POST` | `/api/tokens` | — | Log in with `email` + `password` → `200 {id}` (`404` unknown email, `401` wrong password) |
+| `POST` | `/api/users` | — | Register — `username, password, displayName, profilePicture, location{lat,lng}` (all required) → `201 {id}`. `400` on missing fields or duplicate username. |
+| `POST` | `/api/tokens` | — | Log in with `username` + `password` → `200 {token}` (`404` unknown user, `401` wrong password). |
+| `GET` | `/api/users/:id` | — | Get a user's details (password never returned). |
+| `PATCH` | `/api/users/:id` | 🔒 | Update your own profile → returns a refreshed `{user, token}`. |
 
-### Restaurants
+</details>
+
+<details>
+<summary><b>Restaurants</b></summary>
+
 | Method | Path | Auth | Description |
 | :--- | :--- | :--: | :--- |
-| `GET` | `/api/restaurants` | — | List all restaurants |
-| `POST` | `/api/restaurants` | 🔒 | Create a restaurant (`name, address, phone` required) → `201 {id}` |
-| `GET` | `/api/restaurants/:id` | — | Get one restaurant |
-| `PATCH` | `/api/restaurants/:id` | 🔒 | Update a restaurant |
-| `DELETE` | `/api/restaurants/:id` | 🔒 | Delete a restaurant (cascades its products) |
+| `GET` | `/api/restaurants` | — | List all restaurants. |
+| `GET` | `/api/restaurants/recommended` | 🔒 | Personalized restaurant recommendations for the logged-in user. |
+| `POST` | `/api/restaurants` | 🔒👑 | Create a restaurant → `201 {id}`. |
+| `GET` | `/api/restaurants/:id` | — | Get one restaurant. |
+| `GET` | `/api/restaurants/:id/menu` | — | Get the restaurant's menu, grouped into sections. |
+| `PATCH` | `/api/restaurants/:id` | 🔒👑 | Update a restaurant. |
+| `DELETE` | `/api/restaurants/:id` | 🔒👑 | Delete a restaurant (cascades its products). |
 
-### Products (a restaurant's menu)
+</details>
+
+<details>
+<summary><b>Products (a restaurant's menu)</b></summary>
+
 | Method | Path | Auth | Description |
 | :--- | :--- | :--: | :--- |
-| `GET` | `/api/restaurants/:id/products` | — | List the restaurant's menu |
-| `POST` | `/api/restaurants/:id/products` | 🔒 | Add a product (`name, price, category` required) → `201 {id}` |
-| `GET` | `/api/restaurants/:id/products/:pid` | — | Get a product — **also logs a view to the Ex2 server** |
-| `PATCH` | `/api/restaurants/:id/products/:pid` | 🔒 | Update a product |
-| `DELETE` | `/api/restaurants/:id/products/:pid` | 🔒 | Remove a product |
+| `GET` | `/api/restaurants/:id/products` | — | List the restaurant's products. |
+| `GET` | `/api/restaurants/:id/products/recommended` | 🔒 | Recommended products for this restaurant. |
+| `POST` | `/api/restaurants/:id/products` | 🔒 | Add a product → `201 {id}`. |
+| `GET` | `/api/restaurants/:id/products/:pid` | — | Get a product — **also logs a view to the Ex2 server**. |
+| `PATCH` | `/api/restaurants/:id/products/:pid` | 🔒 | Update a product. |
+| `DELETE` | `/api/restaurants/:id/products/:pid` | 🔒 | Remove a product. |
 
-### Orders
+</details>
+
+<details>
+<summary><b>Orders, search & health</b></summary>
+
 | Method | Path | Auth | Description |
 | :--- | :--- | :--: | :--- |
-| `POST` | `/api/orders` | 🔒 | Create an order — body `{ restaurantId, items: [{ productId, quantity }] }` → `201` + `Location` |
-| `GET` | `/api/orders` | 🔒 | List the logged-in user's orders |
-| `GET` | `/api/orders/:id` | 🔒 | Get one order (`403` if it isn't yours) |
-| `PATCH` | `/api/orders/:id` | 🔒 | Update an order |
-| `DELETE` | `/api/orders/:id` | 🔒 | Delete an order |
+| `POST` | `/api/orders` | 🔒 | Create an order → `201` + `Location`. |
+| `GET` | `/api/orders` | 🔒 | List the logged-in user's orders. |
+| `GET` | `/api/orders/:id` | 🔒 | Get one order (`403` if it isn't yours). |
+| `PATCH` | `/api/orders/:id` | 🔒 | Update an order. |
+| `DELETE` | `/api/orders/:id` | 🔒 | Delete an order. |
+| `PATCH` | `/api/orders/:id/status` | 🔒👑 | Update an order's status. |
+| `GET` | `/api/orders/restaurant/:restaurantId` | 🔒👑 | All orders for a restaurant (admin view). |
+| `GET` | `/api/search/:query` | — | Case-insensitive match → `{ restaurants: [...], products: [...] }`. |
+| `GET` | `/api/health` | — | Liveness check → `200 {"status":"ok"}`. |
 
-### Search
-| Method | Path | Auth | Description |
-| :--- | :--- | :--: | :--- |
-| `GET` | `/api/search/:query` | — | Case-insensitive name/description match → `{ "Restaurants": [...], "Products": [...] }` |
+</details>
 
-### Health
-| Method | Path | Auth | Description |
-| :--- | :--- | :--: | :--- |
-| `GET` | `/api/health` | — | Liveness check → `200 {"status":"ok"}` |
-
-**Status codes:** `200` OK · `201` Created (orders also return a `Location`
-header; restaurants/products return the new `{id}`) · `204` No Content · `400`
-Bad Request (missing/invalid fields) · `401` Unauthorized (missing `x-user-id`)
-· `403` Forbidden (another user's order) · `404` Not Found.
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
-## Ex2 integration
+## Demo & Screenshots
 
-Some actions must reach the **Ex2 C++ recommendation server** (a raw-TCP,
-line-based protocol — not HTTP). The web server opens a socket to it as a client.
+> [!NOTE]
+> The **demo videos** below are real screen recordings of the running app. The still images show the Docker run and key screens; the cart, checkout, orders and admin flows are demonstrated in the videos.
 
-The clearest example: **`GET /api/restaurants/:id/products/:pid`** records that
-the user viewed the product by sending `POST <userId> <productId>` to the Ex2
-server (falling back to `PATCH` if the user already exists). This is handled by
-[`src/services/tcpClient.js`](src/services/tcpClient.js) and is **fire-and-forget
-and crash-proof**: if the Ex2 server is unreachable or slow, the HTTP response is
-unaffected. The target server is configured with `EX2_HOST` / `EX2_PORT`.
+### 🎥 Demo videos
 
----
+Click ▶ on any clip to play it inline.
 
-## How to Run
+**▶ Happy flow** — browse restaurants → build a cart → checkout → see the order
 
-### Option 1 — Docker Compose (recommended)
+https://github.com/user-attachments/assets/9ff6c47c-feea-4fc3-b908-873d04f29cad
 
-Runs the web server and the Ex2 C++ server as **two containers** on a shared
-network — exactly as the assignment requires.
+**▶ Top bar** — live search, dark/light theme toggle, live location
 
-**Prerequisite:** Docker (Desktop or Engine) running.
+https://github.com/user-attachments/assets/ec7de667-5697-42f2-8200-e58ed8ba570a
 
-```bash
-docker compose up --build
-```
+**▶ Register + create a restaurant** (admin)
 
-| Service | URL / port |
-| :--- | :--- |
-| `web` (Node web server) | `http://localhost:3000` |
-| `ex2-server` (C++ server) | TCP `localhost:8080` |
+https://github.com/user-attachments/assets/752a0366-0608-428a-98b5-f0e0211d23d7
 
-The web server reaches the C++ server by the hostname `ex2-server` over the
-internal network (no host config needed). Stop with:
+**▶ Admin features** — manage menus & restaurant orders
 
-```bash
-docker compose down
-```
+https://github.com/user-attachments/assets/a3c95300-cd66-4a4d-a8d8-52a7f990ccac
 
-### Option 2 — Standalone (no Docker)
+**▶ Promote a customer to admin**
 
-Run the two servers in two terminals.
+https://github.com/user-attachments/assets/a095bb96-02e4-4b0e-b634-0b9c5c842c10
 
-**Terminal 1 — Ex2 C++ server** (build once with CMake — details in
-[Ex2_README.md](Ex2_README.md)):
 
-```bash
-mkdir build && cd build && cmake .. && make
-./WoltClone 8080
-```
 
-**Terminal 2 — Node web server** (point it at the local C++ server):
+### 🖥️ Running with Docker
 
-```bash
-npm install
-# Linux/macOS:
-EX2_HOST=127.0.0.1 EX2_PORT=8080 PORT=3000 npm start
-# Windows PowerShell:
-#   $env:EX2_HOST='127.0.0.1'; $env:EX2_PORT=8080; $env:PORT=3000; npm start
-```
+<img src="screenshots/compose-up.png" width="720" alt="docker compose up — all three services build and start">
 
-The web API is then at `http://localhost:3000`.
+### 🔐 Login — light & dark theme
 
-> **Environment variables:** `PORT` (web port, default `3000`), `EX2_HOST`
-> (default `ex2-server`, the Docker service name), `EX2_PORT` (default `8080`).
-> When running standalone, set `EX2_HOST=127.0.0.1` so the bridge finds the local
-> C++ server.
+The top-bar toggle re-themes the entire app.
 
-### Run the tests
+| Light | Dark |
+| :---: | :---: |
+| <img src="screenshots/login-light.png" width="380" alt="Login (light)"> | <img src="screenshots/login-dark.png" width="380" alt="Login (dark)"> |
 
-```bash
-npm test          # node:test — repositories, app, and the TCP bridge (web-tests/)
-```
+### 📝 Register — with validation
+
+Required fields, password rules, profile picture and location, with clear inline feedback.
+
+| Top | Bottom |
+| :---: | :---: |
+| <img src="screenshots/register-dark-top.png" width="380" alt="Register (top)"> | <img src="screenshots/register-dark-bottom.png" width="380" alt="Register (bottom)"> |
+
+### 🏠 Home · 🍽️ Restaurant
+
+| Home — nearby, promoted & recommended | Restaurant — full menu |
+| :---: | :---: |
+| <img src="screenshots/home.png" width="380" alt="Home screen"> | <img src="screenshots/restaurant.png" width="380" alt="Restaurant menu"> |
+
+> [!TIP]
+> Cart & checkout, orders, and the full admin area (manage restaurants, menus & orders) are shown end-to-end in the **demo videos** above.
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
-## Example walk-through (curl)
+## Running Without Docker
 
-A short session against a freshly started server. Real responses shown.
+<details>
+<summary>Development workflow (three processes)</summary>
+
+Useful for fast iteration on the frontend.
 
 ```bash
-# 1) List restaurants — open endpoint, empty on a fresh start.
-$ curl -s -i http://localhost:3000/api/restaurants
-HTTP/1.1 200 OK
-[]
+# 1) Ex2 C++ server (build once with CMake — see Ex2_README.md)
+mkdir build && cd build && cmake .. && make && ./WoltClone 8080
 
-# 2) Create a restaurant WITHOUT logging in — rejected.
-$ curl -s -i -X POST http://localhost:3000/api/restaurants \
-    -H "Content-Type: application/json" -d '{"name":"aaa"}'
-HTTP/1.1 401 Unauthorized
-{"error":"Unauthorized: x-user-id header is missing"}
+# 2) Node/Express API (point it at the local C++ server)
+#    Linux/macOS:
+EX2_HOST=127.0.0.1 EX2_PORT=8080 PORT=3000 JWT_SECRET=dev-secret npm start
+#    Windows PowerShell:
+#    $env:EX2_HOST='127.0.0.1'; $env:EX2_PORT=8080; $env:PORT=3000; $env:JWT_SECRET='dev-secret'; npm start
 
-# 3) Create it correctly — auth header + required fields.
-$ curl -s -i -X POST http://localhost:3000/api/restaurants \
-    -H "Content-Type: application/json" -H "x-user-id: u1" \
-    -d '{"name":"aaa","address":"123 Main St","phone":"050-1234567"}'
-HTTP/1.1 201 Created
+# 3) React dev server (proxies /api to :3000 — see frontend/package.json "proxy")
+cd frontend && npm install && npm start
+```
 
-# 4) Read it back.
-$ curl -s http://localhost:3000/api/restaurants
-[{"name":"aaa","address":"123 Main St","phone":"050-1234567", ... ,"id":"<uuid>"}]
+> [!NOTE]
+> Since the API already holds port `3000`, the CRA dev server starts on the next free port (it offers **`http://localhost:3001`**) and proxies `/api` calls to the Express server on `:3000`. In the Docker build, nginx plays that proxy role instead — which is why the containerized app is single-origin on `:3000`.
 
-# 5) Add a product, then view it (this also logs a view to the Ex2 server).
-$ curl -s -X POST http://localhost:3000/api/restaurants/<id>/products \
-    -H "Content-Type: application/json" -H "x-user-id: u1" \
-    -d '{"name":"prod","price":10,"category":"main"}'
-$ curl -s -i http://localhost:3000/api/restaurants/<id>/products/<pid> -H "x-user-id: u1"
-HTTP/1.1 200 OK
+</details>
 
-# 6) Search by name/description.
-$ curl -s http://localhost:3000/api/search/aaa
-{"Restaurants":[ ... ],"Products":[ ... ]}
+---
+
+## Tests
+
+```bash
+# Backend — node:test (repositories, app, TCP bridge)
+npm test
+
+# Frontend — React Testing Library / Jest (watch mode; prefix CI=true to run once)
+cd frontend && CI=true npm test
 ```
 
 ---
 
-## Screenshots
-
-### Restaurants flow (GET → POST → GET)
-Listing restaurants, creating one (with the `x-user-id` header + required
-fields), then reading it back.
-
-![Restaurant create/list via curl](screenshots/ex3_restaurants_flow.png)
-
-### Auth enforcement (401)
-A protected `POST` without the `x-user-id` header is rejected.
-
-![401 Unauthorized without x-user-id](screenshots/ex3_auth_401.png)
-
-### Search
-`GET /api/search/:query` returning matching restaurants and products.
-
-![Search results](screenshots/ex3_search.png)
-
-### Tests passing
-`npm test` — the full `node:test` suite (repositories, app, and the TCP bridge).
-
-![npm test — all passing](screenshots/ex3_tests.png)
-
----
-
-## Version control — Ex2 vs Ex3
-
-- **Ex3** (this Node/Express web server) is developed on **`main`** via feature
-  branches merged through reviewed pull requests.
-- **Ex2** (the C++ server + Python client) is **frozen for grading** at tag
-  **`ex2-submission`** and branch **`submission/ex2`**, and is never modified by
-  Ex3 work — so the two submissions never mix.
-
-To inspect the Ex2 submission:
-
-```bash
-git checkout ex2-submission      # or: git checkout submission/ex2
-```
-
-Ex2 is documented separately in **[Ex2_README.md](Ex2_README.md)**.
-
----
-
-## Project Management
+## Work Process & Project Management
 
 Developed with **Agile Scrum**, tracked in **JIRA**:
 
-- Work is split into epics, user stories, and subtasks; each is assigned before
-  work begins and built on a **feature branch** whose name contains the JIRA
-  issue key, which auto-links the branch to the issue.
-- **Feature-branch workflow:** every change merges into `main` only through a
-  **pull request** reviewed and approved by another team member (the approver is
-  never the author).
-- **Test-driven** where it applies — the data layer and the TCP bridge ship with
-  `node:test` suites written before the implementation.
+- Work is split into **epics → user stories → subtasks**; each is assigned before work begins and built on a **feature branch** whose name contains the JIRA issue key (e.g. `SCRUM-276-docker-and-readme`), which auto-links the branch and PR to the issue.
+- **Feature-branch workflow:** every change merges into `main` only through a **pull request reviewed and approved by another team member** — the approver is never the author. Status moves `In Progress → Code Review → Done` on the board, and blockers are tracked with *is blocked by* links.
+- **Status meetings** are held through the sprint and their decisions recorded in JIRA.
+- **Test-driven where it applies** — the data layer, the TCP bridge and many React components ship with tests.
+
+This Ex4 sprint ("UI for Wolt App") added the React frontend on top of the Ex3 API and containerized the whole stack.
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
 ---
 
-## Notes & limitations
+## Notes & Limitations
 
-- **In-memory only:** all data is volatile and resets when the web server
-  restarts (per the assignment).
-- **No secrets:** this is a teaching exercise; do not store or send real
-  passwords, cards, tokens, or keys.
-- **Allowed tooling:** Node.js + Express only (plus Node built-ins).
+> [!NOTE]
+> **In-memory store:** all data is volatile and resets when the `web` container restarts. On startup the server **seeds 8 restaurants with full menus** so the app is populated immediately.
+
+> [!WARNING]
+> **No secrets:** this is a teaching exercise — do not store or send real passwords, cards, tokens or keys. `JWT_SECRET` is a throwaway demo value.
+
+**Allowed tooling only:** React/JS/CSS/Bootstrap on the client, Node.js + Express on the server, plus standard infrastructure (nginx, Docker).
+
+<p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
+</content>

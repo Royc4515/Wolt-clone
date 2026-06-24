@@ -1,9 +1,17 @@
-# Shared by ALL builds in this context (Dockerfile.web AND Dockerfile.server).
+# Shared by the ROOT-context builds (Dockerfile.web AND Dockerfile.server).
 # Only exclude what neither image needs — do NOT add cpp-tests/, data/, src/Client,
 # src/Archive or CMakeLists.txt here, since Dockerfile.server copies those.
+# NOTE: the React app builds from its own context (./frontend) with its own
+# frontend/.dockerignore, so excluding frontend/ here does not affect it — it only
+# keeps the (large) React node_modules out of the C++/web build contexts.
 
 node_modules
+**/node_modules
 build/
+frontend/
+screenshots/
+web-tests/
+test-utils/
 .git
 .gitignore
 docs/

@@ -1,23 +1,27 @@
-# Ex3 — runs the two servers the assignment requires, each in its own container:
-#   * ex2-server : the legacy Ex2 C++ recommendation server (TCP, :8080)
-#   * web        : the Node.js + Express web server (HTTP API, :3000)
-# The web server reaches the C++ server by the service hostname `ex2-server`
-# over the shared `wolt` network (see src/config/env.js → EX2_HOST).
+# Ex4 — runs the full Wolt-clone stack, each part in its own container:
+#   * ex2-server : legacy Ex2 C++ recommendation server (TCP, internal :8080)
+#   * web        : Node.js + Express web/API server (internal :3000)
+#   * frontend   : React single-page app served by nginx (container :80 -> host :3000)
 #
-# Run:  docker compose up --build      (web on http://localhost:3000)
+# Single origin — everything is reached through nginx on host :3000:
+#   http://localhost:3000            -> nginx (frontend) -> static React bundle
+#   http://localhost:3000/api/...    -> nginx proxies to web:3000 -> ex2-server:8080
+#   http://localhost:3000/images/... -> nginx proxies to web:3000
+#
+# Run:  docker compose up --build
+#   * App : http://localhost:3000
+#   * API : http://localhost:3000/api
 
 services:
-  # Legacy Ex2 C++ recommendation server.
+  # Legacy Ex2 C++ recommendation server. Internal only: reached by `web` over the
+  # shared `wolt` network as host `ex2-server`. Never needs a host port.
   ex2-server:
     build:
       context: .
       dockerfile: Dockerfile.server
     command: ["./WoltClone", "8080"]
-    ports:
-      # Bound to localhost only: reachable for local debugging, not exposed to the
-      # network. The web service talks to it over the internal `wolt` network and
-      # does not need this published at all.
-      - "127.0.0.1:8080:8080"
+    expose:
+      - "8080"
     # Report "healthy" only once the TCP port actually accepts connections, so the
     # web service can wait for readiness (not just container creation) below.
     healthcheck:
@@ -29,20 +33,40 @@ services:
     networks:
       - wolt
 
-  # Ex3 Node.js + Express web server (the app).
+  # Node.js + Express web/API server (the app's backend). Internal only:
+  # the frontend (nginx) proxies /api and /images to it over the wolt network.
   web:
     build:
       context: .
       dockerfile: Dockerfile.web
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
       - PORT=3000
       - EX2_HOST=ex2-server   # resolves to the C++ container on the wolt network
       - EX2_PORT=8080
+      # Secret used to sign/verify JWTs. Taken from the host environment (or a
+      # local .env, which is gitignored) when present; otherwise falls back to a
+      # throwaway demo value so `docker compose up` works out of the box. This is
+      # NOT a real secret — override JWT_SECRET for any non-demo use.
+      - JWT_SECRET=${JWT_SECRET:-wolt-clone-demo-jwt-secret}
     depends_on:
       ex2-server:
         condition: service_healthy   # wait until the C++ server actually accepts TCP
+    networks:
+      - wolt
+
+  # React single-page app: built by Node, served by nginx on host :3000. nginx is
+  # the single entry point and reverse-proxies /api and /images to the web service
+  # over the wolt network (see frontend/nginx.conf).
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - web
     networks:
       - wolt
 

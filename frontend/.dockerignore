@@ -1,0 +1,9 @@
+# Keep the build context small. None of these belong inside the image:
+# node_modules is reinstalled with `npm ci`, and build/coverage are regenerated.
+node_modules
+build
+coverage
+.env*
+*.log
+.git
+.gitignore
