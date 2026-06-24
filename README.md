@@ -324,18 +324,20 @@ Base URL: `http://localhost:3000/api` — every response is JSON.
 ## Demo & Screenshots
 
 > [!NOTE]
-> The login/register shots already exist; the rest are **placeholders**. Drop your captured images/videos into `screenshots/` using the filenames shown (or rename the references to match your files) and they render automatically.
+> The **demo videos** and the **login/register** shots are included. The remaining still screenshots (home, restaurant, cart, checkout, orders, admin, `compose-up`) are **placeholders** — drop the captured images into `screenshots/` using the filenames shown and they render automatically.
 
 ### 🎥 Demo videos
 
 > [!TIP]
-> For inline playback you can drag-and-drop a video straight into the PR description and GitHub hosts it. Otherwise commit the files below and they open in GitHub's video player.
+> Click a video to open it in GitHub's player. (For inline autoplay, a file can instead be drag-and-dropped into the PR description — GitHub then hosts it with a native player.)
 
-| Demo | File to add |
+| Demo | Watch |
 | :--- | :--- |
-| Full order flow — browse → restaurant → cart → checkout → orders | [`screenshots/demo-order.mp4`](screenshots/demo-order.mp4) |
-| Auth — register (with validation) → login → protected pages | [`screenshots/demo-auth.mp4`](screenshots/demo-auth.mp4) |
-| Admin — manage restaurants, menus & incoming orders | [`screenshots/demo-admin.mp4`](screenshots/demo-admin.mp4) |
+| **Happy flow** — browse restaurants, build a cart, checkout, see the order | [`happy-flow.mp4`](screenshots/happy-flow.mp4) |
+| **Top bar** — live search, dark/light theme toggle, live location | [`top-bar.mp4`](screenshots/top-bar.mp4) |
+| **Register + create a restaurant** (admin) | [`admin-register-restaurant.mp4`](screenshots/admin-register-restaurant.mp4) |
+| **Admin features** — manage menus & restaurant orders | [`admin-features.mp4`](screenshots/admin-features.mp4) |
+| **Promote a customer to admin** | [`customer-to-admin.mp4`](screenshots/customer-to-admin.mp4) |
 
 ### 🖥️ Running with Docker
 
