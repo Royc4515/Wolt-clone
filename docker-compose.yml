@@ -1,5 +1,6 @@
-# Ex4 — runs the full Wolt-clone stack, each part in its own container:
+# Ex5 — runs the full Wolt-clone stack, each part in its own container:
 #   * ex2-server : legacy Ex2 C++ recommendation server (TCP, internal :8080)
+#   * mongo      : MongoDB database (internal :27017, mapped to host for debugging)
 #   * web        : Node.js + Express web/API server (internal :3000)
 #   * frontend   : React single-page app served by nginx (container :80 -> host :3000)
 #
@@ -32,6 +33,16 @@ services:
       start_period: 5s
     networks:
       - wolt
+  
+  # MongoDB Database Container.
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017" # Exposing to host so you can inspect the DB with tools like MongoDB Compass.
+    volumes:
+      - mongo-data:/data/db # Maps the database files to a persistent volume.
+    networks:
+      - wolt
 
   # Node.js + Express web/API server (the app's backend). Internal only:
   # the frontend (nginx) proxies /api and /images to it over the wolt network.
@@ -50,9 +61,12 @@ services:
       # throwaway demo value so `docker compose up` works out of the box. This is
       # NOT a real secret — override JWT_SECRET for any non-demo use.
       - JWT_SECRET=${JWT_SECRET:-wolt-clone-demo-jwt-secret}
+      - MONGO_URI=mongodb://mongo:27017/wolt_db   # Connection string for MongoDB.
     depends_on:
       ex2-server:
         condition: service_healthy   # wait until the C++ server actually accepts TCP
+      mongo:
+        condition: service_started   # Tell the web server to wait for MongoDB to start
     networks:
       - wolt
 
@@ -73,3 +87,7 @@ services:
 networks:
   wolt:
     driver: bridge
+
+# Define the persistent volume for MongoDB.
+volumes:
+  mongo-data:
