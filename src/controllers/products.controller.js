@@ -1,5 +1,5 @@
 const productsRepo = require('../services/repositories/products.repository');
-const restRepo = require('../services/repositories/restaurants.repository');
+const Restaurant = require('../models/Restaurant');
 const ordersRepo = require('../services/repositories/orders.repository');
 const { recordView } = require('../services/tcpClient');
 const { getRecommendations } = require('../services/tcpClient');
@@ -40,53 +40,41 @@ const getAllProducts = (req, res) => {
 };
 
 // Add a new product to a specific restaurant's menu.
-const createProduct = (req,res) => {
-    const { id } = req.params;      // Restaurant ID.
-    const { 
-        name, description, price, isAvailable, 
-        image, section, sectionOrder
-    } = req.body;
+const createProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, price, isAvailable, image, section } = req.body;
 
-    // Validation for mandatory data.
-    const missingFields = [];
-    if (!name) missingFields.push("Name");
-    if (price === undefined) missingFields.push("Price");
-    if (!section) missingFields.push("Section");
+        const missingFields = [];
+        if (!name) missingFields.push('Name');
+        if (price === undefined) missingFields.push('Price');
+        if (!section) missingFields.push('Section');
+        if (missingFields.length > 0) {
+            return res.status(400).json({ error: `${missingFields.join(', ')} is required` });
+        }
 
-    if (missingFields.length > 0) {
-        return res.status(400).json({ error: `${missingFields.join(', ')} is required` });
+        const restaurant = await Restaurant.findById(id);
+        if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+        if (restaurant.ownerId !== req.userId) {
+            return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can add products' });
+        }
+
+        const newProduct = productsRepo.create({
+            name,
+            description:  description  || '',
+            price,
+            section,
+            isAvailable:  isAvailable !== undefined ? isAvailable : true,
+            image:        image || '',
+            restId:       id,
+            sectionOrder: calcSectionOrder(section),
+        });
+
+        res.setHeader('Location', `/api/restaurants/${id}/products/${newProduct.id}`);
+        res.status(201).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // Ensure the target restaurant actually exists before adding a product.
-    const restaurant = restRepo.findById(id);
-    if (!restaurant) {
-        return res.status(404).json({ error: "Restaurant not found" });
-    }
-
-    // Ensure that the user trying to create a product is the restaurant's owner.
-    if (restaurant.ownerId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can add products" });
-    }
-
-    const calculatedSectionOrder = calcSectionOrder(section);
-
-    // Building the new object's data.
-    const newProdData = {
-        name,
-        description: description || "",
-        price,
-        section,
-        // If not mentioned otherwise, assume the product is available.
-        isAvailable: isAvailable !== undefined ? isAvailable : true,
-        image: image || "",
-        restId: id, // Will be used to link the product to a restaurant.
-        sectionOrder: calculatedSectionOrder
-    };
-
-    // Create the product.
-    const newProduct = productsRepo.create(newProdData);
-    res.setHeader('Location', `/api/restaurants/${id}/products/${newProduct.id}`);
-    res.status(201).send();
 };
 
 // Retrieve a specific product by its product ID (pid).
@@ -122,51 +110,48 @@ const getProduct = (req,res) => {
 };
 
 // Update a specific product's details.
-const updateProduct = (req,res) => {
-    const { pid } = req.params;
+const updateProduct = async (req, res) => {
+    try {
+        const { pid } = req.params;
+        const product = productsRepo.findById(pid);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    // Find the product in DB.
-    const product = productsRepo.findById(pid);
-    if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+        const restaurant = await Restaurant.findById(product.restId);
+        if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+        if (restaurant.ownerId !== req.userId) {
+            return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can update this product' });
+        }
+
+        const { restId, id: _id, ...allowedUpdates } = req.body;
+        if (allowedUpdates.section) {
+            allowedUpdates.sectionOrder = calcSectionOrder(allowedUpdates.section);
+        }
+
+        productsRepo.update(pid, allowedUpdates);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // Find the restaurant this product belongs to, and check for the owner.
-    const restaurant = restRepo.findById(product.restId);
-    if (!restaurant || restaurant.ownerId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
-    }
-
-    // Update the product (only the editable fields).
-    const { restId, id: bodyId, ...allowedUpdates } = req.body;
-
-    if (allowedUpdates.section) {
-        allowedUpdates.sectionOrder = calcSectionOrder(allowedUpdates.section);
-    }
-
-    productsRepo.update(pid, allowedUpdates);
-    res.status(204).send();
 };
 
 // Delete a specific product from the database.
-const deleteProduct = (req, res) => {
-    const { pid } = req.params;
+const deleteProduct = async (req, res) => {
+    try {
+        const { pid } = req.params;
+        const product = productsRepo.findById(pid);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    // Find the product in DB.
-    const product = productsRepo.findById(pid);
-    if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+        const restaurant = await Restaurant.findById(product.restId);
+        if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
+        if (restaurant.ownerId !== req.userId) {
+            return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can delete this product' });
+        }
+
+        productsRepo.remove(pid);
+        res.status(204).send();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    // Find the restaurant this product belongs to, and check for the owner.
-    const restaurant = restRepo.findById(product.restId);
-    if (!restaurant || restaurant.ownerId !== req.userId) {
-        return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update this product" });
-    }
-
-    // Delete the product.
-    productsRepo.remove(pid);
-    res.status(204).send();
 };
 
 // Fetch recommended products specific to a requested restaurant.
