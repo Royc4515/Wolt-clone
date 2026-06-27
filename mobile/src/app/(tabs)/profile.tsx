@@ -1,11 +1,25 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useContext } from 'react';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Typography, Spacing } from '../../constants/theme';
 
 export default function ProfileScreen() {
+    const { isDark } = useContext(ThemeContext);
+
+    // Pick the right color palette based on the current theme
+    const currentColors = isDark ? Colors.dark : Colors.light;
+
   return (
-    // The main wrapper view for the Profile screen layout
-    <View style={styles.container}>
-      {/* Placeholder text for the user's personal details and settings */}
-      <Text style={styles.text}>My Profile</Text>
+    // Dynamically change background color based on the current theme.
+    <View style={[styles.container, { backgroundColor: currentColors.background }]}>
+
+      {/* Dynamically change text color based on the current theme */}
+      <Text style={[styles.text, { color: currentColors.text }]}>
+        My Profile
+      </Text>
+      <Text style={{ color: currentColors.textMuted, fontSize: Typography.sm, marginTop: Spacing[2] }}>
+        Welcome back!
+      </Text>
     </View>
   );
 }
@@ -18,7 +32,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' 
   },
   text: { 
-    fontSize: 20, 
+    fontSize: Typography.h2, 
     fontWeight: 'bold' 
   }
 });
