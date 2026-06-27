@@ -1,27 +1,30 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
+import { useContext } from 'react';
 
-// Make sure the path matches where your AnimatedSplashOverlay is located
+// Import our custom context wrapper
+import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
 import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
 
-export default function RootLayout() {
-  // Hook that detects if the device is currently in dark or light mode
-  const colorScheme = useColorScheme();
+// Inner component to consume the context and apply the theme
+function RootLayoutNav() {
+  const { isDark } = useContext(ThemeContext);
 
   return (
-    // Wraps the entire application, passing down the correct theme globally
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      
-      {/* Renders the custom splash screen overlay */}
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      
-      {/* The root navigator that points to our tabs folder */}
-      {/* We hide the default header because the tabs will manage their own headers */}
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-
     </ThemeProvider>
+  );
+}
+
+// The main export wraps everything in our custom provider
+export default function RootLayout() {
+  return (
+    <ThemeProviderWrapper>
+      <RootLayoutNav />
+    </ThemeProviderWrapper>
   );
 }
