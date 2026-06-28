@@ -59,6 +59,14 @@ export default function RegisterScreen() {
       return;
     }
 
+    const hasLetters = /[a-zA-Z]/.test(password);
+    const hasNumbers = /[0-9]/.test(password);
+
+    if (!hasLetters || !hasNumbers) {
+      setErrorMsg('Password must contain both letters and numbers.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setErrorMsg('Passwords do not match.');
       return;
@@ -117,7 +125,6 @@ export default function RegisterScreen() {
           headerShadowVisible: false,
           headerTintColor: dynamicStyles.textColor,
           headerRight: () => (
-            // MODIFIED: Replaced text emojis with the exact Pressable and Ionicons styling from index.tsx
             <Pressable
                 onPress={toggleTheme}
                 style={{
