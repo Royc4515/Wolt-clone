@@ -1,7 +1,18 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-const HOST =
-    Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+// On a physical device, hostUri is e.g. "192.168.1.101:8081" — use that IP with port 3000.
+// On emulators, fall back to the loopback aliases.
+const getHost = (): string => {
+    const hostUri = Constants.expoConfig?.hostUri;
+    if (hostUri) {
+        const ip = hostUri.split(':')[0];
+        return `http://${ip}:3000`;
+    }
+    return Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+};
+
+const HOST = getHost();
 
 const BASE_URL = `${HOST}/api`;
 
