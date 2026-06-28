@@ -4,24 +4,38 @@ import { useContext } from 'react';
 
 // Import our custom context wrappers.
 import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
-import { AuthProvider } from '../context/AuthContext';
+import { AuthProvider } from '../context/AuthContext'; // Using the merged AuthProvider name
 import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
 
 // Inner component to consume the context and apply the theme.
 function RootLayoutNav() {
-  const { isDark } = useContext(ThemeContext);
+    const { isDark } = useContext(ThemeContext);
 
-  return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
-  );
+    return (
+        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+            <AnimatedSplashOverlay />
+            <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                
+                {/* Roy's added screens for restaurants and owners */}
+                <Stack.Screen
+                    name="restaurant/[id]"
+                    options={{ title: '', headerBackTitle: 'Back' }}
+                />
+                <Stack.Screen
+                    name="owner/index"
+                    options={{ title: 'My Restaurants' }}
+                />
+                <Stack.Screen
+                    name="owner/new-restaurant"
+                    options={{ title: 'New Restaurant' }}
+                />
+            </Stack>
+        </ThemeProvider>
+    );
 }
 
-// The main export wraps everything in our custom provider.
+// The main export wraps everything in our custom providers.
 export default function RootLayout() {
   return (
     <ThemeProviderWrapper>
