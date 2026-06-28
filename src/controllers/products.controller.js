@@ -1,42 +1,25 @@
-const productsRepo = require('../services/repositories/products.repository');
+const Product = require('../models/Product');
 const Restaurant = require('../models/Restaurant');
 const ordersRepo = require('../services/repositories/orders.repository');
-const { recordView } = require('../services/tcpClient');
-const { getRecommendations } = require('../services/tcpClient');
+const { recordView, getRecommendations } = require('../services/tcpClient');
 const jwt = require('jsonwebtoken');
 
-// --- Helper Function: Calculate Section Order ---
 const calcSectionOrder = (section) => {
     const normalized = section.trim();
-    
-    if (normalized === 'Starters') {
-        return 1;
-    }
-    if (normalized === 'Drinks' || normalized === 'Beverages') {
-        return 3; 
-    }
-    
-    // Everything else gets priority 2. 
-    // They will be sorted alphabetically by ASCII later.
+    if (normalized === 'Starters') return 1;
+    if (normalized === 'Drinks' || normalized === 'Beverages') return 3;
     return 2;
 };
 
 // Retrieve all products belonging to a specific restaurant.
-const getAllProducts = (req, res) => {
-    const { id } = req.params;      // Restaurant ID from the parent route.
-    const products = productsRepo.findBy(p => p.restId === id);
-
-    // Sort the products before returning them to the frontend.
-    products.sort((a, b) => {
-        // First priority: sort by the assigned section number (1, 2, or 3)
-        if (a.sectionOrder !== b.sectionOrder) {
-            return a.sectionOrder - b.sectionOrder;
-        }
-        // Second priority: if they have the same number, sort by ASCII string value
-        return a.section.localeCompare(b.section);
-    });
-
-    res.status(200).json(products);
+const getAllProducts = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const products = await Product.find({ restaurantId: id }).sort({ sectionOrder: 1, section: 1 });
+        res.status(200).json(products);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 // Add a new product to a specific restaurant's menu.
@@ -59,15 +42,15 @@ const createProduct = async (req, res) => {
             return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can add products' });
         }
 
-        const newProduct = productsRepo.create({
+        const newProduct = await Product.create({
             name,
-            description:  description  || '',
+            description:  description || '',
             price,
             section,
+            sectionOrder: calcSectionOrder(section),
             isAvailable:  isAvailable !== undefined ? isAvailable : true,
             image:        image || '',
-            restId:       id,
-            sectionOrder: calcSectionOrder(section),
+            restaurantId: id,
         });
 
         res.setHeader('Location', `/api/restaurants/${id}/products/${newProduct.id}`);
@@ -78,76 +61,68 @@ const createProduct = async (req, res) => {
 };
 
 // Retrieve a specific product by its product ID (pid).
-const getProduct = (req,res) => {
-    const { pid } = req.params;
-    const product = productsRepo.findById(pid);
+const getProduct = async (req, res) => {
+    try {
+        const { pid } = req.params;
+        const product = await Product.findById(pid);
+        if (!product) return res.status(404).json({ error: 'Product not found' });
 
-    if (!product) {
-        return res.status(404).json({ error: "Product not found" });
-    }
-
-    // Attempt to securely extract the user ID from the JWT
-    const authHeader = req.headers['authorization'];
-    let userId = null;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1];
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key'); 
-            
-            // Adjust 'id' if your token payload uses a different key (e.g., decoded.userId).
-            userId = decoded.id; 
-        } catch (err) {
-            // Token is invalid or expired. We ignore it and treat the request as a guest view.
+        // Extract userId from JWT if present, then log the view asynchronously.
+        const authHeader = req.headers['authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+                const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+                if (decoded.id) recordView(decoded.id, pid);
+            } catch {
+                // Invalid or expired token — treat as guest view, no logging.
+            }
         }
-    }
 
-    // Log the view to the Ex2 C++ server asynchronously if the user is logged in.
-    if (userId) {
-        recordView(userId, pid);
+        res.status(200).json(product);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    res.status(200).json(product);
 };
 
 // Update a specific product's details.
 const updateProduct = async (req, res) => {
     try {
         const { pid } = req.params;
-        const product = productsRepo.findById(pid);
+        const product = await Product.findById(pid);
         if (!product) return res.status(404).json({ error: 'Product not found' });
 
-        const restaurant = await Restaurant.findById(product.restId);
+        const restaurant = await Restaurant.findById(product.restaurantId);
         if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
         if (restaurant.ownerId !== req.userId) {
             return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can update this product' });
         }
 
-        const { restId, id: _id, ...allowedUpdates } = req.body;
+        const { restaurantId, id, _id, ...allowedUpdates } = req.body;
         if (allowedUpdates.section) {
             allowedUpdates.sectionOrder = calcSectionOrder(allowedUpdates.section);
         }
 
-        productsRepo.update(pid, allowedUpdates);
+        await Product.findByIdAndUpdate(pid, allowedUpdates, { runValidators: true });
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Delete a specific product from the database.
+// Delete a specific product.
 const deleteProduct = async (req, res) => {
     try {
         const { pid } = req.params;
-        const product = productsRepo.findById(pid);
+        const product = await Product.findById(pid);
         if (!product) return res.status(404).json({ error: 'Product not found' });
 
-        const restaurant = await Restaurant.findById(product.restId);
+        const restaurant = await Restaurant.findById(product.restaurantId);
         if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
         if (restaurant.ownerId !== req.userId) {
             return res.status(403).json({ error: 'Forbidden: Only the restaurant owner can delete this product' });
         }
 
-        productsRepo.remove(pid);
+        await Product.findByIdAndDelete(pid);
         res.status(204).send();
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -157,49 +132,38 @@ const deleteProduct = async (req, res) => {
 // Fetch recommended products specific to a requested restaurant.
 const getRecomProds = async (req, res) => {
     const userId = req.userId;
-    const restaurantId = req.params.id; // The restaurant the user is currently viewing
+    const restaurantId = req.params.id;
 
-    // 1. Find the last product the user ordered across all orders.
+    const fallback = async () => {
+        const prods = await Product.find({ restaurantId }).limit(5);
+        return prods;
+    };
+
     const allOrders = ordersRepo.findAll();
     const userOrders = allOrders.filter(o => o.userId === userId);
-    
-    // Fallback if the user has no history: return popular products of this restaurant.
+
     if (userOrders.length === 0) {
-        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
-        return res.status(200).json(restProducts.slice(0, 5));
+        return res.status(200).json(await fallback());
     }
 
-    // Extract the first item from the last order as the "target product".
     const lastOrder = userOrders[userOrders.length - 1];
     const targetProductId = lastOrder.items[0]?.productId;
-
     if (!targetProductId) {
-        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
-        return res.status(200).json(restProducts.slice(0, 5));
+        return res.status(200).json(await fallback());
     }
 
     try {
-        // 2. Fetch recommendations from the Ex2 C++ server.
         const recommendedIds = await getRecommendations(userId, targetProductId);
+        const recomProds = (
+            await Promise.all(recommendedIds.map(id => Product.findById(id)))
+        ).filter(Boolean);
 
-        // 3. Map IDs to product objects.
-        const recomProds = recommendedIds
-            .map(id => productsRepo.findById(id))
-            .filter(prod => prod != null);
+        const filtered = recomProds.filter(p => p.restaurantId === restaurantId);
+        if (filtered.length === 0) return res.status(200).json(await fallback());
 
-        // 4. Filter the recommendations to ONLY include products from the CURRENT restaurant.
-        const filteredByRest = recomProds.filter(prod => String(prod.restId) === String(restaurantId));
-
-        if (filteredByRest.length === 0) {
-             const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
-             return res.status(200).json(restProducts.slice(0, 5));
-        }
-
-        res.status(200).json(filteredByRest.slice(0, 5));
-    } catch (error) {
-        console.error('Error fetching product recommendations:', error);
-        const restProducts = productsRepo.findAll().filter(p => String(p.restId) === String(restaurantId));
-        res.status(200).json(restProducts.slice(0, 5));
+        res.status(200).json(filtered.slice(0, 5));
+    } catch {
+        res.status(200).json(await fallback());
     }
 };
 
@@ -209,5 +173,5 @@ module.exports = {
     getProduct,
     updateProduct,
     deleteProduct,
-    getRecomProds
-}
+    getRecomProds,
+};

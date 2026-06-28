@@ -1,5 +1,5 @@
 const Restaurant = require('../models/Restaurant');
-const productsRepo = require('../services/repositories/products.repository');
+const Product = require('../models/Product');
 const { calcAerialDistance } = require('../services/distance');
 const { getRecommendations } = require('../services/tcpClient');
 const ordersRepo = require('../services/repositories/orders.repository');
@@ -111,13 +111,12 @@ const deleteRest = async (req, res) => {
 };
 
 // Return all products for a restaurant grouped into menu sections.
-// Products are still in-memory until SCRUM-417; queried by restId.
 const getMenu = async (req, res) => {
     try {
         const restaurant = await Restaurant.findById(req.params.id);
         if (!restaurant) return res.status(404).json({ error: 'Restaurant not found' });
 
-        const products = productsRepo.findBy(p => p.restId === req.params.id);
+        const products = await Product.find({ restaurantId: req.params.id }).sort({ sectionOrder: 1, section: 1 });
 
         const sectionsMap = new Map();
         products.forEach(p => {
