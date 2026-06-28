@@ -103,8 +103,12 @@ const loginUser = async (req, res) => {
             JWT_SECRET
         );
 
-        // Return 200 OK with the user's token.
-        res.status(200).json({ token });
+        // Return 200 OK with the user's token AND user data.
+        const { password: currentPassword, ...userWithoutPassword } = user.toObject();
+        res.status(200).json({ 
+            token, 
+            user: userWithoutPassword 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message});
     }

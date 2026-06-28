@@ -1,23 +1,39 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
+import { getGuestLocation } from '@/services/authStorage';
 
 // Import our custom context wrappers.
 import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
-import { AuthProvider } from '../context/AuthContext'; // Using the merged AuthProvider name
+import { AuthProvider, AuthContext } from '../context/AuthContext'; // Using the merged AuthProvider name
 import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
 
 // Inner component to consume the context and apply the theme.
 function RootLayoutNav() {
     const { isDark } = useContext(ThemeContext);
+    const { token, isLoading } = useContext(AuthContext);
+    const [isGuest, setIsGuest] = useState(false);
+    const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        async function checkGuest() {
+            const loc = await getGuestLocation(); // Using the utility function
+            if (loc) setIsGuest(true);
+            setChecking(false);
+        }
+        checkGuest();
+    }, []);
+
+    if (isLoading || checking) return <AnimatedSplashOverlay />;
 
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-            <AnimatedSplashOverlay />
-            <Stack>
+            <Stack initialRouteName={(!token && !isGuest) ? "login" : "(tabs)"}>
+                <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="register" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="guest-location-input" options={{ presentation: 'modal', title: 'Set Location' }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 
-                {/* Roy's added screens for restaurants and owners */}
                 <Stack.Screen
                     name="restaurant/[id]"
                     options={{ title: '', headerBackTitle: 'Back' }}

@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// The key used to store the token in the device's local storage.
 const TOKEN_KEY = 'wolt_user_token';
+const GUEST_LOCATION_KEY = 'guest_location';
 
+// --- TOKEN MANAGEMENT ---
 // Function to save the token (called immediately after successful login/registration).
 export const saveToken = async (token: string) => {
   try {
@@ -29,4 +30,22 @@ export const removeToken = async () => {
   } catch (error) {
     console.error("Error removing token", error);
   }
+};
+
+// --- GUEST LOCATION MANAGEMENT ---
+// Function to save guest's location.
+export const saveGuestLocation = async (lat: number, lng: number) => {
+  const location = JSON.stringify({ lat, lng });
+  await AsyncStorage.setItem(GUEST_LOCATION_KEY, location);
+};
+
+// Function to get guest's location.
+export const getGuestLocation = async () => {
+  const data = await AsyncStorage.getItem(GUEST_LOCATION_KEY);
+  return data ? JSON.parse(data) : null;
+};
+
+// Function to remove guest's location.
+export const removeGuestLocation = async () => {
+  await AsyncStorage.removeItem(GUEST_LOCATION_KEY);
 };

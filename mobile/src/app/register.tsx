@@ -8,31 +8,32 @@ import {
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Pressable
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router'; 
+import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme';
 
 export default function RegisterScreen() {
-  // State for all required fields according to the User model
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState(''); 
   const [displayName, setDisplayName] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [role, setRole] = useState('customer'); 
   
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { isDark } = useContext(ThemeContext);
+  const { isDark, toggleTheme } = useContext(ThemeContext);
   const router = useRouter();
 
-  // Select the appropriate color palette based on the current theme
   const themeColors = isDark ? Colors.dark : Colors.light;
 
-  // Map the palette to specific UI elements
   const dynamicStyles = {
     containerBg: themeColors.background,
     textColor: themeColors.text,
@@ -41,19 +42,25 @@ export default function RegisterScreen() {
     buttonBg: themeColors.accent,
     errorColor: themeColors.danger,
     placeholder: themeColors.textMuted,
+    hintText: themeColors.textMuted,
+    surfaceBg: themeColors.surface, 
   };
 
   const handleRegister = async () => {
     setErrorMsg('');
 
-    // 1. Client-side validations
-    if (!username || !password || !displayName || !profilePicture || !lat || !lng) {
+    if (!username || !password || !confirmPassword || !displayName || !profilePicture || !lat || !lng) {
       setErrorMsg('All fields are required.');
       return;
     }
 
     if (password.length < 8) {
       setErrorMsg('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMsg('Passwords do not match.');
       return;
     }
 
@@ -68,7 +75,6 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     try {
-      // 2. API Call to create user
       const response = await fetch('http://localhost:3000/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +84,7 @@ export default function RegisterScreen() {
           displayName,
           profilePicture,
           location: { lat: numericLat, lng: numericLng },
-          role: 'customer' // Default role
+          role 
         }),
       });
 
@@ -90,7 +96,6 @@ export default function RegisterScreen() {
         return;
       }
 
-      // 3. Success! Route the user back to the login screen
       router.replace('/login');
       
     } catch (error) {
@@ -105,67 +110,145 @@ export default function RegisterScreen() {
       style={{ flex: 1 }} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <Stack.Screen 
+        options={{ 
+          title: '', 
+          headerStyle: { backgroundColor: dynamicStyles.containerBg },
+          headerShadowVisible: false,
+          headerTintColor: dynamicStyles.textColor,
+          headerRight: () => (
+            // MODIFIED: Replaced text emojis with the exact Pressable and Ionicons styling from index.tsx
+            <Pressable
+                onPress={toggleTheme}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
+                }}
+            >
+                <Ionicons 
+                  name={isDark ? 'sunny-outline' : 'moon-outline'} 
+                  size={18} 
+                  color={isDark ? '#fff' : '#1c1d2a'} 
+                />
+            </Pressable>
+          ),
+        }} 
+      />
+
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: dynamicStyles.containerBg }]}>
         <Text style={[styles.title, { color: dynamicStyles.textColor }]}>Create Account</Text>
 
+        {/* Username Block (Label -> Input -> Hint) */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Username</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="Username"
+          placeholder="your_username"
           placeholderTextColor={dynamicStyles.placeholder}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
         />
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>At least 3 characters · letters, numbers, underscores</Text>
 
+        {/* Password Block */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Password</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="Password (min 8 chars)"
+          placeholder="••••••••"
           placeholderTextColor={dynamicStyles.placeholder}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>At least 8 characters · mix of letters and numbers</Text>
 
+        {/* Confirm Password Block */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Confirm Password</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="Display Name"
+          placeholder="••••••••"
+          placeholderTextColor={dynamicStyles.placeholder}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>Must match your password</Text>
+
+        {/* Display Name Block */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Display Name</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
+          placeholder="Full Name"
           placeholderTextColor={dynamicStyles.placeholder}
           value={displayName}
           onChangeText={setDisplayName}
         />
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>Your public name shown to other users</Text>
 
+        {/* Profile Picture Block */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Profile Picture URL</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="Profile Picture URL"
+          placeholder="https://example.com/avatar.jpg"
           placeholderTextColor={dynamicStyles.placeholder}
           value={profilePicture}
           onChangeText={setProfilePicture}
           autoCapitalize="none"
         />
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>JPG, PNG or GIF · shown next to your orders</Text>
 
+        {/* Location Block */}
         <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-            placeholder="Latitude (e.g. 32.08)"
-            placeholderTextColor={dynamicStyles.placeholder}
-            value={lat}
-            onChangeText={setLat}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={[styles.input, styles.halfInput, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-            placeholder="Longitude (e.g. 34.78)"
-            placeholderTextColor={dynamicStyles.placeholder}
-            value={lng}
-            onChangeText={setLng}
-            keyboardType="numeric"
-          />
+          <View style={styles.halfInputContainer}>
+            <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Latitude</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
+              placeholder="32.08"
+              placeholderTextColor={dynamicStyles.placeholder}
+              value={lat}
+              onChangeText={setLat}
+              keyboardType="numeric"
+            />
+            <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>-90 to 90</Text>
+          </View>
+          <View style={styles.halfInputContainer}>
+            <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Longitude</Text>
+            <TextInput
+              style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
+              placeholder="34.78"
+              placeholderTextColor={dynamicStyles.placeholder}
+              value={lng}
+              onChangeText={setLng}
+              keyboardType="numeric"
+            />
+            <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>-180 to 180</Text>
+          </View>
         </View>
 
-        {/* Error Message Display */}
+        {/* Role Selection Segmented Control */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Account type</Text>
+        <View style={[styles.roleContainer, { backgroundColor: dynamicStyles.surfaceBg }]}>
+          <TouchableOpacity 
+            style={[styles.roleButton, role === 'customer' && { backgroundColor: dynamicStyles.containerBg, shadowColor: '#000', elevation: 2 }]}
+            onPress={() => setRole('customer')}
+          >
+            <Text style={[styles.roleText, { color: role === 'customer' ? dynamicStyles.textColor : dynamicStyles.hintText }]}>Customer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.roleButton, role === 'admin' && { backgroundColor: dynamicStyles.containerBg, shadowColor: '#000', elevation: 2 }]}
+            onPress={() => setRole('admin')}
+          >
+            <Text style={[styles.roleText, { color: role === 'admin' ? dynamicStyles.textColor : dynamicStyles.hintText }]}>Admin</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>Admins can manage restaurants and menus</Text>
+
         {errorMsg ? <Text style={[styles.errorText, { color: dynamicStyles.errorColor }]}>{errorMsg}</Text> : null}
 
-        {/* Register Button / Loading Indicator */}
         <TouchableOpacity 
           style={[styles.button, { backgroundColor: dynamicStyles.buttonBg }]} 
           onPress={handleRegister}
@@ -178,7 +261,6 @@ export default function RegisterScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Navigation to Login Screen */}
         <TouchableOpacity onPress={() => router.push('/login')} style={styles.linkButton}>
           <Text style={[styles.linkText, { color: dynamicStyles.buttonBg }]}>Already have an account? Log in</Text>
         </TouchableOpacity>
@@ -191,7 +273,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 24,
+    paddingBottom: 50,
   },
   title: {
     fontSize: 28,
@@ -199,23 +282,48 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
+  label: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    marginBottom: 8 
+  },
   input: {
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 4,
     borderWidth: 1,
     fontSize: 16,
+  },
+  hint: { 
+    fontSize: 12, 
+    marginBottom: 20 
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  halfInput: {
+  halfInputContainer: {
     width: '48%',
   },
+  roleContainer: { 
+    flexDirection: 'row', 
+    borderRadius: 30, 
+    padding: 4, 
+    marginBottom: 4 
+  },
+  roleButton: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    borderRadius: 26, 
+    alignItems: 'center' 
+  },
+  roleText: { 
+    fontWeight: 'bold', 
+    fontSize: 15 
+  },
   button: {
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 30,
     alignItems: 'center',
     marginTop: 10,
   },
@@ -227,6 +335,7 @@ const styles = StyleSheet.create({
   errorText: {
     marginBottom: 15,
     textAlign: 'center',
+    fontWeight: '600'
   },
   linkButton: {
     marginTop: 20,
@@ -234,6 +343,6 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   linkText: {
-    fontSize: 16,
+    fontSize: 15,
   },
 });
