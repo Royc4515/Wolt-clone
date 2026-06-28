@@ -2,11 +2,12 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
 import { useContext } from 'react';
 
-// Import our custom context wrapper
+// Import our custom context wrappers.
 import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
+import { AuthProvider } from '../context/AuthContext';
 import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
 
-// Inner component to consume the context and apply the theme
+// Inner component to consume the context and apply the theme.
 function RootLayoutNav() {
   const { isDark } = useContext(ThemeContext);
 
@@ -20,11 +21,13 @@ function RootLayoutNav() {
   );
 }
 
-// The main export wraps everything in our custom provider
+// The main export wraps everything in our custom provider.
 export default function RootLayout() {
   return (
     <ThemeProviderWrapper>
-      <RootLayoutNav />
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
     </ThemeProviderWrapper>
   );
 }
