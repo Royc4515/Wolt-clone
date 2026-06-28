@@ -1,30 +1,41 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack } from 'expo-router';
 import { useContext } from 'react';
-
-// Import our custom context wrapper
 import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
-import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
+import { AuthProviderWrapper } from '../context/AuthContext';
+import { AnimatedSplashOverlay } from '@/components/animated-icon';
 
-// Inner component to consume the context and apply the theme
 function RootLayoutNav() {
-  const { isDark } = useContext(ThemeContext);
+    const { isDark } = useContext(ThemeContext);
 
-  return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
-  );
+    return (
+        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+            <AnimatedSplashOverlay />
+            <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                    name="restaurant/[id]"
+                    options={{ title: '', headerBackTitle: 'Back' }}
+                />
+                <Stack.Screen
+                    name="owner/index"
+                    options={{ title: 'My Restaurants' }}
+                />
+                <Stack.Screen
+                    name="owner/new-restaurant"
+                    options={{ title: 'New Restaurant' }}
+                />
+            </Stack>
+        </ThemeProvider>
+    );
 }
 
-// The main export wraps everything in our custom provider
 export default function RootLayout() {
-  return (
-    <ThemeProviderWrapper>
-      <RootLayoutNav />
-    </ThemeProviderWrapper>
-  );
+    return (
+        <AuthProviderWrapper>
+            <ThemeProviderWrapper>
+                <RootLayoutNav />
+            </ThemeProviderWrapper>
+        </AuthProviderWrapper>
+    );
 }
