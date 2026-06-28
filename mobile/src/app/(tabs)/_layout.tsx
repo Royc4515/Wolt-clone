@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme';
 
 const WOLT_BLUE = '#009DE0';
 const WOLT_BLUE_DARK_FG = '#004F80'; // darker blue for search text/icon in dark mode
@@ -17,8 +18,9 @@ function FloatingTabBar() {
     const pathname = usePathname();
 
     const tabs = [
-        { name: 'index',  href: '/',       iconOff: 'home-outline' as const, iconOn: 'home' as const },
-        { name: 'search', href: '/search', iconOff: 'search' as const,       iconOn: 'search' as const, isSearch: true },
+        { name: 'index',   href: '/',        iconOff: 'home-outline' as const,   iconOn: 'home' as const },
+        { name: 'search',  href: '/search',   iconOff: 'search' as const,         iconOn: 'search' as const,  isSearch: true },
+        { name: 'profile', href: '/profile',  iconOff: 'person-outline' as const, iconOn: 'person' as const },
     ];
 
     return (
@@ -100,12 +102,36 @@ const tabStyles = StyleSheet.create({
 // ── Tab layout ─────────────────────────────────────────────────────────────
 
 export default function TabLayout() {
+    const { isDark, toggleTheme } = useContext(ThemeContext);
+    const currentColors = isDark ? Colors.dark : Colors.light;
+
     return (
+        // Outer View is the positioning root for FloatingTabBar
         <View style={{ flex: 1 }}>
-            <Tabs screenOptions={{ tabBarStyle: { display: 'none' }, headerShown: false }}>
-                <Tabs.Screen name="index"  options={{ title: 'Home'   }} />
-                <Tabs.Screen name="search" options={{ title: 'Search' }} />
+            <Tabs
+                screenOptions={{
+                    headerStyle: { backgroundColor: currentColors.surface },
+                    headerTintColor: currentColors.text,
+                    headerShadowVisible: false,
+                    // Kill the native tab bar entirely — our FloatingTabBar handles it
+                    tabBarStyle: { display: 'none' },
+                    headerRight: () => (
+                        <Pressable onPress={toggleTheme} style={{ marginRight: 15 }}>
+                            <Ionicons
+                                name={isDark ? 'sunny-outline' : 'moon-outline'}
+                                size={22}
+                                color={currentColors.text}
+                            />
+                        </Pressable>
+                    ),
+                }}
+            >
+                <Tabs.Screen name="index"   options={{ title: 'Home',       headerShown: false }} />
+                <Tabs.Screen name="search"  options={{ title: 'Search',     headerShown: false }} />
+                <Tabs.Screen name="profile" options={{ title: 'My Profile'               }} />
             </Tabs>
+
+            {/* Floats above Tabs content, no wrapper background */}
             <FloatingTabBar />
         </View>
     );
