@@ -1,6 +1,7 @@
 const app = require('./app');
 const mongoose = require('mongoose');
 const { PORT } = require('./config/env');
+const { seed } = require('./seed');
 
 // Connect to MongoDB
 const connectDB = async () => {
@@ -9,6 +10,7 @@ const connectDB = async () => {
     const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/wolt_db';
     const conn = await mongoose.connect(uri);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    await seed();
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error.message}`);
     process.exit(1); // Exit process with failure if the connection fails
