@@ -47,6 +47,7 @@ export default function RestaurantScreen() {
     const [tabsVisible, setTabsVisible] = useState(false);
     const [searchActive, setSearchActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     // ── Refs ───────────────────────────────────────────────────────────────────
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -134,10 +135,10 @@ export default function RestaurantScreen() {
         [sections],
     );
 
-    const filteredSectionData = useMemo(() => {
+    const searchSectionData = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
-        if (!q) return sectionListData;
-        return sectionListData
+        if (!q) return [];
+        let res = sectionListData
             .map(s => ({
                 ...s,
                 data: s.data.filter((item: Product) =>
@@ -146,11 +147,20 @@ export default function RestaurantScreen() {
                 ),
             }))
             .filter(s => s.data.length > 0);
-    }, [sectionListData, searchQuery]);
+
+        if (selectedCategory) {
+            res = res.filter(s => s.id === selectedCategory);
+        } else {
+            // Take up to 3 items per section if no category is selected
+            res = res.map(s => ({ ...s, data: s.data.slice(0, 3), totalItems: s.data.length }));
+        }
+        return res;
+    }, [sectionListData, searchQuery, selectedCategory]);
 
     const dismissSearch = useCallback(() => {
         setSearchActive(false);
         setSearchQuery('');
+        setSelectedCategory(null);
         searchInputRef.current?.blur();
     }, []);
 
@@ -265,7 +275,7 @@ export default function RestaurantScreen() {
             {/* ── Main scrollable menu ─────────────────────────────── */}
             <SectionList
                 ref={sectionListRef}
-                sections={filteredSectionData}
+                sections={sectionListData}
                 keyExtractor={(item: Product) => item.id}
                 stickySectionHeadersEnabled={false}
                 contentContainerStyle={{ paddingBottom: 120 }}
@@ -276,14 +286,6 @@ export default function RestaurantScreen() {
                 scrollEventThrottle={16}
                 onScrollBeginDrag={() => { stepperDismissRef.current?.(); searchInputRef.current?.blur(); }}
                 ListHeaderComponent={listHeader}
-                ListEmptyComponent={searchQuery.trim() ? (
-                    <View style={[styles.centered, { paddingVertical: 48 }]}>
-                        <Ionicons name="search-outline" size={40} color={c.textMuted} />
-                        <Text style={[styles.errorText, { color: c.textMuted, marginTop: Spacing[3], marginBottom: 0 }]}>
-                            No results for "{searchQuery}"
-                        </Text>
-                    </View>
-                ) : null}
                 renderSectionHeader={({ section }) => (
                     <Text
                         style={[
@@ -388,31 +390,10 @@ export default function RestaurantScreen() {
                                 { backgroundColor: isDark ? 'rgba(10,12,23,0.72)' : 'rgba(255,255,255,0.85)' },
                             ]}
                         >
-                            <Ionicons name="search-outline" size={14} color={searchActive ? c.text : c.textMuted} />
-                            {searchActive ? (
-                                <TextInput
-                                    ref={searchInputRef}
-                                    style={[styles.headerSearchText, { color: c.text }]}
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    placeholder="Search menu..."
-                                    placeholderTextColor={c.textMuted}
-                                    returnKeyType="search"
-                                    autoCorrect={false}
-                                />
-                            ) : (
-                                <Text style={[styles.headerSearchText, { color: c.textMuted }]} numberOfLines={1}>
-                                    {restaurant.name}
-                                </Text>
-                            )}
-                            {searchActive && searchQuery.length > 0 && (
-                                <Pressable
-                                    hitSlop={8}
-                                    onPress={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
-                                >
-                                    <Ionicons name="close-circle" size={16} color={c.textMuted} />
-                                </Pressable>
-                            )}
+                            <Ionicons name="search-outline" size={14} color={c.textMuted} />
+                            <Text style={[styles.headerSearchText, { color: c.textMuted }]} numberOfLines={1}>
+                                {restaurant.name}
+                            </Text>
                         </View>
                     </Pressable>
 
@@ -427,6 +408,89 @@ export default function RestaurantScreen() {
                     </View>
                 </View>
             </Animated.View>
+
+            {/* ── Search Overlay ─────────────────────────────────────── */}
+            {searchActive && (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: c.background, zIndex: 100 }]}>
+                    <View style={{ paddingTop: insets.top, backgroundColor: c.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
+                        <View style={[styles.headerRow, { paddingHorizontal: Spacing[4] }]}>
+                            <Pressable
+                                onPress={dismissSearch}
+                                hitSlop={10}
+                                style={{ marginRight: Spacing[3], padding: 4 }}
+                            >
+                                <Ionicons name="chevron-back" size={26} color={c.text} />
+                            </Pressable>
+                            <View style={[styles.headerSearch, { flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#F0F0F0' }]}>
+                                <TextInput
+                                    ref={searchInputRef}
+                                    style={[styles.headerSearchText, { color: c.text }]}
+                                    value={searchQuery}
+                                    onChangeText={(text) => {
+                                        setSearchQuery(text);
+                                        setSelectedCategory(null);
+                                    }}
+                                    placeholder="Search in restaurant"
+                                    placeholderTextColor={c.textMuted}
+                                    returnKeyType="search"
+                                    autoCorrect={false}
+                                />
+                                {searchQuery.length > 0 && (
+                                    <Pressable hitSlop={8} onPress={() => { setSearchQuery(''); setSelectedCategory(null); searchInputRef.current?.focus(); }}>
+                                        <Ionicons name="close-circle" size={16} color={c.textMuted} />
+                                    </Pressable>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    {searchQuery.trim().length === 0 ? (
+                        <View style={[styles.fill, styles.centered]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: Spacing[4] }}>
+                                <Ionicons name="search" size={70} color="#2db4e8" style={{ transform: [{ rotate: '-15deg' }, { translateX: 10 }] }} />
+                                <Ionicons name="search" size={60} color="#61c7ed" style={{ transform: [{ rotate: '15deg' }, { translateX: -10 }] }} />
+                            </View>
+                            <Text style={{ fontSize: Typography.base, color: c.textMuted }}>Search for similar dishes.</Text>
+                        </View>
+                    ) : (
+                        <SectionList
+                            sections={searchSectionData}
+                            keyExtractor={(item: Product) => item.id}
+                            contentContainerStyle={{ paddingBottom: 120 }}
+                            onScrollBeginDrag={() => { stepperDismissRef.current?.(); searchInputRef.current?.blur(); }}
+                            ListEmptyComponent={
+                                <View style={[styles.centered, { paddingVertical: 48 }]}>
+                                    <Text style={[styles.errorText, { color: c.textMuted }]}>No results for "{searchQuery}"</Text>
+                                </View>
+                            }
+                            renderSectionHeader={({ section }) => (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing[4], paddingTop: Spacing[5], paddingBottom: Spacing[3], backgroundColor: c.background }}>
+                                    <View>
+                                        <Text style={{ fontSize: Typography.h3, fontWeight: '900', color: c.text }}>{section.title}</Text>
+                                        <Text style={{ fontSize: Typography.sm, color: c.textMuted, marginTop: 2 }}>{section.totalItems ?? section.data.length} items</Text>
+                                    </View>
+                                    {!selectedCategory && (section.totalItems ?? section.data.length) > 3 && (
+                                        <Pressable 
+                                            style={[styles.seeAllBtn, { backgroundColor: isDark ? 'rgba(0,157,224,0.15)' : '#e6f5fb' }]} 
+                                            onPress={() => setSelectedCategory(section.id)}
+                                        >
+                                            <Text style={[styles.seeAllBtnText, { color: c.accent }]}>See all</Text>
+                                        </Pressable>
+                                    )}
+                                </View>
+                            )}
+                            renderItem={({ item }: { item: Product }) => (
+                                <SwipeableItemRow
+                                    item={item}
+                                    borderColor={c.border}
+                                    bgColor={c.background}
+                                    onPress={() => { stepperDismissRef.current?.(); setModalItem(item); }}
+                                />
+                            )}
+                        />
+                    )}
+                </View>
+            )}
 
             {/* ── Item detail modal ────────────────────────────────── */}
             <MenuItemModal
@@ -523,6 +587,16 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     headerSearchText: { flex: 1, fontSize: Typography.sm },
+
+    seeAllBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    seeAllBtnText: {
+        fontWeight: '700',
+        fontSize: Typography.sm,
+    },
 
     // Error / retry
     errorText: {
