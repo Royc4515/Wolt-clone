@@ -6,6 +6,7 @@ import { getGuestLocation } from '@/services/authStorage';
 // Import our custom context wrappers.
 import { ThemeProviderWrapper, ThemeContext } from '../context/ThemeContext';
 import { AuthProvider, AuthContext } from '../context/AuthContext'; // Using the merged AuthProvider name
+import { CartProvider } from '../context/CartContext';
 import { AnimatedSplashOverlay } from '@/components/animated-icon'; 
 
 // Inner component to consume the context and apply the theme.
@@ -36,7 +37,7 @@ function RootLayoutNav() {
                 
                 <Stack.Screen
                     name="restaurant/[id]"
-                    options={{ title: '', headerBackTitle: 'Back' }}
+                    options={{ headerShown: false }}
                 />
                 <Stack.Screen
                     name="owner/index"
@@ -56,7 +57,9 @@ export default function RootLayout() {
   return (
     <ThemeProviderWrapper>
       <AuthProvider>
-        <RootLayoutNav />
+        <CartProvider>
+          <RootLayoutNav />
+        </CartProvider>
       </AuthProvider>
     </ThemeProviderWrapper>
   );
