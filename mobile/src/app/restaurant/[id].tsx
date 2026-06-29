@@ -1,14 +1,15 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     Animated,
     Pressable,
     ScrollView,
     SectionList,
     StyleSheet,
     Text,
+    TextInput,
     View,
 } from 'react-native';
-import { ActivityIndicator } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +45,8 @@ export default function RestaurantScreen() {
     const [activeSection, setActiveSection] = useState(0);
     const [modalItem, setModalItem] = useState<Product | null>(null);
     const [tabsVisible, setTabsVisible] = useState(false);
+    const [searchActive, setSearchActive] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // ── Refs ───────────────────────────────────────────────────────────────────
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -54,6 +57,7 @@ export default function RestaurantScreen() {
     setModalItemRef.current = setModalItem;
     // Dismisses the active card stepper from outside (scroll, row press, tab press)
     const stepperDismissRef = useRef<(() => void) | null>(null);
+    const searchInputRef = useRef<TextInput>(null);
 
     // ── Load ───────────────────────────────────────────────────────────────────
     const load = useCallback(async () => {
@@ -129,6 +133,26 @@ export default function RestaurantScreen() {
         () => sections.map(s => ({ ...s, data: s.items, key: s.id })),
         [sections],
     );
+
+    const filteredSectionData = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return sectionListData;
+        return sectionListData
+            .map(s => ({
+                ...s,
+                data: s.data.filter((item: Product) =>
+                    item.name.toLowerCase().includes(q) ||
+                    (item.description?.toLowerCase().includes(q) ?? false)
+                ),
+            }))
+            .filter(s => s.data.length > 0);
+    }, [sectionListData, searchQuery]);
+
+    const dismissSearch = useCallback(() => {
+        setSearchActive(false);
+        setSearchQuery('');
+        searchInputRef.current?.blur();
+    }, []);
 
     const listHeader = useMemo(() => {
         if (!restaurant) return null;
@@ -241,7 +265,7 @@ export default function RestaurantScreen() {
             {/* ── Main scrollable menu ─────────────────────────────── */}
             <SectionList
                 ref={sectionListRef}
-                sections={sectionListData}
+                sections={filteredSectionData}
                 keyExtractor={(item: Product) => item.id}
                 stickySectionHeadersEnabled={false}
                 contentContainerStyle={{ paddingBottom: 120 }}
@@ -250,8 +274,16 @@ export default function RestaurantScreen() {
                     { useNativeDriver: false },
                 )}
                 scrollEventThrottle={16}
-                onScrollBeginDrag={() => stepperDismissRef.current?.()}
+                onScrollBeginDrag={() => { stepperDismissRef.current?.(); searchInputRef.current?.blur(); }}
                 ListHeaderComponent={listHeader}
+                ListEmptyComponent={searchQuery.trim() ? (
+                    <View style={[styles.centered, { paddingVertical: 48 }]}>
+                        <Ionicons name="search-outline" size={40} color={c.textMuted} />
+                        <Text style={[styles.errorText, { color: c.textMuted, marginTop: Spacing[3], marginBottom: 0 }]}>
+                            No results for "{searchQuery}"
+                        </Text>
+                    </View>
+                ) : null}
                 renderSectionHeader={({ section }) => (
                     <Text
                         style={[
@@ -274,14 +306,14 @@ export default function RestaurantScreen() {
 
             {/* ── Floating section tabs (fades in after hero scrolls away) ── */}
             <Animated.View
-                pointerEvents={tabsVisible ? 'auto' : 'none'}
+                pointerEvents={tabsVisible && !searchActive ? 'auto' : 'none'}
                 style={[
                     styles.tabsBar,
                     {
                         top: HEADER_H,
                         backgroundColor: c.surface,
                         borderBottomColor: c.border,
-                        opacity: tabsOpacity,
+                        opacity: searchActive ? 0 : tabsOpacity,
                         transform: [{ translateY: tabsTranslateY }],
                     },
                 ]}
@@ -334,7 +366,7 @@ export default function RestaurantScreen() {
                 />
                 <View style={styles.headerRow} pointerEvents="box-none">
                     <Pressable
-                        onPress={() => router.back()}
+                        onPress={() => searchActive ? dismissSearch() : router.back()}
                         style={[
                             styles.headerBtn,
                             { backgroundColor: isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)' },
@@ -343,19 +375,46 @@ export default function RestaurantScreen() {
                         <Ionicons name="arrow-back" size={20} color={isDark ? '#fff' : '#1c1d2a'} />
                     </Pressable>
 
-                    <View style={styles.headerCenter} pointerEvents="none">
+                    <Pressable
+                        style={styles.headerCenter}
+                        onPress={() => {
+                            setSearchActive(true);
+                            setTimeout(() => searchInputRef.current?.focus(), 50);
+                        }}
+                    >
                         <View
                             style={[
                                 styles.headerSearch,
                                 { backgroundColor: isDark ? 'rgba(10,12,23,0.72)' : 'rgba(255,255,255,0.85)' },
                             ]}
                         >
-                            <Ionicons name="search-outline" size={14} color={c.textMuted} />
-                            <Text style={[styles.headerSearchText, { color: c.textMuted }]} numberOfLines={1}>
-                                {restaurant.name}
-                            </Text>
+                            <Ionicons name="search-outline" size={14} color={searchActive ? c.text : c.textMuted} />
+                            {searchActive ? (
+                                <TextInput
+                                    ref={searchInputRef}
+                                    style={[styles.headerSearchText, { color: c.text }]}
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                    placeholder="Search menu..."
+                                    placeholderTextColor={c.textMuted}
+                                    returnKeyType="search"
+                                    autoCorrect={false}
+                                />
+                            ) : (
+                                <Text style={[styles.headerSearchText, { color: c.textMuted }]} numberOfLines={1}>
+                                    {restaurant.name}
+                                </Text>
+                            )}
+                            {searchActive && searchQuery.length > 0 && (
+                                <Pressable
+                                    hitSlop={8}
+                                    onPress={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                                >
+                                    <Ionicons name="close-circle" size={16} color={c.textMuted} />
+                                </Pressable>
+                            )}
                         </View>
-                    </View>
+                    </Pressable>
 
                     <View
                         style={[
