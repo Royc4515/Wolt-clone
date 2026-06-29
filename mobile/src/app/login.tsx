@@ -6,13 +6,14 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ActivityIndicator,
-  Pressable     // Added Pressable to match the home screen's button style
+  Pressable
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme'; 
+import { login as apiLogin } from '../services/api';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -47,27 +48,13 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/tokens', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMsg(data.error || 'Login failed. Please try again.');
-        setIsLoading(false);
-        return;
-      }
+      const data = await apiLogin(username, password)
 
       await login(data.token, data.user);
       router.replace('/(tabs)');
       
-    } catch (error) {
-      setErrorMsg('Network error. Check your connection to the server.');
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

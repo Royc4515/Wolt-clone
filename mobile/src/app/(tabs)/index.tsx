@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { getRestaurants, MEDIA_BASE, type Restaurant } from '../../services/api';
+import { getGuestLocation } from '../../services/authStorage';
+import { AuthContext } from '../../context/AuthContext';
 
 // ── Static category image map (public/images/categories/) ──────────────────
 
@@ -230,6 +232,19 @@ export default function HomeScreen() {
     const { isDark, toggleTheme } = useContext(ThemeContext);
     const c = isDark ? Colors.dark : Colors.light;
     const insets = useSafeAreaInsets();
+
+    // States for user context and guest location.
+    const { token, user } = useContext(AuthContext);
+    const [guestLoc, setGuestLoc] = useState<{lat: number, lng: number} | null>(null);
+
+    // Fetch guest location on mount.
+    useEffect(() => {
+        if (!token) {
+            getGuestLocation().then(loc => {
+                if (loc) setGuestLoc(loc);
+            });
+        }
+    }, [token]);
 
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -481,15 +496,32 @@ export default function HomeScreen() {
                 />
                 {/* Header row */}
                 <View style={styles.headerRow} pointerEvents="box-none">
-                    <View style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}>
-                        <Ionicons name="person-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
-                    </View>
+                    {/* Left Icon (The generic person) */}
+                    <Pressable 
+                        style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)', overflow: 'hidden' }]}
+                        onPress={() => router.push('/(tabs)/profile')}
+                    >
+                        {user?.profilePicture ? (
+                            <Image source={{ uri: user.profilePicture }} style={{ width: '100%', height: '100%' }} />
+                        ) : (
+                            <Ionicons name="person-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
+                        )}
+                    </Pressable>
+
+                    {/* Center area - modified to show row of [Location - Title] */}
                     <View style={styles.headerCenter} pointerEvents="none">
+                        {(!token && guestLoc) && (
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: c.accent, marginRight: 8 }}>
+                                📍 {guestLoc.lat.toFixed(2)}, {guestLoc.lng.toFixed(2)}
+                            </Text>
+                        )}
                         <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#1c1d2a' }]}>
                             Wolt Clone
                         </Text>
                         <Ionicons name="chevron-down" size={14} color={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)'} />
                     </View>
+
+                    {/* Right Toggle */}
                     <Pressable
                         onPress={toggleTheme}
                         style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}
