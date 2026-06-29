@@ -72,10 +72,12 @@ export interface SearchResult {
 
 export interface AuthUser {
     id: string;
+    _id?: string;
     username: string;
     displayName: string;
     role: 'customer' | 'admin';
     location?: { lat: number; lng: number };
+    profilePicture?: string;
 }
 
 // ── API calls ──────────────────────────────────────────────────────────────
@@ -95,7 +97,7 @@ export const searchAll = (query: string) =>
     apiFetch<SearchResult>(`/search/${encodeURIComponent(query)}`);
 
 export const login = (username: string, password: string) =>
-    apiFetch<{ token: string }>('/tokens', {
+    apiFetch<{ token: string; user: AuthUser }>('/tokens', {
         method: 'POST',
         body: JSON.stringify({ username, password }),
     });
@@ -106,6 +108,7 @@ export const register = (data: {
     displayName: string;
     profilePicture: string;
     location: { lat: number; lng: number };
+    role: 'customer' | 'admin';
 }) => apiFetch<{ id: string }>('/users', { method: 'POST', body: JSON.stringify(data) });
 
 export const createRestaurant = (
@@ -122,4 +125,17 @@ export const deleteRestaurant = (id: string, token: string) =>
     apiFetch<void>(`/restaurants/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
+    });
+
+export const deleteUser = (id: string, token: string) =>
+    apiFetch<void>(`/users/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+export const updateUser = (id: string, data: Partial<AuthUser>, token: string) =>
+    apiFetch<{ user: AuthUser; token: string }>(`/users/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
     });

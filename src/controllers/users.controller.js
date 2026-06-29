@@ -187,10 +187,36 @@ const updateUser = async (req, res) => {
     
 };
 
+// Function to delete a user.
+const deleteUser = async (req, res) => {
+    try {
+        // Extract the user ID from the route parameter.
+        const { id } = req.params;
+    
+        // Ensure the user is only deleting their own profile.
+        if (req.user && req.user.id !== id) {
+            return res.status(403).json({ error: "Forbidden: You can only delete your own profile" });
+        }
+
+        // Find and delete the user from the database.
+        const deletedUser = await User.findByIdAndDelete(id);
+
+        if (!deletedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Return a success message.
+        res.status(200).json({ message: "User deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 // Export the function so the router can use it.
 module.exports = {
     createUser,
     loginUser,
     getUser,
-    updateUser
+    updateUser,
+    deleteUser
 };

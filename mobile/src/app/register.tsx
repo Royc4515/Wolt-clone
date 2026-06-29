@@ -15,6 +15,9 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme';
+import { register as apiRegister } from '../services/api';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
@@ -22,6 +25,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState(''); 
   const [displayName, setDisplayName] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [base64Data, setBase64Data] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [role, setRole] = useState('customer'); 
@@ -44,6 +48,25 @@ export default function RegisterScreen() {
     placeholder: themeColors.textMuted,
     hintText: themeColors.textMuted,
     surfaceBg: themeColors.surface, 
+  };
+
+  // Function to open device gallery.
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      setProfilePicture(result.assets[0].uri);
+
+      if (result.assets[0].base64) {
+          setBase64Data(result.assets[0].base64);
+      }
+    }
   };
 
   const handleRegister = async () => {
@@ -83,31 +106,23 @@ export default function RegisterScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username,
-          password,
-          displayName,
-          profilePicture,
-          location: { lat: numericLat, lng: numericLng },
-          role 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrorMsg(data.error || 'Registration failed.');
-        setIsLoading(false);
-        return;
+      if (profilePicture && !base64Data) {
+        throw new Error('Failed to process image. Please try picking it again.');
       }
+
+      const response = await apiRegister({
+        username,
+        password,
+        displayName,
+        profilePicture: base64Data ? `data:image/jpeg;base64,${base64Data}` : '',
+        location: { lat: numericLat, lng: numericLng },
+        role: role as 'customer' | 'admin'
+      });
 
       router.replace('/login');
       
-    } catch (error) {
-      setErrorMsg('Network error. Check your connection to the server.');
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +164,7 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: dynamicStyles.containerBg }]}>
         <Text style={[styles.title, { color: dynamicStyles.textColor }]}>Create Account</Text>
 
-        {/* Username Block (Label -> Input -> Hint) */}
+        {/* Username Block */}
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Username</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
@@ -189,23 +204,28 @@ export default function RegisterScreen() {
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Display Name</Text>
         <TextInput
           style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="Full Name"
+          placeholder="Display Name"
           placeholderTextColor={dynamicStyles.placeholder}
           value={displayName}
           onChangeText={setDisplayName}
         />
         <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>Your public name shown to other users</Text>
 
-        {/* Profile Picture Block */}
-        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Profile Picture URL</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="https://example.com/avatar.jpg"
-          placeholderTextColor={dynamicStyles.placeholder}
-          value={profilePicture}
-          onChangeText={setProfilePicture}
-          autoCapitalize="none"
-        />
+        {/* Profile Picture Image Picker Block */}
+        <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Profile Picture</Text>
+        <TouchableOpacity 
+            style={[styles.imagePickerBtn, { borderColor: dynamicStyles.inputBorder, backgroundColor: dynamicStyles.inputBg }]} 
+            onPress={pickImage}
+        >
+          {profilePicture ? (
+            <Image source={{ uri: profilePicture }} style={styles.previewImage} contentFit="cover" />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="camera-outline" size={32} color={dynamicStyles.placeholder} />
+              <Text style={{ color: dynamicStyles.placeholder, marginTop: 8 }}>Upload Photo</Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>JPG, PNG or GIF · shown next to your orders</Text>
 
         {/* Location Block */}
@@ -300,6 +320,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     borderWidth: 1,
     fontSize: 16,
+  },
+  imagePickerBtn: {
+    height: 120,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+    overflow: 'hidden'
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
   },
   hint: { 
     fontSize: 12, 
