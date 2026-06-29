@@ -1,39 +1,70 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
+import { getToken, saveToken, removeToken } from '../services/authStorage';
 import type { AuthUser } from '../services/api';
 
-interface AuthState {
-    token: string | null;
-    user: AuthUser | null;
-    login: (token: string, user: AuthUser) => void;
-    logout: () => void;
+// Define the shape of our authentication context combining both approaches
+interface AuthContextType {
+  token: string | null;
+  user: AuthUser | null;
+  isLoading: boolean;
+  login: (token: string, user: AuthUser) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthState>({
-    token: null,
-    user: null,
-    login: () => {},
-    logout: () => {},
+// Create the context with default values
+export const AuthContext = createContext<AuthContextType>({
+  token: null,
+  user: null,
+  isLoading: true,
+  login: async () => {},
+  logout: async () => {},
 });
 
-export function AuthProviderWrapper({ children }: { children: React.ReactNode }) {
-    const [token, setToken] = useState<string | null>(null);
-    const [user, setUser] = useState<AuthUser | null>(null);
+// The provider component that will wrap our app
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    const login = (newToken: string, newUser: AuthUser) => {
-        setToken(newToken);
-        setUser(newUser);
+  // Check if a user is already logged in when the app starts (Dana's logic)
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const storedToken = await getToken();
+        if (storedToken) {
+          setToken(storedToken);
+          // Note: In a full app, you might also want to fetch or decode the user object here
+        }
+      } catch (error) {
+        console.error("Failed to fetch token on startup", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-    };
+    checkLoginStatus();
+  }, []);
 
-    return (
-        <AuthContext.Provider value={{ token, user, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
-}
+  // Function to call when user successfully logs in or registers (Merged logic)
+  const login = async (newToken: string, newUser: AuthUser) => {
+    await saveToken(newToken); // Dana's AsyncStorage
+    setToken(newToken);
+    setUser(newUser);          // Roy's User state
+  };
 
+  // Function to call when user clicks logout
+  const logout = async () => {
+    await removeToken();
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ token, user, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Roy's custom hook for easier consumption in components
 export const useAuth = () => useContext(AuthContext);
