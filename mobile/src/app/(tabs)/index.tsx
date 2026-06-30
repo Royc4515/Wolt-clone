@@ -246,9 +246,9 @@ export default function HomeScreen() {
     // States for user context.
     const { token, user, login } = useContext(AuthContext);
 
-    // NEW: Pull items from CartContext and calculate total quantity for the badge.
-    const { items: cartItems } = useContext(CartContext);
-    const cartItemsCount = cartItems.reduce((sum, current) => sum + current.qty, 0);
+    // Get all carts and count how many active carts exist (how many restaurants have items)
+    const { carts } = useContext(CartContext);
+    const cartCount = Object.keys(carts).length; // The number of restaurant carts currently active
 
     const [guestLoc, setGuestLoc] = useState<{lat: number, lng: number} | null>(null);
 
@@ -622,10 +622,10 @@ export default function HomeScreen() {
                         >
                             <Ionicons name="cart-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
                             
-                            {/* Only show the red badge if there are items in the cart */}
-                            {cartItemsCount > 0 && (
+                            {/* Only show the red badge if there is at least one active cart */}
+                            {cartCount > 0 && (
                                 <View style={[styles.badge, { borderColor: c.surface }]}>
-                                    <Text style={styles.badgeText}>{cartItemsCount}</Text>
+                                    <Text style={styles.badgeText}>{cartCount}</Text>
                                 </View>
                             )}
                         </Pressable>

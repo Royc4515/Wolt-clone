@@ -6,120 +6,97 @@ export interface CartItem {
     qty: number;
 }
 
+export interface CartState {
+    [restaurantId: string]: CartItem[]; // A map of restaurant IDs to their specific cart items.
+}
+
 export interface CartContextValue {
-    items: CartItem[];
-    cartRestaurantId: string | null;
-    subtotal: number;
-    getQty: (itemId: string) => number;
+    // Returns all carts state
+    carts: CartState;
+    // Helper to get items for a specific restaurant
+    getCartByRestaurant: (restaurantId: string) => CartItem[];
+    // Helper to get total qty for a specific item
+    getQty: (restaurantId: string, itemId: string) => number;
     add: (item: Product) => void;
-    addMany: (item: Product, qty: number) => void;
-    remove: (itemId: string) => void;
-    clearCart: () => void;
+    remove: (restaurantId: string, itemId: string) => void;
+    clearCart: (restaurantId: string) => void;
 }
 
 export const CartContext = createContext<CartContextValue>({
-    items: [],
-    cartRestaurantId: null,
-    subtotal: 0,
+    carts: {},
+    getCartByRestaurant: () => [],
     getQty: () => 0,
     add: () => {},
-    addMany: () => {},
     remove: () => {},
     clearCart: () => {},
 });
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [items, setItems] = useState<CartItem[]>([]);
-    const [cartRestaurantId, setCartRestaurantId] = useState<string | null>(null);
+    const [carts, setCarts] = useState<CartState>({});
 
-    // Calculate the total cost of all items currently in the cart
-    const subtotal = useMemo(() => {
-        return items.reduce((sum, current) => sum + (current.item.price * current.qty), 0);
-    }, [items]);
+    const getCartByRestaurant = useCallback((restaurantId: string) => {
+        return carts[restaurantId] || [];
+    }, [carts]);
 
-    const getQty = useCallback((itemId: string) => {
-        const found = items.find(i => i.item.id === itemId);
+    const getQty = useCallback((restaurantId: string, itemId: string) => {
+        const cart = carts[restaurantId] || [];
+        const found = cart.find(i => i.item.id === itemId);
         return found ? found.qty : 0;
-    }, [items]);
+    }, [carts]);
 
     const add = useCallback((item: Product) => {
-        setItems(prev => {
-            // Enforce single-restaurant cart policy:
-            // If adding an item from a different restaurant, clear the cart first
-            if (prev.length > 0 && cartRestaurantId !== item.restaurantId) {
-                setCartRestaurantId(item.restaurantId);
-                return [{ item, qty: 1 }];
-            }
-
-            // Set the restaurant ID for the first item
-            if (prev.length === 0) {
-                setCartRestaurantId(item.restaurantId);
-            }
-
-            const found = prev.find(i => i.item.id === item.id);
-            if (found) {
-                return prev.map(i => i.item.id === item.id ? { ...i, qty: i.qty + 1 } : i);
-            }
-            return [...prev, { item, qty: 1 }];
-        });
-    }, [cartRestaurantId]);
-
-    const addMany = useCallback((item: Product, qty: number) => {
-        setItems(prev => {
-            // Enforce single-restaurant cart policy
-            if (prev.length > 0 && cartRestaurantId !== item.restaurantId) {
-                setCartRestaurantId(item.restaurantId);
-                return [{ item, qty }];
-            }
-
-            if (prev.length === 0) {
-                setCartRestaurantId(item.restaurantId);
-            }
-
-            const found = prev.find(i => i.item.id === item.id);
-            if (found) {
-                return prev.map(i => i.item.id === item.id ? { ...i, qty: i.qty + qty } : i);
-            }
-            return [...prev, { item, qty }];
-        });
-    }, [cartRestaurantId]);
-
-    const remove = useCallback((itemId: string) => {
-        setItems(prev => {
-            const found = prev.find(i => i.item.id === itemId);
-            if (found && found.qty > 1) {
-                // Decrement quantity if more than 1
-                return prev.map(i => i.item.id === itemId ? { ...i, qty: i.qty - 1 } : i);
-            }
+        setCarts(prev => {
+            const rid = item.restaurantId;
+            const currentCart = prev[rid] || [];
+            const found = currentCart.find(i => i.item.id === item.id);
             
-            // Remove item entirely if quantity reaches 0
-            const updatedItems = prev.filter(i => i.item.id !== itemId);
-            
-            // If cart is empty after removal, reset the restaurant lock
-            if (updatedItems.length === 0) {
-                setCartRestaurantId(null);
-            }
-            
-            return updatedItems;
+            const newCart = found 
+                ? currentCart.map(i => i.item.id === item.id ? { ...i, qty: i.qty + 1 } : i)
+                : [...currentCart, { item, qty: 1 }];
+
+            return { ...prev, [rid]: newCart };
         });
     }, []);
 
-    const clearCart = useCallback(() => {
-        // Completely reset the cart state (used after successful checkout)
-        setItems([]);
-        setCartRestaurantId(null);
+    const remove = useCallback((restaurantId: string, itemId: string) => {
+        setCarts(prev => {
+            const currentCart = prev[restaurantId] || [];
+            const found = currentCart.find(i => i.item.id === itemId);
+            
+            if (!found) return prev;
+
+            let newCart: CartItem[];
+            if (found.qty > 1) {
+                newCart = currentCart.map(i => i.item.id === itemId ? { ...i, qty: i.qty - 1 } : i);
+            } else {
+                newCart = currentCart.filter(i => i.item.id !== itemId);
+            }
+
+            // If the cart for this restaurant is empty, remove the key from state
+            if (newCart.length === 0) {
+                const { [restaurantId]: _, ...rest } = prev;
+                return rest;
+            }
+
+            return { ...prev, [restaurantId]: newCart };
+        });
+    }, []);
+
+    const clearCart = useCallback((restaurantId: string) => {
+        setCarts(prev => {
+            const { [restaurantId]: _, ...rest } = prev;
+            return rest;
+        });
     }, []);
 
     const value = useMemo(() => ({ 
-        items, 
-        cartRestaurantId, 
-        subtotal, 
+        carts, 
+        getCartByRestaurant, 
         getQty, 
         add, 
-        addMany, 
         remove, 
         clearCart 
-    }), [items, cartRestaurantId, subtotal, getQty, add, addMany, remove, clearCart]);
+    }), [carts, getCartByRestaurant, getQty, add, remove, clearCart]);
 
     return (
         <CartContext.Provider value={value}>
