@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Animated,
     Pressable,
     ScrollView,
@@ -11,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -23,6 +25,7 @@ import {
     type Product,
     type Restaurant,
 } from '../../services/api';
+import { CartContext } from '../../context/CartContext';
 import { HERO_H, HEADER_CONTENT_H, TABS_BAR_H } from './_components/constants';
 import { HeroImage } from './_components/HeroImage';
 import { MenuItemModal } from './_components/MenuItemModal';
@@ -30,12 +33,17 @@ import { RecommendedCard } from './_components/RecommendedCard';
 import { SwipeableItemRow } from './_components/SwipeableItemRow';
 
 export default function RestaurantScreen() {
-    const params = useLocalSearchParams<{ id: string }>();
+    const params = useLocalSearchParams<{ id: string, openItem?: string }>();
     const id = (Array.isArray(params.id) ? params.id[0] : params.id) ?? '';
+    const openItem = (Array.isArray(params.openItem) ? params.openItem[0] : params.openItem);
     const { isDark } = useContext(ThemeContext);
     const c = isDark ? Colors.dark : Colors.light;
     const insets = useSafeAreaInsets();
     const HEADER_H = insets.top + HEADER_CONTENT_H;
+
+    const { items: cartItems } = useContext(CartContext);
+    const cartQty   = cartItems.reduce((s, i) => s + i.qty, 0);
+    const cartTotal = cartItems.reduce((s, i) => s + i.item.price * i.qty, 0);
 
     // ── State ──────────────────────────────────────────────────────────────────
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -67,12 +75,17 @@ export default function RestaurantScreen() {
             const [rest, menu] = await Promise.all([getRestaurant(id), getMenu(id)]);
             setRestaurant(rest);
             setSections(menu);
+            
+            if (openItem) {
+                const target = menu.flatMap(s => s.items).find(i => i.id === openItem);
+                if (target) setModalItem(target);
+            }
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to load menu');
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, openItem]);
 
     useEffect(() => { load(); }, [load]);
 
@@ -131,7 +144,9 @@ export default function RestaurantScreen() {
 
     // ── Stable data ────────────────────────────────────────────────────────────
     const sectionListData = useMemo(
-        () => sections.map(s => ({ ...s, data: s.items, key: s.id })),
+        () => sections
+            .map(s => ({ ...s, data: s.items.filter(i => i.isAvailable !== false), key: s.id }))
+            .filter(s => s.data.length > 0),
         [sections],
     );
 
@@ -166,18 +181,27 @@ export default function RestaurantScreen() {
 
     const listHeader = useMemo(() => {
         if (!restaurant) return null;
-        const recommended = sections.flatMap(s => s.items).slice(0, 6);
+        const recommended = sections
+            .flatMap(s => s.items)
+            .filter(i => i.isAvailable !== false)
+            .slice(0, 6);
+        const heroUri = restaurant.image
+            ? (restaurant.image.startsWith('data:') || restaurant.image.startsWith('http')
+                ? restaurant.image
+                : `${MEDIA_BASE}${restaurant.image}`)
+            : undefined;
         return (
             <View>
-                <HeroImage uri={restaurant.image ? `${MEDIA_BASE}${restaurant.image}` : undefined} />
+                <HeroImage uri={heroUri} />
                 <View style={[styles.infoBlock, { backgroundColor: c.surface }]}>
                     <Text style={[styles.restName, { color: c.text, textAlign: 'center' }]}>
                         {restaurant.name}
                     </Text>
-                    <Text style={[styles.restMeta, { color: c.textMuted, textAlign: 'center' }]}>
-                        {restaurant.rating > 0 ? `☺ ${restaurant.rating.toFixed(1)}` : ''}
-                        {restaurant.openHours ? `  ·  ${restaurant.openHours}` : ''}
-                    </Text>
+                    {restaurant.openHours ? (
+                        <Text style={[styles.restMeta, { color: c.textMuted, textAlign: 'center' }]}>
+                            {restaurant.openHours}
+                        </Text>
+                    ) : null}
                     {restaurant.description ? (
                         <Text
                             style={[styles.restDesc, { color: c.textMuted, textAlign: 'center' }]}
@@ -186,31 +210,35 @@ export default function RestaurantScreen() {
                             {restaurant.description}
                         </Text>
                     ) : null}
-                    <View style={styles.feeRow}>
-                        <Text style={[styles.feeText, { color: c.accent }]}>
-                            {restaurant.deliveryFee === 0
-                                ? 'Free delivery'
-                                : `₪${restaurant.deliveryFee} delivery`}
-                        </Text>
-                        {restaurant.deliveryTime > 0 ? (
-                            <Text style={[styles.feeText, { color: c.textMuted }]}>
-                                {'  ·  '}{restaurant.deliveryTime} min
+                    <View style={styles.pillRow}>
+                        {restaurant.rating > 0 && (
+                            <View style={[styles.pill, { backgroundColor: c.text + '0A' }]}>
+                                <Ionicons name="happy-outline" size={13} color={c.textMuted} />
+                                <Text style={[styles.pillText, { color: c.textMuted }]}>
+                                    {restaurant.rating.toFixed(1)}
+                                </Text>
+                            </View>
+                        )}
+                        {restaurant.deliveryTime > 0 && (
+                            <View style={[styles.pill, { backgroundColor: c.text + '0A' }]}>
+                                <Ionicons name="time-outline" size={13} color={c.textMuted} />
+                                <Text style={[styles.pillText, { color: c.textMuted }]}>
+                                    {restaurant.deliveryTime} min
+                                </Text>
+                            </View>
+                        )}
+                        <View style={[
+                            styles.pill,
+                            { backgroundColor: restaurant.deliveryFee === 0 ? c.accent + '15' : c.text + '0A' },
+                        ]}>
+                            <Ionicons
+                                name="bicycle-outline"
+                                size={13}
+                                color={restaurant.deliveryFee === 0 ? c.accent : c.textMuted}
+                            />
+                            <Text style={[styles.pillText, { color: restaurant.deliveryFee === 0 ? c.accent : c.textMuted }]}>
+                                {restaurant.deliveryFee === 0 ? 'Free delivery' : `₪${restaurant.deliveryFee} delivery`}
                             </Text>
-                        ) : null}
-                    </View>
-                    <View style={{ alignItems: 'center', marginTop: Spacing[3] }}>
-                        <View
-                            style={[
-                                styles.deliveryPill,
-                                { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F0F0F0' },
-                            ]}
-                        >
-                            <Ionicons name="bicycle-outline" size={16} color={c.textMuted} />
-                            <Text style={[styles.deliveryPillText, { color: c.text }]}>
-                                Delivery{' '}
-                                {restaurant.deliveryTime > 0 ? `${restaurant.deliveryTime} min` : 'available'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={14} color={c.textMuted} />
                         </View>
                     </View>
                 </View>
@@ -397,15 +425,21 @@ export default function RestaurantScreen() {
                         </View>
                     </Pressable>
 
-                    <View
-                        style={[
+                    <Pressable
+                        style={({ pressed }) => [
                             styles.headerBtn,
                             { backgroundColor: isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)' },
+                            pressed && { opacity: 0.7 }
                         ]}
-                        pointerEvents="none"
+                        onPress={() => Alert.alert('Coming Soon', 'Checkout will be available in the next update.')}
                     >
-                        <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? '#fff' : '#1c1d2a'} />
-                    </View>
+                        <Ionicons name="cart-outline" size={20} color={isDark ? '#fff' : '#1c1d2a'} />
+                        {cartQty > 0 && (
+                            <View style={[styles.cartBadge, { backgroundColor: c.accent }]}>
+                                <Text style={styles.cartBadgeText}>{cartQty > 9 ? '9+' : cartQty}</Text>
+                            </View>
+                        )}
+                    </Pressable>
                 </View>
             </Animated.View>
 
@@ -467,9 +501,9 @@ export default function RestaurantScreen() {
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing[4], paddingTop: Spacing[5], paddingBottom: Spacing[3], backgroundColor: c.background }}>
                                     <View>
                                         <Text style={{ fontSize: Typography.h3, fontWeight: '900', color: c.text }}>{section.title}</Text>
-                                        <Text style={{ fontSize: Typography.sm, color: c.textMuted, marginTop: 2 }}>{section.totalItems ?? section.data.length} items</Text>
+                                        <Text style={{ fontSize: Typography.sm, color: c.textMuted, marginTop: 2 }}>{(section as any).totalItems ?? section.data.length} items</Text>
                                     </View>
-                                    {!selectedCategory && (section.totalItems ?? section.data.length) > 3 && (
+                                    {!selectedCategory && ((section as any).totalItems ?? section.data.length) > 3 && (
                                         <Pressable 
                                             style={[styles.seeAllBtn, { backgroundColor: isDark ? 'rgba(0,157,224,0.15)' : '#e6f5fb' }]} 
                                             onPress={() => setSelectedCategory(section.id)}
@@ -498,6 +532,64 @@ export default function RestaurantScreen() {
                 visible={modalItem !== null}
                 onClose={() => setModalItem(null)}
             />
+
+            {/* ── Cart bar ─────────────────────────────────────────── */}
+            {!searchActive && cartQty > 0 && (
+                <View style={[styles.cartOuter, { bottom: 0 }]} pointerEvents="box-none">
+                    {/* Pill — no blur behind it */}
+                    <View style={styles.cartPillWrap}>
+                        <Pressable
+                            style={[styles.cartBar, { backgroundColor: c.accent }]}
+                            onPress={() => Alert.alert('Coming Soon', 'Checkout will be available in the next update.')}
+                        >
+                            <View style={[styles.cartBarBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.92)' }]}>
+                                <Text style={[styles.cartBarBadgeText, { color: isDark ? '#fff' : c.accent }]}>{cartQty}</Text>
+                            </View>
+                            <Text style={styles.cartBarLabel}>View cart</Text>
+                            <Text style={styles.cartBarTotal}>₪{cartTotal.toFixed(2)}</Text>
+                        </Pressable>
+                    </View>
+
+                    {/* Frosted area — starts exactly at the pill's bottom edge */}
+                    <View style={styles.cartFrosted}>
+                        <BlurView
+                            intensity={92}
+                            tint={isDark ? 'dark' : 'light'}
+                            style={StyleSheet.absoluteFill}
+                        />
+                        <View
+                            pointerEvents="none"
+                            style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(10,12,23,0.52)' : 'rgba(255,255,255,0.52)' }]}
+                        />
+                        {/* Side fades — stepped to simulate gradient */}
+                        {(['left', 'right'] as const).map(side => (
+                            [
+                                { offset: 0,  width: 28, opacity: 0.62 },
+                                { offset: 28, width: 18, opacity: 0.34 },
+                                { offset: 46, width: 12, opacity: 0.14 },
+                            ].map(({ offset, width, opacity }) => (
+                                <View
+                                    key={`${side}-${offset}`}
+                                    pointerEvents="none"
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0, bottom: 0,
+                                        [side]: offset,
+                                        width,
+                                        backgroundColor: isDark
+                                            ? `rgba(10,12,23,${opacity})`
+                                            : `rgba(255,255,255,${opacity})`,
+                                    }}
+                                />
+                            ))
+                        ))}
+                        <Text style={[styles.cartFeeNote, { color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.38)' }]}>
+                            Estimated service & delivery fees ₪{restaurant.deliveryFee.toFixed(2)}
+                        </Text>
+                        <View style={{ height: Math.max(insets.bottom, 10) }} />
+                    </View>
+                </View>
+            )}
         </View>
     );
 }
@@ -517,19 +609,10 @@ const styles = StyleSheet.create({
     },
     restName: { fontSize: 30, fontWeight: '900', letterSpacing: 0.8, marginBottom: Spacing[2] },
     restMeta: { fontSize: Typography.sm, marginBottom: 3, lineHeight: 20 },
-    feeRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 3 },
-    feeText: { fontSize: Typography.sm, fontWeight: '700', lineHeight: 20 },
+    pillRow: { flexDirection: 'row', gap: Spacing[2], marginBottom: Spacing[2], justifyContent: 'center', flexWrap: 'wrap' },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+    pillText: { fontSize: Typography.xs, fontWeight: '700' },
     restDesc: { fontSize: Typography.sm, marginTop: Spacing[2], marginBottom: Spacing[2], lineHeight: 20 },
-    deliveryPill: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: Spacing[3],
-        paddingVertical: 8,
-        borderRadius: 999,
-        gap: 6,
-    },
-    deliveryPillText: { fontSize: Typography.sm, fontWeight: '600' },
-
     // "Recommended for you" section
     recSection: { paddingTop: Spacing[4], paddingBottom: Spacing[3] },
     recSectionTitle: {
@@ -597,6 +680,51 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         fontSize: Typography.sm,
     },
+
+    // Cart badge on header icon
+    cartBadge: {
+        position: 'absolute', top: -4, right: -4,
+        minWidth: 16, height: 16, borderRadius: 8,
+        alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 3,
+    },
+    cartBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+
+    // Cart bar at bottom
+    cartOuter: {
+        position: 'absolute',
+        left: 0, right: 0,
+        zIndex: 30,
+        overflow: 'hidden',
+    },
+    cartPillWrap: {
+        paddingHorizontal: Spacing[4],
+        paddingTop: Spacing[4],
+        paddingBottom: 0,
+    },
+    cartFrosted: {
+        overflow: 'hidden',
+        alignItems: 'center',
+        paddingTop: Spacing[2],
+    },
+    cartBar: {
+        flexDirection: 'row', alignItems: 'center',
+        borderRadius: 14,
+        paddingLeft: 6, paddingRight: Spacing[4], paddingVertical: 12,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2, shadowRadius: 6,
+        gap: Spacing[3],
+    },
+    cartBarBadge: {
+        width: 34, height: 34, borderRadius: 17,
+        alignItems: 'center', justifyContent: 'center',
+    },
+    cartBarBadgeText: { fontWeight: '900', fontSize: Typography.sm },
+    cartBarLabel: { flex: 1, color: '#fff', fontWeight: '700', fontSize: Typography.base },
+    cartBarTotal: { color: '#fff', fontWeight: '900', fontSize: Typography.base },
+    cartFeeNote: { textAlign: 'center', fontSize: Typography.xs },
 
     // Error / retry
     errorText: {

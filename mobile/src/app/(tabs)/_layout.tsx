@@ -5,6 +5,7 @@ import { useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
 import { Colors } from '../../constants/theme';
+import { ThemeToggleButton } from '../../components/ThemeToggleButton';
 
 const WOLT_BLUE = '#009DE0';
 const WOLT_BLUE_DARK_FG = '#004F80'; // darker blue for search text/icon in dark mode
@@ -102,7 +103,7 @@ const tabStyles = StyleSheet.create({
 // ── Tab layout ─────────────────────────────────────────────────────────────
 
 export default function TabLayout() {
-    const { isDark, toggleTheme } = useContext(ThemeContext);
+    const { isDark } = useContext(ThemeContext);
     const currentColors = isDark ? Colors.dark : Colors.light;
 
     return (
@@ -115,15 +116,7 @@ export default function TabLayout() {
                     headerShadowVisible: false,
                     // Kill the native tab bar entirely — our FloatingTabBar handles it
                     tabBarStyle: { display: 'none' },
-                    headerRight: () => (
-                        <Pressable onPress={toggleTheme} style={{ marginRight: 15 }}>
-                            <Ionicons
-                                name={isDark ? 'sunny-outline' : 'moon-outline'}
-                                size={22}
-                                color={currentColors.text}
-                            />
-                        </Pressable>
-                    ),
+                    headerRight: () => <ThemeToggleButton />,
                 }}
             >
                 <Tabs.Screen name="index"   options={{ title: 'Home',       headerShown: false }} />

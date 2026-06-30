@@ -173,7 +173,11 @@ export function SwipeableItemRow({
                             <Text style={[styles.itemPrice, { color: priceColor }]}>₪{item.price}</Text>
                         </View>
                     </View>
-                    <ProductImage uri={item.image ? `${MEDIA_BASE}${item.image}` : undefined} />
+                    <ProductImage uri={item.image
+                        ? (item.image.startsWith('data:') || item.image.startsWith('http')
+                            ? item.image
+                            : `${MEDIA_BASE}${item.image}`)
+                        : undefined} />
                 </Pressable>
             </Animated.View>
         </View>

@@ -30,7 +30,11 @@ export function MenuItemModal({
 
     if (!item) return null;
 
-    const imgUri = item.image && !imgErr ? `${MEDIA_BASE}${item.image}` : undefined;
+    const imgUri = item.image && !imgErr
+        ? (item.image.startsWith('data:') || item.image.startsWith('http')
+            ? item.image
+            : `${MEDIA_BASE}${item.image}`)
+        : undefined;
     const stepperBg = isDark ? 'rgba(255,255,255,0.08)' : '#F0F0F0';
     const closeBtnBg = isDark ? 'rgba(255,255,255,0.1)' : '#EFEFEF';
 

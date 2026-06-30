@@ -24,8 +24,9 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
         ...restOptions,
         headers: { 'Content-Type': 'application/json', ...callerHeaders },
     });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+    const text = await res.text();
+    const json: unknown = text ? JSON.parse(text) : null;
+    if (!res.ok) throw new Error((json as { error?: string } | null)?.error ?? `HTTP ${res.status}`);
     return json as T;
 }
 
@@ -138,4 +139,31 @@ export const updateUser = (id: string, data: Partial<AuthUser>, token: string) =
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
+    });
+
+export const updateRestaurant = (id: string, data: Partial<Restaurant>, token: string) =>
+    apiFetch<Restaurant>(`/restaurants/${id}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+    });
+
+export const createProduct = (restaurantId: string, data: Partial<Product>, token: string) =>
+    apiFetch<Product>(`/restaurants/${restaurantId}/products`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+    });
+
+export const updateProduct = (restaurantId: string, productId: string, data: Partial<Product>, token: string) =>
+    apiFetch<Product>(`/restaurants/${restaurantId}/products/${productId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+    });
+
+export const deleteProduct = (restaurantId: string, productId: string, token: string) =>
+    apiFetch<void>(`/restaurants/${restaurantId}/products/${productId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
     });
