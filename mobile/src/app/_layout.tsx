@@ -53,28 +53,8 @@ function RootLayoutNav() {
                     options={{ headerShown: false }}
                 />
                 <Stack.Screen
-                    name="owner/index"
-                    options={{ title: 'My Restaurants', ...ownerHeaderOpts }}
-                />
-                <Stack.Screen
-                    name="owner/new-restaurant"
-                    options={{ title: 'New Restaurant', ...ownerHeaderOpts }}
-                />
-                <Stack.Screen
-                    name="owner/edit-restaurant/[id]"
-                    options={{ title: 'Edit Restaurant', ...ownerHeaderOpts }}
-                />
-                <Stack.Screen
-                    name="owner/[rid]/dishes/index"
-                    options={{ title: 'Dishes', ...ownerHeaderOpts }}
-                />
-                <Stack.Screen
-                    name="owner/[rid]/dishes/new"
-                    options={{ title: 'New Dish', ...ownerHeaderOpts }}
-                />
-                <Stack.Screen
-                    name="owner/[rid]/dishes/[pid]/edit"
-                    options={{ title: 'Edit Dish', ...ownerHeaderOpts }}
+                    name="owner"
+                    options={{ headerShown: false }}
                 />
             </Stack>
         </ThemeProvider>

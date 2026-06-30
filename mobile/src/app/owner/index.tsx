@@ -150,7 +150,7 @@ function RestaurantCard({
                             </Pressable>
                             <Pressable
                                 style={({ pressed }) => [styles.pillBtn, { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border }, pressed && { opacity: 0.8 }]}
-                                onPress={() => Alert.alert('Orders', 'Order history coming soon.')}
+                                onPress={() => router.push(`/owner/${item.id}/orders`)}
                             >
                                 <Ionicons name="receipt-outline" size={16} color={c.text} />
                                 <Text style={[styles.pillBtnText, { color: c.text }]}>Orders</Text>
@@ -231,9 +231,6 @@ export default function OwnerDashboardScreen() {
         }
     }, [user?._id, user?.id]);
 
-    useEffect(() => {
-        if (!token || user?.role !== 'admin') { router.replace('/(tabs)/profile'); }
-    }, [token, user?.role]);
 
     useFocusEffect(
         useCallback(() => {
@@ -540,13 +537,13 @@ const styles = StyleSheet.create({
     cardSummary: { fontSize: Typography.xs, fontWeight: '500' },
 
     // Primary pill buttons inside card
-    primaryActions: { flexDirection: 'row', gap: Spacing[3], marginTop: Spacing[2] },
+    primaryActions: { flexDirection: 'row', gap: Spacing[2], marginTop: Spacing[2], flexWrap: 'wrap' },
     pillBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        gap: 4,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
         borderRadius: 12,
     },
     pillBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
