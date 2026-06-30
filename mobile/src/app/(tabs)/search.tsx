@@ -1,4 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
     ActivityIndicator,
     FlatList,
@@ -199,6 +200,13 @@ export default function SearchScreen() {
         const t = setTimeout(() => inputRef.current?.focus(), 300);
         return () => clearTimeout(t);
     }, []);
+
+    useFocusEffect(useCallback(() => {
+        return () => {
+            setQuery('');
+            setFiltersOpen(false);
+        };
+    }, []));
 
     const runSearch = useCallback(async (q: string) => {
         if (!q.trim()) {
