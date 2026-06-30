@@ -9,7 +9,7 @@ import { MEDIA_BASE, type Product } from '../../../services/api';
 
 const PALE_BLUE = '#DDF7FF';
 
-export function RecommendedCard({
+export default function RecommendedCard({
     item,
     onPress,
     stepperDismissRef,
@@ -20,7 +20,7 @@ export function RecommendedCard({
 }) {
     const [imgErr, setImgErr] = useState(false);
     const { getQty, add, remove } = useContext(CartContext);
-    const qty = getQty(item.id);
+    const qty = getQty(item.restaurantId, item.id);
     const [stepperExpanded, setStepperExpanded] = useState(false);
     const { isDark } = useContext(ThemeContext);
     const c = isDark ? Colors.dark : Colors.light;
@@ -51,7 +51,7 @@ export function RecommendedCard({
 
     const handleAdd = () => { add(item); scheduleClose(); };
     const handleRemove = () => {
-        remove(item.id);
+        remove(item.restaurantId, item.id);
         const nextQty = qty - 1;
         if (nextQty <= 0) {
             if (closeTimer.current) clearTimeout(closeTimer.current);

@@ -617,7 +617,7 @@ export default function HomeScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto', zIndex: 10 }}>
                         {/* Cart Button with dynamic badge */}
                         <Pressable
-                            onPress={() => router.push('/cart')}
+                            onPress={() => router.push('/cart-overview')}
                             style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}
                         >
                             <Ionicons name="cart-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />

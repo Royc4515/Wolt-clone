@@ -5,9 +5,9 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { Colors, Spacing, Typography } from '../../../constants/theme';
 import { CartContext } from '../../../context/CartContext';
 import { MEDIA_BASE, type Product } from '../../../services/api';
-import { ProductImage } from './ProductImage';
+import ProductImage from './ProductImage';
 
-export function SwipeableItemRow({
+export default function SwipeableItemRow({
     item,
     borderColor,
     bgColor,
@@ -23,7 +23,7 @@ export function SwipeableItemRow({
     const pan = useRef(new Animated.Value(0)).current;
     const isSwiping = useRef(false);
     const { getQty, add, remove } = useContext(CartContext);
-    const qty = getQty(item.id);
+    const qty = getQty(item.restaurantId, item.id);
     const qtyRef = useRef(qty);
     const addRef = useRef(add);
     const removeRef = useRef(remove);
@@ -81,7 +81,7 @@ export function SwipeableItemRow({
                         Animated.timing(pan, { toValue: -maxSwipeRef.current, duration: 60, useNativeDriver: false }),
                         Animated.spring(pan, { toValue: 0, useNativeDriver: false, tension: 80, friction: 10, overshootClamping: true }),
                     ]).start(() => {
-                        removeRef.current(item.id);
+                        removeRef.current(item.restaurantId, item.id);
                         isSwiping.current = false;
                     });
                 } else {

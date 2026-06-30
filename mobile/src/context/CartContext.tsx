@@ -18,6 +18,7 @@ export interface CartContextValue {
     // Helper to get total qty for a specific item
     getQty: (restaurantId: string, itemId: string) => number;
     add: (item: Product) => void;
+    addMany: (item: Product, qty: number) => void;
     remove: (restaurantId: string, itemId: string) => void;
     clearCart: (restaurantId: string) => void;
 }
@@ -27,6 +28,7 @@ export const CartContext = createContext<CartContextValue>({
     getCartByRestaurant: () => [],
     getQty: () => 0,
     add: () => {},
+    addMany: () => {},
     remove: () => {},
     clearCart: () => {},
 });
@@ -57,6 +59,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { ...prev, [rid]: newCart };
         });
     }, []);
+
+    const addMany = useCallback((item: Product, qty: number) => {
+    setCarts(prev => {
+        const rid = item.restaurantId;
+        const currentCart = prev[rid] || [];
+        const found = currentCart.find(i => i.item.id === item.id);
+        
+        const newCart = found 
+            ? currentCart.map(i => i.item.id === item.id ? { ...i, qty: i.qty + qty } : i)
+            : [...currentCart, { item, qty }];
+
+        return { ...prev, [rid]: newCart };
+    });
+}, []);
 
     const remove = useCallback((restaurantId: string, itemId: string) => {
         setCarts(prev => {
@@ -94,9 +110,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getCartByRestaurant, 
         getQty, 
         add, 
+        addMany,
         remove, 
         clearCart 
-    }), [carts, getCartByRestaurant, getQty, add, remove, clearCart]);
+    }), [carts, getCartByRestaurant, getQty, add, addMany, remove, clearCart]);
 
     return (
         <CartContext.Provider value={value}>

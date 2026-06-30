@@ -18,7 +18,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { createRestaurant, getRestaurants } from '../../services/api';
-import { Field } from './_components/Field';
+import Field from './_components/Field';
 
 function CategoryDropdown({
     value, onChange, options, error, colors: c,

@@ -27,10 +27,10 @@ import {
 } from '../../services/api';
 import { CartContext } from '../../context/CartContext';
 import { HERO_H, HEADER_CONTENT_H, TABS_BAR_H } from './_components/constants';
-import { HeroImage } from './_components/HeroImage';
-import { MenuItemModal } from './_components/MenuItemModal';
-import { RecommendedCard } from './_components/RecommendedCard';
-import { SwipeableItemRow } from './_components/SwipeableItemRow';
+import HeroImage from './_components/HeroImage';
+import MenuItemModal from './_components/MenuItemModal';
+import RecommendedCard from './_components/RecommendedCard';
+import SwipeableItemRow from './_components/SwipeableItemRow';
 
 export default function RestaurantScreen() {
     const params = useLocalSearchParams<{ id: string, openItem?: string }>();
@@ -41,7 +41,9 @@ export default function RestaurantScreen() {
     const insets = useSafeAreaInsets();
     const HEADER_H = insets.top + HEADER_CONTENT_H;
 
-    const { items: cartItems } = useContext(CartContext);
+    const { carts } = useContext(CartContext);
+    // Get the cart specific to this restaurant using its ID
+    const cartItems = carts[id] || [];
     const cartQty   = cartItems.reduce((s, i) => s + i.qty, 0);
     const cartTotal = cartItems.reduce((s, i) => s + i.item.price * i.qty, 0);
 

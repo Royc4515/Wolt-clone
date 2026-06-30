@@ -14,7 +14,7 @@ export interface FieldProps {
     colors: typeof Colors.light;
 }
 
-export function Field({
+export default function Field({
     label, value, onChange, placeholder,
     keyboardType = 'default', error, hint, multiline, numberOfLines, colors: c,
 }: FieldProps) {
