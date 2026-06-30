@@ -1,14 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import {
     ScrollView,
+    KeyboardAvoidingView,
     StyleSheet,
     Text,
     View,
     Pressable,
     Alert,
+    Platform
 } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, Stack, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemeContext } from '../../context/ThemeContext';
@@ -18,20 +20,35 @@ import { getGuestLocation } from '../../services/authStorage';
 import { deleteUser } from '../../services/api';
 
 export default function ProfileScreen() {
-    const { isDark } = useContext(ThemeContext);
-    const c = isDark ? Colors.dark : Colors.light;
+    const { isDark, toggleTheme } = useContext(ThemeContext);
     const { token, user, logout } = useContext(AuthContext);
     const [guestLoc, setGuestLoc] = useState<{lat: number, lng: number} | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Fetch guest location on mount if not authenticated.
-    useEffect(() => {
-        if (!token) {
-            getGuestLocation().then(loc => {
-                if (loc) setGuestLoc(loc);
-            });
-        }
-    }, [token]);
+    const c = isDark ? Colors.dark : Colors.light;
+
+    const dynamicStyles = {
+    containerBg: c.background,
+    textColor: c.text,
+    inputBg: c.surface,
+    inputBorder: c.border,
+    buttonBg: c.accent,
+    errorColor: c.danger,
+    placeholder: c.textMuted,
+    hintText: c.textMuted,
+    surfaceBg: c.surface, 
+  };
+
+    // Fetch guest location on mount/focus if not authenticated.
+    useFocusEffect(
+        useCallback(() => {
+            if (!token) {
+                getGuestLocation().then(loc => {
+                    if (loc) setGuestLoc(loc);
+                });
+            }
+        }, [token])
+    );
 
     const handleLogout = async () => {
         if (logout) {
@@ -77,116 +94,194 @@ export default function ProfileScreen() {
     // If there is no token/user, they are browsing as a guest.
     if (!token || !user) {
         return (
-            <ScrollView
-                contentContainerStyle={[styles.centered, { backgroundColor: c.background }]}
-                style={{ backgroundColor: c.background }}
+            <KeyboardAvoidingView 
+                style={{ flex: 1 }} 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                <Ionicons name="person-circle-outline" size={72} color={c.textMuted} />
-                <Text style={[styles.title, { color: c.text }]}>Guest Profile</Text>
-
-                {guestLoc && (
-                    <View style={[styles.guestLocBadge, { backgroundColor: c.surface, borderColor: c.border }]}>
-                        <Ionicons name="location-outline" size={20} color={c.accent} />
-                        <Text style={[styles.guestLocText, { color: c.text }]}>
-                            Location: {guestLoc.lat.toFixed(2)}, {guestLoc.lng.toFixed(2)}
-                        </Text>
-                    </View>
-                )}
-
-                <Text style={[styles.sub, { color: c.textMuted, textAlign: 'center' }]}>
-                    Create an account to track your orders and manage your details.
-                </Text>
-
-                <Pressable
-                    style={[styles.btn, { backgroundColor: c.accent }]}
-                    onPress={() => router.replace('/login')}
+                <Stack.Screen 
+                    options={{
+                        headerShown: true, 
+                        title: 'Profile', // כותרת אחידה
+                        headerStyle: { backgroundColor: c.background }, // רקע תואם למסך
+                        headerShadowVisible: false,
+                        headerTintColor: c.text, // צבע טקסט תואם לעיצוב
+                        headerLeft: () => (
+                            <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
+                                <Ionicons name="chevron-back" size={28} color={c.text} />
+                            </Pressable>
+                        ),
+                        headerRight: () => (
+                            <Pressable
+                              onPress={toggleTheme}
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 18,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
+                              }}
+                            >
+                              <Ionicons 
+                                name={isDark ? 'sunny-outline' : 'moon-outline'} 
+                                size={18} 
+                                color={isDark ? '#fff' : '#1c1d2a'} 
+                              />
+                            </Pressable>
+                        ),
+                    }}
+                />
+            
+                <ScrollView
+                    contentContainerStyle={[styles.centered, { backgroundColor: c.background }]}
+                    style={{ backgroundColor: c.background }}
                 >
-                    <Text style={styles.btnText}>Log In / Sign Up</Text>
-                </Pressable>
-            </ScrollView>
+                    <Ionicons name="person-circle-outline" size={72} color={c.textMuted} />
+                    <Text style={[styles.title, { color: c.text }]}>Guest Profile</Text>
+
+                    {guestLoc && (
+                        <View style={[styles.guestLocBadge, { backgroundColor: c.surface, borderColor: c.border }]}>
+                            <Ionicons name="location-outline" size={20} color={c.accent} />
+                            <Text style={[styles.guestLocText, { color: c.text }]}>
+                                Location: {guestLoc.lat.toFixed(2)}, {guestLoc.lng.toFixed(2)}
+                            </Text>
+                        </View>
+                    )}
+
+                    <Text style={[styles.sub, { color: c.textMuted, textAlign: 'center' }]}>
+                        Create an account to track your orders and manage your details.
+                    </Text>
+
+                    <Pressable
+                        style={[styles.btn, { backgroundColor: c.accent }]}
+                        onPress={() => router.replace('/login')}
+                    >
+                        <Text style={styles.btnText}>Log In / Sign Up</Text>
+                    </Pressable>
+                </ScrollView>
+            </KeyboardAvoidingView>
         );
     }
 
     // Authenticated User View.
     return (
-        <ScrollView
-            style={{ backgroundColor: c.background }}
-            contentContainerStyle={styles.loggedIn}
+        <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
         >
-            {/* Added Avatar display */}
-            <View style={[styles.avatarContainer, { borderColor: c.border }]}>
-                {user.profilePicture ? (
-                    <Image 
-                        source={{ uri: user.profilePicture }} 
-                        style={styles.avatar} 
-                        contentFit="cover"
-                        cachePolicy="none" 
-                    />
-                ) : (
-                    <Ionicons name="person-circle" size={80} color={c.accent} />
-                )}
-            </View>
-
-            <Text style={[styles.title, { color: c.text }]}>{user.displayName}</Text>
-            <Text style={[styles.sub, { color: c.textMuted }]}>@{user.username}</Text>
-
-            {/* Admin/Owner Badge */}
-            {user.role === 'admin' && (
-                <View style={[styles.roleBadge, { backgroundColor: c.accent + '25' }]}>
-                    <Text style={[styles.roleText, { color: c.accent }]}>Restaurant Owner</Text>
+            <Stack.Screen 
+                options={{
+                    headerShown: true, 
+                    title: 'Profile', // כותרת אחידה
+                    headerStyle: { backgroundColor: c.background }, // רקע תואם למסך
+                    headerShadowVisible: false,
+                    headerTintColor: c.text, // צבע טקסט תואם לעיצוב
+                    headerLeft: () => (
+                        <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
+                            <Ionicons name="chevron-back" size={28} color={c.text} />
+                        </Pressable>
+                    ),
+                    headerRight: () => (
+                        <Pressable
+                            onPress={toggleTheme}
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 18,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
+                            }}
+                        >
+                            <Ionicons 
+                              name={isDark ? 'sunny-outline' : 'moon-outline'} 
+                              size={18} 
+                              color={isDark ? '#fff' : '#1c1d2a'} 
+                            />
+                        </Pressable>
+                    ),
+                }}
+            />
+            <ScrollView
+                style={{ backgroundColor: c.background }}
+                contentContainerStyle={styles.loggedIn}
+            >
+                {/* Added Avatar display */}
+                <View style={[styles.avatarContainer, { borderColor: c.border }]}>
+                    {user.profilePicture ? (
+                        <Image 
+                            source={{ uri: user.profilePicture }} 
+                            style={styles.avatar} 
+                            contentFit="cover"
+                            cachePolicy="none" 
+                        />
+                    ) : (
+                        <Ionicons name="person-circle" size={80} color={c.accent} />
+                    )}
                 </View>
-            )}
 
-            {/* Admin/Owner Specific Menu */}
-            {user.role === 'admin' && (
-                <Pressable
-                    style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
-                    onPress={() => router.push('/owner')}
-                >
-                    <Ionicons name="storefront-outline" size={22} color={c.accent} />
-                    <Text style={[styles.menuLabel, { color: c.text }]}>My Restaurants</Text>
+                <Text style={[styles.title, { color: c.text }]}>{user.displayName}</Text>
+                <Text style={[styles.sub, { color: c.textMuted }]}>@{user.username}</Text>
+
+                {/* Admin/Owner Badge */}
+                {user.role === 'admin' && (
+                    <View style={[styles.roleBadge, { backgroundColor: c.accent + '25' }]}>
+                        <Text style={[styles.roleText, { color: c.accent }]}>Restaurant Owner</Text>
+                    </View>
+                )}
+
+                {/* Admin/Owner Specific Menu */}
+                {user.role === 'admin' && (
+                    <Pressable
+                        style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
+                        onPress={() => router.push('/owner')}
+                    >
+                        <Ionicons name="storefront-outline" size={22} color={c.accent} />
+                        <Text style={[styles.menuLabel, { color: c.text }]}>My Restaurants</Text>
+                        <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
+                    </Pressable>
+                )}
+
+                {/* General Menus */}
+                <Pressable style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}>
+                    <Ionicons name="receipt-outline" size={22} color={c.text} />
+                    <Text style={[styles.menuLabel, { color: c.text }]}>Order History</Text>
                     <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
                 </Pressable>
-            )}
 
-            {/* General Menus */}
-            <Pressable style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}>
-                <Ionicons name="receipt-outline" size={22} color={c.text} />
-                <Text style={[styles.menuLabel, { color: c.text }]}>Order History</Text>
-                <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
-            </Pressable>
+                {/* Edit Profile Button */}
+                <Pressable 
+                    style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
+                    onPress={() => router.push('/edit-profile')}
+                >
+                    <Ionicons name="person-outline" size={22} color={c.text} />
+                    <Text style={[styles.menuLabel, { color: c.text }]}>Edit Profile</Text>
+                    <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
+                </Pressable>
 
-            {/* Edit Profile Button */}
-            <Pressable 
-                style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
-                onPress={() => router.push('/edit-profile')}
-            >
-                <Ionicons name="person-outline" size={22} color={c.text} />
-                <Text style={[styles.menuLabel, { color: c.text }]}>Edit Profile</Text>
-                <Ionicons name="chevron-forward" size={18} color={c.textMuted} />
-            </Pressable>
+                {/* Logout Button */}
+                <Pressable
+                    style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border, marginTop: Spacing[4] }]}
+                    onPress={handleLogout}
+                >
+                    <Ionicons name="log-out-outline" size={22} color={c.danger} />
+                    <Text style={[styles.menuLabel, { color: c.danger }]}>Log out</Text>
+                </Pressable>
 
-            {/* Logout Button */}
-            <Pressable
-                style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border, marginTop: Spacing[4] }]}
-                onPress={handleLogout}
-            >
-                <Ionicons name="log-out-outline" size={22} color={c.danger} />
-                <Text style={[styles.menuLabel, { color: c.danger }]}>Log out</Text>
-            </Pressable>
-
-            {/* Delete Account Button */}
-            <Pressable
-                style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.danger, marginTop: Spacing[2] }]}
-                onPress={handleDeleteAccount}
-                disabled={isDeleting}
-            >
-                <Ionicons name="trash-outline" size={22} color={c.danger} />
-                <Text style={[styles.menuLabel, { color: c.danger }]}>
-                    {isDeleting ? 'Deleting...' : 'Delete Account'}
-                </Text>
-            </Pressable>
-        </ScrollView>
+                {/* Delete Account Button */}
+                <Pressable
+                    style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.danger, marginTop: Spacing[2] }]}
+                    onPress={handleDeleteAccount}
+                    disabled={isDeleting}
+                >
+                    <Ionicons name="trash-outline" size={22} color={c.danger} />
+                    <Text style={[styles.menuLabel, { color: c.danger }]}>
+                        {isDeleting ? 'Deleting...' : 'Delete Account'}
+                    </Text>
+                </Pressable>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 

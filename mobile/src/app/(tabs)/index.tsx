@@ -9,15 +9,20 @@ import {
     StyleSheet,
     Text,
     View,
+    Modal,
+    TextInput,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform
 } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
-import { getRestaurants, MEDIA_BASE, type Restaurant } from '../../services/api';
-import { getGuestLocation } from '../../services/authStorage';
+import { getRestaurants, MEDIA_BASE, updateUser, type Restaurant } from '../../services/api';
+import { getGuestLocation, saveGuestLocation } from '../../services/authStorage';
 import { AuthContext } from '../../context/AuthContext';
 
 // ── Static category image map (public/images/categories/) ──────────────────
@@ -234,17 +239,72 @@ export default function HomeScreen() {
     const insets = useSafeAreaInsets();
 
     // States for user context and guest location.
-    const { token, user } = useContext(AuthContext);
+    const { token, user, login } = useContext(AuthContext);
     const [guestLoc, setGuestLoc] = useState<{lat: number, lng: number} | null>(null);
 
-    // Fetch guest location on mount.
-    useEffect(() => {
-        if (!token) {
-            getGuestLocation().then(loc => {
-                if (loc) setGuestLoc(loc);
-            });
+    // Modal State and Logic
+    const [isLocModalVisible, setIsLocModalVisible] = useState(false);
+    const [editLat, setEditLat] = useState('');
+    const [editLng, setEditLng] = useState('');
+    const [locError, setLocError] = useState('');
+    const [isSavingLoc, setIsSavingLoc] = useState(false);
+
+    // Determine which location to show (User's DB location or Guest's AsyncStorage location)
+    const displayLoc = user?.location || guestLoc;
+
+    // Fetch guest location automatically when returning to the screen
+    useFocusEffect(
+        useCallback(() => {
+            if (!token) {
+                getGuestLocation().then(loc => {
+                    if (loc) setGuestLoc(loc);
+                });
+            }
+        }, [token])
+    );
+
+    // Open modal and pre-fill current location
+    const openLocModal = () => {
+        if (displayLoc) {
+            setEditLat(displayLoc.lat.toString());
+            setEditLng(displayLoc.lng.toString());
         }
-    }, [token]);
+        setLocError('');
+        setIsLocModalVisible(true);
+    };
+
+    // Handle saving the location from the Modal
+    const handleSaveLocation = async () => {
+        setLocError('');
+        const numericLat = parseFloat(editLat);
+        const numericLng = parseFloat(editLng);
+
+        if (isNaN(numericLat) || isNaN(numericLng)) {
+            setLocError('Latitude and Longitude must be valid numbers.');
+            return;
+        }
+
+        setIsSavingLoc(true);
+        try {
+            if (user && token) {
+                const userId = user.id || user._id;
+                if (!userId) throw new Error('User ID missing');
+                
+                // Update DB and refresh context for logged-in user
+                const response = await updateUser(userId, { location: { lat: numericLat, lng: numericLng } }, token);
+                if (login) await login(response.token, response.user);
+            } else {
+                // Update AsyncStorage and local state for guest
+                await saveGuestLocation(numericLat, numericLng);
+                setGuestLoc({ lat: numericLat, lng: numericLng });
+            }
+            setIsLocModalVisible(false); // Close modal on success
+        } catch (error: any) {
+            setLocError(error.message || 'Failed to update location.');
+        } finally {
+            setIsSavingLoc(false);
+        }
+    };
 
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
     const [loading, setLoading] = useState(true);
@@ -495,42 +555,115 @@ export default function HomeScreen() {
                     pointerEvents="none"
                 />
                 {/* Header row */}
-                <View style={styles.headerRow} pointerEvents="box-none">
-                    {/* Left Icon (The generic person) */}
-                    <Pressable 
-                        style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)', overflow: 'hidden' }]}
-                        onPress={() => router.push('/(tabs)/profile')}
-                    >
-                        {user?.profilePicture ? (
-                            <Image source={{ uri: user.profilePicture }} style={{ width: '100%', height: '100%' }} />
-                        ) : (
-                            <Ionicons name="person-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
-                        )}
-                    </Pressable>
+                <View style={[styles.headerRow, { position: 'relative' }]} pointerEvents="box-none">
+                    
+                    {/* Left side: profile picture + location */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 10 }}>
+                        <Pressable 
+                            style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)', overflow: 'hidden' }]}
+                            onPress={() => router.push('/(tabs)/profile')}
+                        >
+                            {user?.profilePicture ? (
+                                <Image source={{ uri: user.profilePicture }} style={{ width: '100%', height: '100%' }} />
+                            ) : (
+                                <Ionicons name="person-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
+                            )}
+                        </Pressable>
 
-                    {/* Center area - modified to show row of [Location - Title] */}
-                    <View style={styles.headerCenter} pointerEvents="none">
-                        {(!token && guestLoc) && (
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: c.accent, marginRight: 8 }}>
-                                📍 {guestLoc.lat.toFixed(2)}, {guestLoc.lng.toFixed(2)}
-                            </Text>
+                        {displayLoc && (
+                            <Pressable 
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                                onPress={openLocModal}
+                            >
+                                <Ionicons name="location" size={16} color={c.accent} />
+                                <View style={{ flexDirection: 'column' }}>
+                                    <Text style={{ fontSize: 10, fontWeight: '700', color: c.accent, lineHeight: 12 }}>
+                                        {displayLoc.lat.toFixed(2)}
+                                    </Text>
+                                    <Text style={{ fontSize: 10, fontWeight: '700', color: c.accent, lineHeight: 12 }}>
+                                        {displayLoc.lng.toFixed(2)}
+                                    </Text>
+                                </View>
+                            </Pressable>
                         )}
-                        <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#1c1d2a' }]}>
-                            Wolt Clone
-                        </Text>
-                        <Ionicons name="chevron-down" size={14} color={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)'} />
                     </View>
 
-                    {/* Right Toggle */}
+                    {/* Center: Wolt title */}
+                    <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', zIndex: 1 }]} pointerEvents="none">
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={[styles.headerTitle, { color: isDark ? '#fff' : '#1c1d2a' }]}>
+                                Wolt Clone
+                            </Text>
+                            <Ionicons name="chevron-down" size={14} color={isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.35)'} />
+                        </View>
+                    </View>
+
+                    {/* Right side: lighting mode */}
                     <Pressable
                         onPress={toggleTheme}
-                        style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}
+                        style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)', zIndex: 10, marginLeft: 'auto' }]}
                     >
                         <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={isDark ? '#fff' : '#1c1d2a'} />
                     </Pressable>
                 </View>
             </Animated.View>
 
+            {/* Location Edit Modal (Pop-up) */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={isLocModalVisible}
+                onRequestClose={() => setIsLocModalVisible(false)}
+            >
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={styles.modalOverlay}
+                >
+                    <View style={[styles.modalContent, { backgroundColor: c.surface, borderColor: c.border }]}>
+                        <Text style={[styles.modalTitle, { color: c.text }]}>Update Location</Text>
+                        
+                        <View style={styles.modalRow}>
+                            <View style={styles.modalInputContainer}>
+                                <Text style={[styles.modalLabel, { color: c.text }]}>Latitude</Text>
+                                <TextInput
+                                    style={[styles.modalInput, { backgroundColor: c.background, borderColor: c.border, color: c.text }]}
+                                    value={editLat}
+                                    onChangeText={setEditLat}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                            <View style={styles.modalInputContainer}>
+                                <Text style={[styles.modalLabel, { color: c.text }]}>Longitude</Text>
+                                <TextInput
+                                    style={[styles.modalInput, { backgroundColor: c.background, borderColor: c.border, color: c.text }]}
+                                    value={editLng}
+                                    onChangeText={setEditLng}
+                                    keyboardType="numeric"
+                                />
+                            </View>
+                        </View>
+
+                        {locError ? <Text style={[styles.modalError, { color: c.danger }]}>{locError}</Text> : null}
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity 
+                                style={[styles.modalBtnCancel, { borderColor: c.border }]} 
+                                onPress={() => setIsLocModalVisible(false)}
+                                disabled={isSavingLoc}
+                            >
+                                <Text style={{ color: c.text, fontWeight: '600' }}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.modalBtnSave, { backgroundColor: c.accent }]} 
+                                onPress={handleSaveLocation}
+                                disabled={isSavingLoc}
+                            >
+                                {isSavingLoc ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: 'bold' }}>Save</Text>}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
@@ -727,4 +860,17 @@ const styles = StyleSheet.create({
         fontSize: Typography.base,
         textAlign: 'center',
     },
+
+    // Modal Styles
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+    modalContent: { width: '85%', padding: Spacing[5], borderRadius: 16, borderWidth: 1 },
+    modalTitle: { fontSize: Typography.h3, fontWeight: 'bold', marginBottom: Spacing[4], textAlign: 'center' },
+    modalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing[4] },
+    modalInputContainer: { width: '48%' },
+    modalLabel: { fontSize: Typography.xs, fontWeight: '600', marginBottom: 6 },
+    modalInput: { padding: 12, borderRadius: 8, borderWidth: 1, fontSize: Typography.base },
+    modalError: { textAlign: 'center', fontWeight: '600', marginBottom: Spacing[3] },
+    modalActions: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing[3] },
+    modalBtnCancel: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+    modalBtnSave: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
 });

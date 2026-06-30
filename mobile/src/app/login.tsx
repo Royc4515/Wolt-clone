@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login } = useContext(AuthContext);
   const { isDark, toggleTheme } = useContext(ThemeContext);
@@ -65,10 +66,12 @@ export default function LoginScreen() {
         
         <Stack.Screen 
             options={{ 
+              headerShown: true,
               title: '', 
               headerStyle: { backgroundColor: dynamicStyles.containerBg },
               headerShadowVisible: false,
               headerTintColor: dynamicStyles.textColor,
+              headerLeft: () => null,
               headerRight: () => (
                   // Replaced text emojis with the exact Pressable and Ionicons styling from index.tsx
                   <Pressable
@@ -108,40 +111,45 @@ export default function LoginScreen() {
 
         {/* Password Block */}
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Password</Text>
-        <TextInput
-            style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-            placeholder="••••••••"
-            placeholderTextColor={dynamicStyles.placeholder}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-        />
+        <View style={[styles.passwordWrapper, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder }]}>
+            <TextInput
+                style={[styles.passwordInput, { color: dynamicStyles.textColor }]}
+                placeholder="••••••••"
+                placeholderTextColor={dynamicStyles.placeholder}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={dynamicStyles.placeholder} />
+            </TouchableOpacity>
+        </View>
         <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>At least 8 characters · mix of letters and numbers</Text>
 
-      {errorMsg ? <Text style={[styles.errorText, { color: dynamicStyles.errorColor }]}>{errorMsg}</Text> : null}
+        {errorMsg ? <Text style={[styles.errorText, { color: dynamicStyles.errorColor }]}>{errorMsg}</Text> : null}
 
-      <TouchableOpacity 
-        style={[styles.button, { backgroundColor: dynamicStyles.buttonBg }]} 
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Log In</Text>
-        )}
-      </TouchableOpacity>
+        <TouchableOpacity 
+            style={[styles.button, { backgroundColor: dynamicStyles.buttonBg }]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+        >
+            {isLoading ? (
+            <ActivityIndicator color="#fff" />
+            ) : (
+            <Text style={styles.buttonText}>Log In</Text>
+            )}
+        </TouchableOpacity>
 
-      {/* Added "Continue as guest" button */}
-      <TouchableOpacity 
-        style={[styles.guestButton, { borderColor: dynamicStyles.buttonBg }]} 
-        onPress={() => router.push('/guest-location-input')}>
-            <Text style={[styles.guestButtonText, { color: dynamicStyles.buttonBg }]}>Continue as a guest</Text>
-      </TouchableOpacity>
+        {/* Added "Continue as guest" button */}
+        <TouchableOpacity 
+            style={[styles.guestButton, { borderColor: dynamicStyles.buttonBg }]} 
+            onPress={() => router.push('/guest-location-input')}>
+                <Text style={[styles.guestButtonText, { color: dynamicStyles.buttonBg }]}>Continue as a guest</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/register')} style={styles.linkButton}>
-        <Text style={[styles.linkText, { color: dynamicStyles.buttonBg }]}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/register')} style={styles.linkButton}>
+            <Text style={[styles.linkText, { color: dynamicStyles.buttonBg }]}>Don't have an account? Sign up</Text>
+        </TouchableOpacity>
     </View>
   );
 }
@@ -207,5 +215,18 @@ const styles = StyleSheet.create({
   guestButtonText: { 
     fontSize: 16, 
     fontWeight: 'bold' 
-}
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
 });

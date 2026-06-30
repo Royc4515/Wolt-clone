@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Pressable
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,7 @@ import { Colors, Spacing, Typography } from '../constants/theme';
 import { updateUser } from '../services/api';
 
 export default function EditProfileScreen() {
-  const { isDark } = useContext(ThemeContext);
+  const { isDark, toggleTheme } = useContext(ThemeContext);
   const { user, token, login } = useContext(AuthContext);
   const router = useRouter();
 
@@ -35,6 +36,8 @@ export default function EditProfileScreen() {
   // Optional password update
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Role and Location
   const [role, setRole] = useState(user?.role || 'customer'); 
@@ -66,7 +69,7 @@ export default function EditProfileScreen() {
   const handleSave = async () => {
     setErrorMsg('');
 
-    // --- Validation ---
+    // Validation
     if (!displayName.trim() || !lat || !lng) {
       setErrorMsg('Display name and location are required.');
       return;
@@ -162,11 +165,31 @@ export default function EditProfileScreen() {
     >
       <Stack.Screen 
         options={{ 
-          title: 'Edit Profile',
-          headerStyle: { backgroundColor: c.background },
-          headerShadowVisible: false,
-          headerTintColor: c.text,
-          headerBackTitle: '',
+            headerShown: true,
+            title: 'Edit Profile',
+            headerStyle: { backgroundColor: c.background },
+            headerShadowVisible: false,
+            headerTintColor: c.text,
+            headerBackTitle: 'Profile',
+            headerRight: () => (
+                <Pressable
+                    onPress={toggleTheme}
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
+                        }}
+                    >
+                        <Ionicons 
+                            name={isDark ? 'sunny-outline' : 'moon-outline'} 
+                            size={18} 
+                            color={isDark ? '#fff' : '#1c1d2a'} 
+                        />
+                </Pressable>
+            ),
         }} 
       />
 
@@ -206,26 +229,36 @@ export default function EditProfileScreen() {
         {/* --- Password Inputs (Optional) --- */}
         <View style={styles.inputSection}>
             <Text style={[styles.label, { color: c.text }]}>New Password (Optional)</Text>
-            <TextInput
-                style={[styles.input, { backgroundColor: c.surface, borderColor: c.border, color: c.text }]}
-                placeholder="Leave blank to keep current"
-                placeholderTextColor={c.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+            <View style={[styles.passwordWrapper, { backgroundColor: c.surface, borderColor: c.border }]}>
+                <TextInput
+                    style={[styles.passwordInput, { color: c.text }]}
+                    placeholder="Leave blank to keep current"
+                    placeholderTextColor={c.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={c.textMuted} />
+                </TouchableOpacity>
+            </View>
             
             {password.length > 0 && (
                 <View style={{ marginTop: Spacing[3] }}>
                     <Text style={[styles.label, { color: c.text }]}>Confirm New Password</Text>
-                    <TextInput
-                        style={[styles.input, { backgroundColor: c.surface, borderColor: c.border, color: c.text }]}
-                        placeholder="Re-type new password"
-                        placeholderTextColor={c.textMuted}
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                    />
+                    <View style={[styles.passwordWrapper, { backgroundColor: c.surface, borderColor: c.border }]}>
+                        <TextInput
+                            style={[styles.passwordInput, { color: c.text }]}
+                            placeholder="Re-type new password"
+                            placeholderTextColor={c.textMuted}
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry={!showConfirmPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={{ padding: 4 }}>
+                            <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={22} color={c.textMuted} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             )}
         </View>
@@ -233,15 +266,15 @@ export default function EditProfileScreen() {
         {/* --- Role Selection --- */}
         <View style={styles.inputSection}>
             <Text style={[styles.label, { color: c.text }]}>Account Type</Text>
-            <View style={[styles.roleContainer, { backgroundColor: c.surface, borderColor: c.border, borderWidth: 1 }]}>
+            <View style={[styles.roleContainer, { backgroundColor: isDark ? c.surface : '#E5E5EA', borderColor: c.border, borderWidth: 1 }]}>
                 <TouchableOpacity 
-                    style={[styles.roleButton, role === 'customer' && { backgroundColor: c.background, shadowColor: '#000', elevation: 2 }]}
+                    style={[styles.roleButton, role === 'customer' && { backgroundColor: isDark ? c.background : '#FFFFFF', shadowColor: '#000', elevation: 2 }]}
                     onPress={() => setRole('customer')}
                 >
                     <Text style={[styles.roleText, { color: role === 'customer' ? c.text : c.textMuted }]}>Customer</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                    style={[styles.roleButton, role === 'admin' && { backgroundColor: c.background, shadowColor: '#000', elevation: 2 }]}
+                    style={[styles.roleButton, role === 'admin' && { backgroundColor: isDark ? c.background : '#FFFFFF', shadowColor: '#000', elevation: 2 }]}
                     onPress={() => setRole('admin')}
                 >
                     <Text style={[styles.roleText, { color: role === 'admin' ? c.text : c.textMuted }]}>Admin</Text>
@@ -365,6 +398,19 @@ const styles = StyleSheet.create({
   },
   halfInputContainer: {
     width: '48%',
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: Typography.base,
   },
   roleContainer: { 
     flexDirection: 'row', 
