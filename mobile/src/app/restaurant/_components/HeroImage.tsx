@@ -6,7 +6,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { Colors } from '../../../constants/theme';
 import { HERO_H } from './constants';
 
-export function HeroImage({ uri }: { uri?: string }) {
+export default function HeroImage({ uri }: { uri?: string }) {
     const [err, setErr] = useState(false);
     const { isDark } = useContext(ThemeContext);
     const c = isDark ? Colors.dark : Colors.light;

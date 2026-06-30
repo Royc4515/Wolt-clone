@@ -167,3 +167,10 @@ export const deleteProduct = (restaurantId: string, productId: string, token: st
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     });
+
+export const createOrder = (data: any, token: string) =>
+    apiFetch<any>('/orders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+    });

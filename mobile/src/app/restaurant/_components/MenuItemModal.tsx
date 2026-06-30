@@ -8,7 +8,7 @@ import { Colors, Spacing, Typography } from '../../../constants/theme';
 import { CartContext } from '../../../context/CartContext';
 import { MEDIA_BASE, type Product } from '../../../services/api';
 
-export function MenuItemModal({
+export default function MenuItemModal({
     item,
     visible,
     onClose,

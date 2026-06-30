@@ -24,6 +24,7 @@ import { Colors, Spacing, Typography } from '../../constants/theme';
 import { getRestaurants, MEDIA_BASE, updateUser, type Restaurant } from '../../services/api';
 import { getGuestLocation, saveGuestLocation } from '../../services/authStorage';
 import { AuthContext } from '../../context/AuthContext';
+import { CartContext } from '../../context/CartContext';
 
 // ── Static category image map (public/images/categories/) ──────────────────
 
@@ -242,8 +243,13 @@ export default function HomeScreen() {
     const c = isDark ? Colors.dark : Colors.light;
     const insets = useSafeAreaInsets();
 
-    // States for user context and guest location.
+    // States for user context.
     const { token, user, login } = useContext(AuthContext);
+
+    // Get all carts and count how many active carts exist (how many restaurants have items)
+    const { carts } = useContext(CartContext);
+    const cartCount = Object.keys(carts).length; // The number of restaurant carts currently active
+
     const [guestLoc, setGuestLoc] = useState<{lat: number, lng: number} | null>(null);
 
     // Modal State and Logic
@@ -607,13 +613,31 @@ export default function HomeScreen() {
                         </View>
                     </View>
 
-                    {/* Right side: lighting mode */}
-                    <Pressable
-                        onPress={toggleTheme}
-                        style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)', zIndex: 10, marginLeft: 'auto' }]}
-                    >
-                        <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={isDark ? '#fff' : '#1c1d2a'} />
-                    </Pressable>
+                    {/* Right side: Cart and Theme toggle */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto', zIndex: 10 }}>
+                        {/* Cart Button with dynamic badge */}
+                        <Pressable
+                            onPress={() => router.push('/cart-overview')}
+                            style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}
+                        >
+                            <Ionicons name="cart-outline" size={18} color={isDark ? '#fff' : '#1c1d2a'} />
+                            
+                            {/* Only show the red badge if there is at least one active cart */}
+                            {cartCount > 0 && (
+                                <View style={[styles.badge, { borderColor: c.surface }]}>
+                                    <Text style={styles.badgeText}>{cartCount}</Text>
+                                </View>
+                            )}
+                        </Pressable>
+
+                        {/* Theme Toggle Button */}
+                        <Pressable
+                            onPress={toggleTheme}
+                            style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)' }]}
+                        >
+                            <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={isDark ? '#fff' : '#1c1d2a'} />
+                        </Pressable>
+                    </View>
                 </View>
             </Animated.View>
 
@@ -716,6 +740,23 @@ const styles = StyleSheet.create({
         fontSize: Typography.base,
         fontWeight: '700',
         letterSpacing: -0.2,
+    },
+    badge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#e4312b', // A distinct red color similar to Wolt's branding
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1.5,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 
     // Sticky pills bar — no background, pills float transparently over content
