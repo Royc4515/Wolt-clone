@@ -24,7 +24,11 @@ export function RecommendedCard({
     const [stepperExpanded, setStepperExpanded] = useState(false);
     const { isDark } = useContext(ThemeContext);
     const c = isDark ? Colors.dark : Colors.light;
-    const imgUri = item.image && !imgErr ? `${MEDIA_BASE}${item.image}` : undefined;
+    const imgUri = item.image && !imgErr
+        ? (item.image.startsWith('data:') || item.image.startsWith('http')
+            ? item.image
+            : `${MEDIA_BASE}${item.image}`)
+        : undefined;
     const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // After 3 s of no interaction, collapse stepper → count badge (qty kept)

@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -98,7 +98,7 @@ function RestaurantImage({ uri, style }: { uri?: string; style: object }) {
 
 // ── RestaurantCard ─────────────────────────────────────────────────────────
 
-function RestaurantCard({ item, onPress, carousel }: {
+export function RestaurantCard({ item, onPress, carousel }: {
     item: Restaurant;
     onPress: () => void;
     carousel?: boolean;
@@ -124,7 +124,11 @@ function RestaurantCard({ item, onPress, carousel }: {
             >
                 <View style={styles.imgWrapper}>
                     <RestaurantImage
-                        uri={item.image ? `${MEDIA_BASE}${item.image}` : undefined}
+                        uri={item.image
+                            ? (item.image.startsWith('data:') || item.image.startsWith('http')
+                                ? item.image
+                                : `${MEDIA_BASE}${item.image}`)
+                            : undefined}
                         style={carousel ? styles.cardImgCarousel : styles.cardImgFull}
                     />
                     {item.isPromoted && (
@@ -181,7 +185,7 @@ function CategoryTile({ label, selected, onPress, isDark, imageUri }: {
             {hasImg && (
                 <>
                     <Image source={imageUri!} style={StyleSheet.absoluteFill} contentFit="cover" />
-                    <View style={styles.catTileOverlay} />
+                    <View style={[styles.catTileOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0.15)' }]} />
                 </>
             )}
             {/* Selection ring as inner View — avoids the overflow:hidden + borderWidth Android bug */}
@@ -286,7 +290,9 @@ export default function HomeScreen() {
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useFocusEffect(
+        useCallback(() => { load(); }, [load])
+    );
 
     const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
     const onRetry = useCallback(() => { setLoading(true); load(); }, [load]);
@@ -353,9 +359,12 @@ export default function HomeScreen() {
                     <View style={styles.section}>
                         <View style={styles.sectionHeadRow}>
                             <Text style={[styles.sectionTitle, { color: c.text }]}>Promoted</Text>
-                            <View style={[styles.seeAllPill, { backgroundColor: seeAllBg }]}>
+                            <Pressable 
+                                onPress={() => router.push('/promoted')}
+                                style={[styles.seeAllPill, { backgroundColor: seeAllBg }]}
+                            >
                                 <Text style={[styles.seeAllText, { color: c.text }]}>See all</Text>
-                            </View>
+                            </Pressable>
                         </View>
                         <ScrollView
                             horizontal
@@ -623,7 +632,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.38)',
     },
     catTileRing: {
         borderWidth: 2.5,

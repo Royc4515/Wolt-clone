@@ -6,12 +6,13 @@
     "@expo/ui": "~56.0.18",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-navigation/native": "^7.3.4",
     "expo": "~56.0.12",
+    "expo-blur": "~56.0.3",
     "expo-constants": "~56.0.18",
     "expo-device": "~56.0.4",
     "expo-font": "~56.0.7",
     "expo-glass-effect": "~56.0.4",
+    "expo-haptics": "^56.0.3",
     "expo-image": "~56.0.11",
     "expo-image-picker": "~56.0.18",
     "expo-linking": "~56.0.14",
@@ -29,8 +30,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.8.3",
-    "undefined": "expo-file-system/next"
+    "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
