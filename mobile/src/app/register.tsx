@@ -28,7 +28,9 @@ export default function RegisterScreen() {
   const [base64Data, setBase64Data] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
-  const [role, setRole] = useState('customer'); 
+  const [role, setRole] = useState('customer');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -135,10 +137,12 @@ export default function RegisterScreen() {
     >
       <Stack.Screen 
         options={{ 
+          headerShown: true,
           title: '', 
           headerStyle: { backgroundColor: dynamicStyles.containerBg },
           headerShadowVisible: false,
           headerTintColor: dynamicStyles.textColor,
+          headerBackTitle: 'Back',
           headerRight: () => (
             <Pressable
                 onPress={toggleTheme}
@@ -178,26 +182,36 @@ export default function RegisterScreen() {
 
         {/* Password Block */}
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Password</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="••••••••"
-          placeholderTextColor={dynamicStyles.placeholder}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={[styles.passwordWrapper, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder }]}>
+            <TextInput
+                style={[styles.passwordInput, { color: dynamicStyles.textColor }]}
+                placeholder="••••••••"
+                placeholderTextColor={dynamicStyles.placeholder}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={dynamicStyles.placeholder} />
+            </TouchableOpacity>
+        </View>
         <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>At least 8 characters · mix of letters and numbers</Text>
 
         {/* Confirm Password Block */}
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Confirm Password</Text>
-        <TextInput
-          style={[styles.input, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder, color: dynamicStyles.textColor }]}
-          placeholder="••••••••"
-          placeholderTextColor={dynamicStyles.placeholder}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+        <View style={[styles.passwordWrapper, { backgroundColor: dynamicStyles.inputBg, borderColor: dynamicStyles.inputBorder }]}>
+            <TextInput
+                style={[styles.passwordInput, { color: dynamicStyles.textColor }]}
+                placeholder="••••••••"
+                placeholderTextColor={dynamicStyles.placeholder}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={{ padding: 4 }}>
+                <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={22} color={dynamicStyles.placeholder} />
+            </TouchableOpacity>
+        </View>
         <Text style={[styles.hint, { color: dynamicStyles.hintText }]}>Must match your password</Text>
 
         {/* Display Name Block */}
@@ -258,15 +272,16 @@ export default function RegisterScreen() {
 
         {/* Role Selection Segmented Control */}
         <Text style={[styles.label, { color: dynamicStyles.textColor }]}>Account type</Text>
-        <View style={[styles.roleContainer, { backgroundColor: dynamicStyles.surfaceBg }]}>
+        {/* Changed background color for better contrast in light mode */}
+        <View style={[styles.roleContainer, { backgroundColor: isDark ? dynamicStyles.surfaceBg : '#E5E5EA' }]}>
           <TouchableOpacity 
-            style={[styles.roleButton, role === 'customer' && { backgroundColor: dynamicStyles.containerBg, shadowColor: '#000', elevation: 2 }]}
+            style={[styles.roleButton, role === 'customer' && { backgroundColor: isDark ? dynamicStyles.containerBg : '#FFFFFF', shadowColor: '#000', elevation: 2 }]}
             onPress={() => setRole('customer')}
           >
             <Text style={[styles.roleText, { color: role === 'customer' ? dynamicStyles.textColor : dynamicStyles.hintText }]}>Customer</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.roleButton, role === 'admin' && { backgroundColor: dynamicStyles.containerBg, shadowColor: '#000', elevation: 2 }]}
+            style={[styles.roleButton, role === 'admin' && { backgroundColor: isDark ? dynamicStyles.containerBg : '#FFFFFF', shadowColor: '#000', elevation: 2 }]}
             onPress={() => setRole('admin')}
           >
             <Text style={[styles.roleText, { color: role === 'admin' ? dynamicStyles.textColor : dynamicStyles.hintText }]}>Admin</Text>
@@ -349,6 +364,19 @@ const styles = StyleSheet.create({
   },
   halfInputContainer: {
     width: '48%',
+  },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
   },
   roleContainer: { 
     flexDirection: 'row', 

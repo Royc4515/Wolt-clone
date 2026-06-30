@@ -30,9 +30,9 @@ function RootLayoutNav() {
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
             <Stack initialRouteName={(!token && !isGuest) ? "login" : "(tabs)"}>
-                <Stack.Screen name="login" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="register" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="guest-location-input" options={{ presentation: 'modal', title: 'Set Location' }} />
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="register" options={{ headerShown: false }} />
+                <Stack.Screen name="guest-location-input" options={{ title: 'Set Location' }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 
                 <Stack.Screen
