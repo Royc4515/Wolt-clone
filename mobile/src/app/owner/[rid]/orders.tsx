@@ -42,48 +42,6 @@ function formatDate(iso: string) {
     return d.toLocaleDateString('en-IL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-const TIMELINE_STEPS: OrderStatus[] = ['pending', 'accepted', 'preparing', 'on_the_way', 'delivered'];
-
-function StatusTimeline({ order, colors: c }: { order: Order; colors: typeof Colors.light }) {
-    const history = order.statusHistory ?? [];
-    const isCancelled = order.status === 'cancelled';
-
-    const completedNormal = TIMELINE_STEPS.filter(s => history.some(h => h.status === s));
-    const steps: OrderStatus[] = isCancelled ? [...completedNormal, 'cancelled'] : TIMELINE_STEPS;
-
-    return (
-        <View style={styles.timeline}>
-            {steps.map((step, idx) => {
-                const entry = history.find(h => h.status === step);
-                const isDone = !!entry;
-                const isLast = idx === steps.length - 1;
-                const meta = STATUS_META[step];
-
-                return (
-                    <View key={step} style={styles.timelineRow}>
-                        <View style={styles.timelineTrack}>
-                            <View style={[styles.timelineDot, { backgroundColor: isDone ? meta.color : c.border }]}>
-                                {isDone && <Ionicons name="checkmark" size={9} color="#fff" />}
-                            </View>
-                            {!isLast && (
-                                <View style={[styles.timelineConnector, { backgroundColor: isDone ? meta.color + '50' : c.border }]} />
-                            )}
-                        </View>
-                        <View style={styles.timelineInfo}>
-                            <Text style={[styles.timelineStepLabel, { color: isDone ? c.text : c.textMuted, fontWeight: isDone ? '700' : '400' }]}>
-                                {meta.label}
-                            </Text>
-                            <Text style={[styles.timelineTimestamp, { color: isDone ? c.textMuted : c.border }]}>
-                                {entry ? formatDate(entry.timestamp) : '—'}
-                            </Text>
-                        </View>
-                    </View>
-                );
-            })}
-        </View>
-    );
-}
-
 function OrderCard({
     order,
     customerName,
@@ -168,9 +126,15 @@ function OrderCard({
                         </Text>
                     </View>
 
-                    <View style={[styles.timelineSection, { borderTopColor: c.border }]}>
-                        <Text style={[styles.expandedSectionTitle, { color: c.text, marginBottom: Spacing[2] }]}>Timeline</Text>
-                        <StatusTimeline order={order} colors={c} />
+                    <View style={[styles.timesRow, { borderTopColor: c.border }]}>
+                        <View style={styles.timeCell}>
+                            <Text style={[styles.timeCellLabel, { color: c.textMuted }]}>Placed</Text>
+                            <Text style={[styles.timeCellValue, { color: c.text }]}>{formatDate(order.createdAt)}</Text>
+                        </View>
+                        <View style={[styles.timeCell, styles.timeCellRight]}>
+                            <Text style={[styles.timeCellLabel, { color: c.textMuted, textAlign: 'right' }]}>Updated</Text>
+                            <Text style={[styles.timeCellValue, { color: c.text, textAlign: 'right' }]}>{formatDate(order.updatedAt)}</Text>
+                        </View>
                     </View>
 
                     <View style={[styles.pricingBreakdown, { borderTopColor: c.border }]}>
@@ -534,23 +498,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    timelineSection: {
+    timesRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         borderTopWidth: StyleSheet.hairlineWidth,
         marginTop: Spacing[1],
         paddingTop: Spacing[2],
     },
-    timeline: { gap: 0 },
-    timelineRow: { flexDirection: 'row', alignItems: 'flex-start' },
-    timelineTrack: { alignItems: 'center', width: 20 },
-    timelineDot: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    timelineConnector: { width: 2, height: 24 },
-    timelineInfo: { flex: 1, paddingLeft: Spacing[2], paddingBottom: 6, justifyContent: 'center' },
-    timelineStepLabel: { fontSize: Typography.sm },
-    timelineTimestamp: { fontSize: Typography.xs, marginTop: 1 },
+    timeCell: { flex: 1, gap: 2 },
+    timeCellRight: { alignItems: 'flex-end' },
+    timeCellLabel: { fontSize: Typography.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    timeCellValue: { fontSize: Typography.xs },
 });

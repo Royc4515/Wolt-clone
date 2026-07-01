@@ -94,7 +94,6 @@ export interface Order {
     };
     estimatedTime: number;
     status: 'pending' | 'accepted' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
-    statusHistory?: Array<{ status: Order['status']; timestamp: string }>;
     createdAt: string;
     updatedAt: string;
 }

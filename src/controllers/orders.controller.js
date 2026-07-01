@@ -112,8 +112,7 @@ const createOrder = async (req, res) => {
                 total: Number(finalTotal.toFixed(2))
             },
             estimatedTime,
-            status: "pending",
-            statusHistory: [{ status: 'pending', timestamp: new Date() }]
+            status: "pending"
         });
 
         res.status(201).json(newOrder);
@@ -254,9 +253,8 @@ const updateOrderStatus = async (req, res) => {
             return res.status(403).json({ error: "Forbidden: Only the restaurant owner can update order statuses" });
         }
 
-        // Update the status and record the timestamp in history.
+        // Update the status in the database.
         order.status = status;
-        order.statusHistory.push({ status, timestamp: new Date() });
         const updatedOrder = await order.save();
 
         res.status(200).json(updatedOrder);

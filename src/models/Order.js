@@ -34,11 +34,7 @@ const orderSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'accepted', 'preparing', 'on_the_way', 'delivered', 'cancelled'],
         default: 'pending'
-    },
-    statusHistory: [{
-        status: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now }
-    }]
+    }
 }, {
     timestamps: true,
     toJSON: { virtuals: true }
