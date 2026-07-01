@@ -57,15 +57,6 @@ function RestaurantCard({
         outputRange: ['0deg', '180deg'],
     });
 
-    const summary: string[] = [];
-    if (item.openHours) summary.push(item.openHours);
-    if (item.phone) summary.push(item.phone);
-    if (summary.length === 0) {
-        if (item.deliveryTime > 0) summary.push(`${item.deliveryTime} min`);
-        if (item.deliveryFee === 0) summary.push('Free delivery');
-        else if (item.deliveryFee > 0) summary.push(`₪${item.deliveryFee} delivery`);
-    }
-
     return (
         <View style={[
             styles.cardWrapper, 
@@ -143,14 +134,14 @@ function RestaurantCard({
                         <View style={styles.primaryActions}>
                             <Pressable
                                 style={({ pressed }) => [styles.pillBtn, { backgroundColor: c.accent }, pressed && { opacity: 0.8 }]}
-                                onPress={() => router.push(`/restaurant/${item.id}`)}
+                                onPress={() => router.push(`/restaurant/${(item as any)._id || item.id}`)}
                             >
                                 <Ionicons name="eye-outline" size={16} color="#fff" />
                                 <Text style={styles.pillBtnText}>View page</Text>
                             </Pressable>
                             <Pressable
                                 style={({ pressed }) => [styles.pillBtn, { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border }, pressed && { opacity: 0.8 }]}
-                                onPress={() => router.push(`/owner/${item.id}/orders`)}
+                                onPress={() => router.push(`/owner/${(item as any)._id || item.id}/orders`)}
                             >
                                 <Ionicons name="receipt-outline" size={16} color={c.text} />
                                 <Text style={[styles.pillBtnText, { color: c.text }]}>Orders</Text>
@@ -174,14 +165,14 @@ function RestaurantCard({
                     <View style={[styles.expandedStrip, { borderTopColor: c.border }]}>
                         <Pressable
                             style={[styles.mgmtBtn, { backgroundColor: c.accent + '18' }]}
-                            onPress={() => router.push(`/owner/edit-restaurant/${item.id}`)}
+                            onPress={() => router.push(`/owner/edit-restaurant/${(item as any)._id || item.id}`)}
                         >
                             <Ionicons name="pencil-outline" size={18} color={c.accent} />
                             <Text style={[styles.mgmtBtnText, { color: c.accent }]}>Edit</Text>
                         </Pressable>
                         <Pressable
                             style={[styles.mgmtBtn, { backgroundColor: c.accent + '18' }]}
-                            onPress={() => router.push(`/owner/${item.id}/dishes`)}
+                            onPress={() => router.push(`/owner/${(item as any)._id || item.id}/dishes`)}
                         >
                             <Ionicons name="restaurant-outline" size={18} color={c.accent} />
                             <Text style={[styles.mgmtBtnText, { color: c.accent }]}>Menu</Text>
@@ -210,7 +201,6 @@ export default function OwnerDashboardScreen() {
     const scrollY = useRef(new Animated.Value(0)).current;
 
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -269,7 +259,8 @@ export default function OwnerDashboardScreen() {
                                     style: 'destructive',
                                     onPress: async () => {
                                         try {
-                                            await deleteRestaurant(r.id, token!);
+                                            const idToUse = (r as any)._id || r.id;
+                                            await deleteRestaurant(idToUse, token!);
                                             setRestaurants((prev) => prev.filter((x) => x.id !== r.id));
                                             setExpandedId(null);
                                         } catch (err: unknown) {
@@ -331,6 +322,11 @@ export default function OwnerDashboardScreen() {
                         />
                     ),
                     headerTitleStyle: { color: c.text },
+                    headerLeft: restaurants.length === 0 ? () => (
+                        <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: 8 }}>
+                            <Ionicons name="arrow-back" size={24} color={c.text} />
+                        </Pressable>
+                    ) : undefined,
                 }}
             />
             
@@ -346,31 +342,6 @@ export default function OwnerDashboardScreen() {
                     { useNativeDriver: false }
                 )}
                 scrollEventThrottle={16}
-                ListHeaderComponent={
-                    restaurants.length > 0 ? (
-                        <View style={styles.headerArea}>
-                            <View style={[styles.searchBox, { backgroundColor: c.surface, borderColor: c.border }]}>
-                                <Ionicons name="search-outline" size={18} color={c.textMuted} />
-                                <TextInput
-                                    style={[styles.searchInput, { color: c.text }]}
-                                    placeholder="Search restaurants..."
-                                    placeholderTextColor={c.textMuted}
-                                    value={searchQuery}
-                                    onChangeText={setSearchQuery}
-                                    returnKeyType="search"
-                                />
-                                {searchQuery.length > 0 && (
-                                    <Pressable onPress={() => setSearchQuery('')}>
-                                        <Ionicons name="close-circle" size={18} color={c.textMuted} />
-                                    </Pressable>
-                                )}
-                            </View>
-                            <Text style={[styles.counter, { color: c.textMuted }]}>
-                                {restaurants.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase())).length} {restaurants.length === 1 ? 'restaurant' : 'restaurants'}
-                            </Text>
-                        </View>
-                    ) : null
-                }
                 ListEmptyComponent={
                     <View style={styles.emptyState}>
                         <View style={[styles.emptyIconCircle, { backgroundColor: c.accent + '15' }]}>
@@ -393,9 +364,6 @@ export default function OwnerDashboardScreen() {
                     </View>
                 }
                 renderItem={({ item }) => {
-                    if (searchQuery.trim() && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                        return null;
-                    }
                     return (
                         <RestaurantCard
                             item={item}
@@ -410,19 +378,22 @@ export default function OwnerDashboardScreen() {
             />
 
             {restaurants.length > 0 && (
-                <Pressable onPress={() => router.push('/owner/new-restaurant')}>
-                    <Animated.View style={[styles.fab, { backgroundColor: c.accent, width: fabWidth }]}>
+                <Animated.View style={[styles.fab, { backgroundColor: c.accent, width: fabWidth }]}>
+                    <Pressable 
+                        style={StyleSheet.absoluteFill} 
+                        onPress={() => router.push('/owner/new-restaurant')}
+                    >
                         <View style={styles.fabInner}>
                             <Ionicons name="add" size={28} color="#fff" />
                             <Animated.Text 
                                 style={[styles.fabText, { opacity: textOpacity }]} 
                                 numberOfLines={1}
                             >
-                                New Restaurant
+                                Add Restaurant
                             </Animated.Text>
                         </View>
-                    </Animated.View>
-                </Pressable>
+                    </Pressable>
+                </Animated.View>
             )}
         </View>
     );

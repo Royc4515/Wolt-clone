@@ -37,7 +37,7 @@ export default function AdminDashboard() {
     setError('');
     try {
       await deleteRestaurant(id);
-      setRestaurants((prev) => prev.filter((r) => r.id !== id));
+      setRestaurants((prev) => prev.filter((r) => (r._id || r.id) !== id));
     } catch (err) {
       setError(err.message || 'Failed to delete restaurant.');
     } finally {
@@ -73,8 +73,10 @@ export default function AdminDashboard() {
           </p>
         ) : (
           <ul className="admin__list">
-            {restaurants.map((r) => (
-              <li key={r.id} className="admin__card">
+            {restaurants.map((r) => {
+              const rId = r._id || r.id;
+              return (
+              <li key={rId} className="admin__card">
                 <div className="admin__card-img">
                   {r.image
                     ? <img src={r.image} alt={r.name} />
@@ -87,20 +89,21 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <div className="admin__card-actions">
-                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/orders`)}>Orders</button>
-                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/menu`)}>Menu</button>
-                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${r.id}/edit`)}>Edit</button>
+                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${rId}/orders`)}>Orders</button>
+                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${rId}/menu`)}>Menu</button>
+                  <button type="button" className="admin__btn" onClick={() => navigate(`/admin/restaurants/${rId}/edit`)}>Edit</button>
                   <button
                     type="button"
                     className="admin__btn admin__btn--danger"
-                    onClick={() => handleDelete(r.id)}
-                    disabled={deletingId === r.id}
+                    onClick={() => handleDelete(rId)}
+                    disabled={deletingId === rId}
                   >
-                    {deletingId === r.id ? 'Deleting…' : 'Delete'}
+                    {deletingId === rId ? 'Deleting…' : 'Delete'}
                   </button>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </main>
