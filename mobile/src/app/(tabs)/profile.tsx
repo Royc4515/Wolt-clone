@@ -19,6 +19,7 @@ import { Colors, Spacing, Typography } from '../../constants/theme';
 import { getGuestLocation } from '../../services/authStorage';
 import { deleteUser } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
 
 export default function ProfileScreen() {
     const { isDark, toggleTheme } = useContext(ThemeContext);
@@ -106,11 +107,7 @@ export default function ProfileScreen() {
                         headerStyle: { backgroundColor: c.background },
                         headerShadowVisible: false,
                         headerTintColor: c.text,
-                        headerLeft: () => (
-                            <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
-                                <Ionicons name="chevron-back" size={28} color={c.text} />
-                            </Pressable>
-                        ),
+                        headerLeft: () => <HeaderBackButton />,
                         headerRight: () => <ThemeToggleButton/>
                     }}
                 />
@@ -160,30 +157,8 @@ export default function ProfileScreen() {
                     headerStyle: { backgroundColor: c.background },
                     headerShadowVisible: false,
                     headerTintColor: c.text,
-                    headerLeft: () => (
-                        <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
-                            <Ionicons name="chevron-back" size={28} color={c.text} />
-                        </Pressable>
-                    ),
-                    headerRight: () => (
-                        <Pressable
-                            onPress={toggleTheme}
-                            style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: 18,
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
-                            }}
-                        >
-                            <Ionicons 
-                              name={isDark ? 'sunny-outline' : 'moon-outline'} 
-                              size={18} 
-                              color={isDark ? '#fff' : '#1c1d2a'} 
-                            />
-                        </Pressable>
-                    ),
+                    headerLeft: () => <HeaderBackButton />,
+                    headerRight: () => <ThemeToggleButton />,
                 }}
             />
             <ScrollView

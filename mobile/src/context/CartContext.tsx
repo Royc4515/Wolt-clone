@@ -1,5 +1,7 @@
-import React, { createContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useCallback, useMemo, useEffect, useContext, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Product } from '@/services/api';
+import { AuthContext } from './AuthContext';
 
 export interface CartItem {
     item: Product;
@@ -21,6 +23,7 @@ export interface CartContextValue {
     addMany: (item: Product, qty: number) => void;
     remove: (restaurantId: string, itemId: string) => void;
     clearCart: (restaurantId: string) => void;
+    clearAllCarts: () => void;
 }
 
 export const CartContext = createContext<CartContextValue>({
@@ -31,10 +34,55 @@ export const CartContext = createContext<CartContextValue>({
     addMany: () => {},
     remove: () => {},
     clearCart: () => {},
+    clearAllCarts: () => {},
 });
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { user } = useContext(AuthContext);
     const [carts, setCarts] = useState<CartState>({});
+    
+    // Use refs to strictly track loading state and prevent cross-saving between users.
+    const isLoadedRef = useRef(false);
+    const loadedKeyRef = useRef<string | null>(null);
+
+    const userId = user?.id || (user as any)?._id;
+    const storageKey = userId ? `@carts_${userId}` : '@carts_guest';
+
+    // Carts are loaded upon login using user's specific key.
+    useEffect(() => {
+        let isMounted = true;
+        isLoadedRef.current = false;
+
+        const loadCarts = async () => {
+            try {
+                const savedCarts = await AsyncStorage.getItem(storageKey);
+                if (isMounted) {
+                    if (savedCarts) {
+                        setCarts(JSON.parse(savedCarts));
+                    } else {
+                        setCarts({});
+                    }
+                    // Mark that the current 'carts' state firmly belongs to this specific user key
+                    loadedKeyRef.current = storageKey;
+                    isLoadedRef.current = true; // Allow saving again
+                }
+            } catch (e) {
+                console.error("Failed to load carts", e);
+            }
+        };
+        loadCarts();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [storageKey]);
+
+    // Save the cart upon any change.
+    useEffect(() => {
+        if (isLoadedRef.current && loadedKeyRef.current === storageKey) {
+            AsyncStorage.setItem(storageKey, JSON.stringify(carts)).catch(e => console.error("Failed to save carts", e));
+        }
+    }, [carts, storageKey]);
 
     const getCartByRestaurant = useCallback((restaurantId: string) => {
         return carts[restaurantId] || [];
@@ -61,18 +109,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const addMany = useCallback((item: Product, qty: number) => {
-    setCarts(prev => {
-        const rid = item.restaurantId;
-        const currentCart = prev[rid] || [];
-        const found = currentCart.find(i => i.item.id === item.id);
-        
-        const newCart = found 
-            ? currentCart.map(i => i.item.id === item.id ? { ...i, qty: i.qty + qty } : i)
-            : [...currentCart, { item, qty }];
+        setCarts(prev => {
+            const rid = item.restaurantId;
+            const currentCart = prev[rid] || [];
+            const found = currentCart.find(i => i.item.id === item.id);
+            
+            const newCart = found 
+                ? currentCart.map(i => i.item.id === item.id ? { ...i, qty: i.qty + qty } : i)
+                : [...currentCart, { item, qty }];
 
-        return { ...prev, [rid]: newCart };
-    });
-}, []);
+            return { ...prev, [rid]: newCart };
+        });
+    }, []);
 
     const remove = useCallback((restaurantId: string, itemId: string) => {
         setCarts(prev => {
@@ -105,6 +153,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }, []);
 
+    const clearAllCarts = useCallback(() => {
+        setCarts({});
+    }, []);
+
     const value = useMemo(() => ({ 
         carts, 
         getCartByRestaurant, 
@@ -112,8 +164,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         add, 
         addMany,
         remove, 
-        clearCart 
-    }), [carts, getCartByRestaurant, getQty, add, addMany, remove, clearCart]);
+        clearCart,
+        clearAllCarts
+    }), [carts, getCartByRestaurant, getQty, add, addMany, remove, clearCart, clearAllCarts]);
 
     return (
         <CartContext.Provider value={value}>

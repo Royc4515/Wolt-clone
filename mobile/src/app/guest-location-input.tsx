@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
+import { HeaderBackButton } from '@/components/HeaderBackButton';
 
 export default function GuestLocationInput() {
   const [lat, setLat] = useState('');
@@ -42,6 +43,7 @@ export default function GuestLocationInput() {
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       <Stack.Screen options={{ 
         title: 'Set Location',
+        headerBackTitle: 'Log In',
         headerRight: () => <ThemeToggleButton/>
       }} />
       

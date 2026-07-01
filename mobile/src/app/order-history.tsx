@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { Colors, Spacing, Typography } from '../constants/theme';
-import { getUserOrders, getRestaurant, getMenu, type Order, type Product } from '../services/api';
+import { getUserOrders, getRestaurant, getMenu, type Order, type Product, MEDIA_BASE, type Restaurant } from '../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 // Helper to format ISO date to a readable string
@@ -56,6 +57,29 @@ export default function OrderHistoryScreen() {
     // State for Order Details Modal
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isReordering, setIsReordering] = useState(false);
+    const [restaurantDetails, setRestaurantDetails] = useState<Record<string, Restaurant>>({});
+
+    // Fetch restaurant details for all orders
+    useEffect(() => {
+        const fetchRestaurants = async () => {
+            const uniqueIds = [...new Set(orders.map(o => o.restaurantId))];
+            const details: Record<string, Restaurant> = {};
+            
+            for (const id of uniqueIds) {
+                try {
+                    const rest = await getRestaurant(id);
+                    details[id] = rest;
+                } catch (e) {
+                    console.error("Failed to fetch restaurant:", e);
+                }
+            }
+            setRestaurantDetails(details);
+        };
+
+        if (orders.length > 0) {
+            fetchRestaurants();
+        }
+    }, [orders]);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -145,7 +169,7 @@ export default function OrderHistoryScreen() {
 
     const renderOrderItem = ({ item }: { item: Order }) => {
         const meta = STATUS_META[item.status] || STATUS_META.pending;
-        const itemsSummary = item.items.map(i => `${i.quantity}x ${i.name}`).join(', ');
+        const rest = restaurantDetails[item.restaurantId];
 
         return (
             <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -163,9 +187,18 @@ export default function OrderHistoryScreen() {
 
                 <View style={styles.cardBody}>
                     <View style={styles.row}>
-                        <Ionicons name="fast-food-outline" size={20} color={c.text} />
-                        <Text style={[styles.itemsText, { color: c.text }]} numberOfLines={2}>
-                            {itemsSummary}
+                        {rest?.image ? (
+                            <Image 
+                                source={{ uri: rest.image.startsWith('http') ? rest.image : `${MEDIA_BASE}${rest.image}` }} 
+                                style={styles.restAvatar} 
+                            />
+                        ) : (
+                            <View style={[styles.restAvatar, { backgroundColor: c.border, alignItems: 'center', justifyContent: 'center' }]}>
+                                <Ionicons name="storefront-outline" size={20} color={c.textMuted} />
+                            </View>
+                        )}
+                        <Text style={[styles.restName, { color: c.text }]} numberOfLines={1}>
+                            {rest?.name || 'Loading...'}
                         </Text>
                     </View>
                     
@@ -272,7 +305,15 @@ export default function OrderHistoryScreen() {
                         {selectedOrder && (
                             <>
                                 <View style={styles.modalHeader}>
-                                    <Text style={[styles.modalTitle, { color: c.text }]}>Order Details</Text>
+                                    <View>
+                                        <Text style={[styles.modalTitle, { color: c.text }]}>Order Details</Text>
+                                        {/* Added restaurant name under the title */}
+                                        {selectedOrder && restaurantDetails[selectedOrder.restaurantId] && (
+                                            <Text style={[styles.modalSubTitle, { color: c.accent }]}>
+                                                {restaurantDetails[selectedOrder.restaurantId].name}
+                                            </Text>
+                                        )}
+                                    </View>
                                     <Pressable onPress={() => setSelectedOrder(null)} hitSlop={10}>
                                         <Ionicons name="close" size={24} color={c.text} />
                                     </Pressable>
@@ -506,5 +547,8 @@ const styles = StyleSheet.create({
     modalCloseBtnText: {
         fontSize: Typography.base,
         fontWeight: '700'
-    }
+    },
+    restAvatar: { width: 44, height: 44, borderRadius: 8 },
+    restName: { flex: 1, fontSize: Typography.base, fontWeight: '700' },
+    modalSubTitle: { fontSize: Typography.sm, fontWeight: '700', marginTop: 2 },
 });
