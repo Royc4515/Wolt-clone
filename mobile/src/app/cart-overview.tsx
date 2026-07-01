@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CartContext } from '../context/CartContext';
@@ -7,9 +7,10 @@ import { ThemeContext } from '../context/ThemeContext';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { Image } from 'expo-image';
 import { getRestaurant, MEDIA_BASE, type Restaurant } from '../services/api';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function CartOverviewScreen() {
-    const { carts } = useContext(CartContext);
+    const { carts, clearCart } = useContext(CartContext);
     const { isDark } = useContext(ThemeContext);
     const router = useRouter();
     const c = isDark ? Colors.dark : Colors.light;
@@ -19,7 +20,7 @@ export default function CartOverviewScreen() {
         containerBg: c.background,
         textColor: c.text,
         buttonBg: c.accent,
-        errorColor: c.danger,
+        errorColor: c.danger || '#FF3B30',
         placeholder: c.textMuted,
     };
 
@@ -36,11 +37,12 @@ export default function CartOverviewScreen() {
         <View style={[styles.fill, { backgroundColor: c.background }]}>
             <Stack.Screen options={{
                 headerShown: true,
-                title: 'Your Carts',
+                title: 'Your Orders',
                 headerStyle: { backgroundColor: dynamicStyles.containerBg },
                 headerShadowVisible: false,
                 headerTintColor: dynamicStyles.textColor,
-                headerBackTitle: 'Back'
+                headerBackTitle: 'Back',
+                headerRight: () => <ThemeToggleButton/>
                 }}
             />
             <FlatList
@@ -53,7 +55,7 @@ export default function CartOverviewScreen() {
 
                     return (
                         <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
-                            {/* Header: Restaurant Image + Name */}
+                            {/* Header: Restaurant Image + Name + Trash Icon */}
                             <View style={styles.header}>
                                 <View style={styles.restInfo}>
                                     {/* Checking image existence */}
@@ -63,17 +65,26 @@ export default function CartOverviewScreen() {
                                             style={styles.avatar} 
                                         />
                                     ) : (
-                                        /* Present generic Avatar if there's no image*/
+                                        /* Present generic Avatar if there's no image */
                                         <View style={[styles.avatar, { backgroundColor: c.border }]} />
                                     )}
                                     <View>
                                         <Text style={[styles.name, { color: c.text }]}>{rest?.name || "Loading..."}</Text>
                                     </View>
                                 </View>
-                                <Ionicons name="ellipsis-horizontal" size={20} color={c.text} />
+
+                                <TouchableOpacity 
+                                    onPress={() => clearCart(restaurantId)} 
+                                    hitSlop={8} // Makes the hit area slightly larger for easier tapping
+                                >
+                                    <Ionicons name="trash-outline" size={20} color={dynamicStyles.errorColor} />
+                                </TouchableOpacity>
                             </View>
 
-                            {/* Items Preview - Now using actual product images */}
+                            {/* Subtle dashed divider between header and items */}
+                            <View style={[styles.divider, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#EAEAEA' }]} />
+
+                            {/* Items Preview using product images */}
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.itemsScroll}>
                                 {items.map((cartItem, idx) => {
                                     const imgUri = cartItem.item.image 
@@ -93,14 +104,17 @@ export default function CartOverviewScreen() {
 
                             {/* Actions */}
                             <View style={styles.actions}>
-                                <TouchableOpacity style={[styles.btn, styles.secondaryBtn, { backgroundColor: c.background }]}>
+                                <TouchableOpacity 
+                                    style={[styles.btn, styles.secondaryBtn, { backgroundColor: c.background }]}
+                                    onPress={() => router.push(`/restaurant/${restaurantId}`)}
+                                >
                                     <Text style={{ color: c.text, fontWeight: '600' }}>Add items</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
                                     style={[styles.btn, styles.primaryBtn, { backgroundColor: c.accent }]}
                                     onPress={() => router.push({ pathname: '/cart', params: { restaurantId } })}
                                 >
-                                    <Text style={{ color: '#fff', fontWeight: '600' }}>View cart</Text>
+                                    <Text style={{ color: '#fff', fontWeight: '600' }}>View order</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -114,16 +128,63 @@ export default function CartOverviewScreen() {
 const styles = StyleSheet.create({
     fill: { flex: 1 },
     list: { padding: Spacing[4] },
-    card: { padding: Spacing[4], borderRadius: 16, borderWidth: 1, marginBottom: Spacing[4] },
-    header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing[3] },
-    restInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing[3] },
-    avatar: { width: 40, height: 40, borderRadius: 8 },
-    name: { fontSize: Typography.base, fontWeight: '800' },
-    itemsScroll: { flexDirection: 'row', marginBottom: Spacing[3] },
-    itemThumb: { width: 60, height: 60, borderRadius: 8, marginRight: Spacing[2] },
-    subtotal: { fontWeight: '700', marginBottom: Spacing[3] },
-    actions: { flexDirection: 'row', gap: Spacing[3] },
-    btn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-    secondaryBtn: { borderWidth: 1, borderColor: '#eee' },
+    card: { 
+        padding: Spacing[4], 
+        borderRadius: 16, 
+        borderWidth: 1, 
+        marginBottom: Spacing[4] 
+    },
+    header: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        marginBottom: Spacing[3] 
+    },
+    restInfo: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        gap: Spacing[3] 
+    },
+    avatar: { 
+        width: 40, 
+        height: 40, 
+        borderRadius: 8 
+    },
+    name: { 
+        fontSize: Typography.base, 
+        fontWeight: '800' 
+    },
+    divider: {
+        borderBottomWidth: 2,
+        borderStyle: 'dashed',
+        marginBottom: Spacing[3],
+    },
+    itemsScroll: { 
+        flexDirection: 'row', 
+        marginBottom: Spacing[3] 
+    },
+    itemThumb: { 
+        width: 60, 
+        height: 60, 
+        borderRadius: 8, 
+        marginRight: Spacing[2] 
+    },
+    subtotal: { 
+        fontWeight: '700', 
+        marginBottom: Spacing[3] 
+    },
+    actions: { 
+        flexDirection: 'row',
+        gap: Spacing[3] 
+    },
+    btn: { 
+        flex: 1, 
+        paddingVertical: 12, 
+        borderRadius: 8, 
+        alignItems: 'center' 
+    },
+    secondaryBtn: { 
+        borderWidth: 1, 
+        borderColor: '#eee' 
+    },
     primaryBtn: { }
 });
