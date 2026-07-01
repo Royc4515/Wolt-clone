@@ -377,8 +377,8 @@ export default function OwnerDashboardScreen() {
             {restaurants.length > 0 && (
                 <Animated.View style={[styles.fab, { backgroundColor: c.accent, width: fabWidth, bottom: Spacing[6] + insets.bottom }]}>
                     <Pressable
+                        style={StyleSheet.absoluteFill}
                         onPress={() => router.push('/owner/new-restaurant')}
-                        style={StyleSheet.absoluteFillObject}
                     >
                         <View style={styles.fabInner}>
                             <Ionicons name="add" size={28} color="#fff" />
