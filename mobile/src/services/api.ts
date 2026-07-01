@@ -66,6 +66,38 @@ export interface MenuSection {
     items: Product[];
 }
 
+export interface OrderItem {
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+}
+
+export interface Order {
+    id: string;
+    _id?: string;
+    userId: string;
+    restaurantId: string;
+    items: OrderItem[];
+    mode: 'delivery' | 'pickup';
+    paymentMethod: string;
+    cutlery: number;
+    notes: string;
+    location?: { lat: number; lng: number };
+    tip: number;
+    pricing: {
+        subtotal: number;
+        serviceFee: number;
+        deliveryFee: number;
+        finalTip: number;
+        total: number;
+    };
+    estimatedTime: number;
+    status: 'pending' | 'accepted' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface SearchResult {
     restaurants: Restaurant[];
     products: Product[];
@@ -174,3 +206,18 @@ export const createOrder = (data: any, token: string) =>
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
     });
+
+export const getRestaurantOrders = (restaurantId: string, token: string) =>
+    apiFetch<Order[]>(`/orders/restaurant/${restaurantId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+export const updateOrderStatus = (orderId: string, status: Order['status'], token: string) =>
+    apiFetch<Order>(`/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+    });
+
+export const getUser = (id: string) =>
+    apiFetch<AuthUser>(`/users/${id}`);
