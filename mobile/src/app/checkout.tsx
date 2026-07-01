@@ -20,6 +20,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { createOrder, getRestaurant, type Restaurant } from '../services/api';
+import { calcAerialDistance } from '@/utils/distance';
 
 // Helper function to format location as readable text
 const formatLocation = (loc: any) => {
@@ -31,21 +32,8 @@ const formatLocation = (loc: any) => {
     return 'Missing location';
 };
 
-// Helper function to calculate aerial distance (matches backend logic)
-const calcAerialDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
-    const R = 6371; 
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = 
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2); 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)); 
-    return R * c;
-};
-
 export default function CheckoutScreen() {
-    const { restaurantId, notes } = useLocalSearchParams<{ restaurantId: string, notes?: string }>();
+    const { restaurantId, notes, forcePickup } = useLocalSearchParams<{ restaurantId: string, notes?: string, forcePickup?: string }>();
     const { carts, clearCart } = useContext(CartContext);
     const { token, user } = useContext(AuthContext);
     const { isDark } = useContext(ThemeContext);
@@ -56,7 +44,7 @@ export default function CheckoutScreen() {
     const [isLoading, setIsLoading] = useState(false);
     
     // Form States
-    const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>('delivery');
+    const [deliveryMode, setDeliveryMode] = useState<'delivery' | 'pickup'>(forcePickup === 'true' ? 'pickup' : 'delivery');
     const [leaveAtDoor, setLeaveAtDoor] = useState(false);
     const [cutleryQty, setCutleryQty] = useState<number>(0);
 
@@ -161,8 +149,12 @@ export default function CheckoutScreen() {
                 <View style={[styles.section, { backgroundColor: c.surface, borderColor: c.border }]}>
                     <View style={styles.pillContainer}>
                         <TouchableOpacity 
-                            style={[styles.pillBtn, deliveryMode === 'delivery' && { backgroundColor: c.accent }]}
+                            style={[styles.pillBtn, 
+                                deliveryMode === 'delivery' && { backgroundColor: c.accent },
+                                forcePickup === 'true' && { opacity: 0.4 }
+                            ]}
                             onPress={() => setDeliveryMode('delivery')}
+                            disabled={forcePickup === 'true'}
                         >
                             <Ionicons name="bicycle-outline" size={20} color={deliveryMode === 'delivery' ? '#fff' : c.textMuted} />
                             <Text style={[styles.pillText, deliveryMode === 'delivery' ? { color: '#fff' } : { color: c.textMuted }]}>Delivery</Text>

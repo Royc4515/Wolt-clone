@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { 
     View, 
     Text, 
@@ -6,8 +6,7 @@ import {
     TouchableOpacity, 
     StyleSheet, 
     Alert, 
-    TextInput, 
-    Switch 
+    TextInput 
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +15,13 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors, Spacing, Typography } from '../constants/theme';
-import { getRestaurant, MEDIA_BASE, type Restaurant } from '../services/api';
+import { getRestaurant, getMenu, MEDIA_BASE, type Restaurant, type Product } from '../services/api';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
+import { calcAerialDistance } from '@/utils/distance';
+
+// Reusing the components from the restaurant screen
+import RecommendedCard from './restaurant/_components/RecommendedCard';
+import MenuItemModal from './restaurant/_components/MenuItemModal';
 
 export default function CartScreen() {
     const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -28,35 +33,107 @@ export default function CartScreen() {
 
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [orderNotes, setOrderNotes] = useState('');
-    const [wantsCutlery, setWantsCutlery] = useState(false);
+    
+    // States for Recommended Products
+    const [recommended, setRecommended] = useState<Product[]>([]);
+    const [modalItem, setModalItem] = useState<Product | null>(null);
+    const stepperDismissRef = useRef<(() => void) | null>(null);
 
     const items = carts[restaurantId] || [];
     const subtotal = items.reduce((sum, current) => sum + (current.item.price * current.qty), 0);
 
     useEffect(() => {
         if (restaurantId) {
+            // 1. Fetch Restaurant details
             getRestaurant(restaurantId).then(setRestaurant).catch(console.error);
+
+            // 2. Fetch Recommended Products
+            const fetchRecommended = async () => {
+                try {
+                    if (token) {
+                        // Authorized user: hit the backend recommendations endpoint
+                        const res = await fetch(`${MEDIA_BASE}/api/restaurants/${restaurantId}/products/recommended`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            setRecommended(data);
+                        } else {
+                            throw new Error('Failed to fetch recommended');
+                        }
+                    } else {
+                        // Guest user fallback: get first 5 available items from the menu
+                        const menu = await getMenu(restaurantId);
+                        const fallbackItems = menu.flatMap(s => s.items).filter(i => i.isAvailable !== false).slice(0, 5);
+                        setRecommended(fallbackItems);
+                    }
+                } catch (err) {
+                    console.error("Error fetching recommendations:", err);
+                    // Absolute fallback on network error
+                    try {
+                        const menu = await getMenu(restaurantId);
+                        const fallbackItems = menu.flatMap(s => s.items).filter(i => i.isAvailable !== false).slice(0, 5);
+                        setRecommended(fallbackItems);
+                    } catch (e) {}
+                }
+            };
+            fetchRecommended();
         }
-    }, [restaurantId]);
+    }, [restaurantId, token]);
 
     const handleGoToCheckout = () => {
+        // Check if user is logged in.
         if (!token || !user) {
             Alert.alert(
-                "LOGGED IN USER REQUIRED", 
-                "In order to proceed, please log in or register",
-                [{ text: "Got it", style: "default" }]
-                // TODO: Add a button referring to log in screen.
+                "Login Required", 
+                "Please log in or create an account to proceed to checkout.",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Log In", onPress: () => router.push('/login') }
+                ]
             );
             return;
         }
 
-        // Go to checkout page.
+        // Validate delivery distance (Max 15km).
+        if (user.location && restaurant?.location) {
+            const distanceKm = calcAerialDistance(
+                restaurant.location.lat, restaurant.location.lng,
+                user.location.lat, user.location.lng
+            );
+
+            const MAX_DELIVERY_RADIUS_KM = 15;
+
+            // If too far, warn the user and offer to proceed for Pickup only
+            if (distanceKm > MAX_DELIVERY_RADIUS_KM) {
+                Alert.alert(
+                    "Out of Delivery Range",
+                    `Your address is ${distanceKm.toFixed(1)}km away. The maximum delivery distance is ${MAX_DELIVERY_RADIUS_KM}km.\n\nYou can still proceed if you intend to pick up your order.`,
+                    [
+                        { text: "Cancel", style: "cancel" },
+                        { 
+                            text: "Proceed to Pickup", 
+                            onPress: () => router.push({
+                                pathname: '/checkout',
+                                params: { 
+                                    restaurantId, 
+                                    notes: orderNotes, 
+                                    forcePickup: 'true'
+                                }
+                            }) 
+                        }
+                    ]
+                );
+                return; // Stop standard flow
+            }
+        }
+
+        // Go to checkout page
         router.push({
             pathname: '/checkout',
             params: { 
                 restaurantId, 
-                notes: orderNotes, 
-                cutlery: wantsCutlery ? 'true' : 'false' 
+                notes: orderNotes 
             }
         });
     };
@@ -73,11 +150,16 @@ export default function CartScreen() {
     return (
         <View style={[styles.fill, { backgroundColor: c.background }]}>
             <Stack.Screen options={{ 
-                title: restaurant?.name ? `Cart - ${restaurant.name}` : 'Your Order',
-                headerBackTitle: 'Back'
+                title: restaurant?.name ? `${restaurant.name}` : 'Your Order',
+                headerBackTitle: 'Back',
+                headerRight: () => <ThemeToggleButton />
             }} />
             
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                contentContainerStyle={styles.scroll} 
+                showsVerticalScrollIndicator={false}
+                onScrollBeginDrag={() => stepperDismissRef.current?.()} // Close stepper on scroll
+            >
                 
                 {/* 1. Items List */}
                 <View style={[styles.section, { backgroundColor: c.surface, borderColor: c.border }]}>
@@ -93,8 +175,9 @@ export default function CartScreen() {
                                 <Text style={{ color: c.textMuted }}>₪{(item.price * qty).toFixed(2)}</Text>
                             </View>
                             <View style={styles.qtyControls}>
+                                {/* Changed minus button color to match the plus button */}
                                 <TouchableOpacity onPress={() => remove(restaurantId, item.id)}>
-                                    <Ionicons name="remove-circle" size={28} color={c.border} />
+                                    <Ionicons name="remove-circle" size={28} color={c.accent} />
                                 </TouchableOpacity>
                                 <Text style={[styles.qtyText, { color: c.text }]}>{qty}</Text>
                                 <TouchableOpacity onPress={() => add(item)}>
@@ -104,12 +187,12 @@ export default function CartScreen() {
                         </View>
                     ))}
                     
-                    <View style={[styles.switchRow, { borderTopWidth: 1, borderTopColor: c.border, paddingTop: Spacing[3], marginTop: Spacing[2] }]}>
-                        <View style={styles.iconRow}>
-                            <Ionicons name="restaurant-outline" size={20} color={c.text} />
-                            <Text style={{ color: c.text, marginLeft: 8 }}>I need cutlery</Text>
-                        </View>
-                        <Switch value={wantsCutlery} onValueChange={setWantsCutlery} trackColor={{ true: c.accent }} />
+                    {/* Disclaimer note for fees */}
+                    <View style={styles.disclaimerContainer}>
+                        <Ionicons name="information-circle-outline" size={16} color={c.textMuted} />
+                        <Text style={[styles.disclaimerText, { color: c.textMuted }]}>
+                            Price does not include delivery and service fees.
+                        </Text>
                     </View>
                 </View>
 
@@ -126,8 +209,26 @@ export default function CartScreen() {
                     />
                 </View>
 
-                {/* Placeholder for "Recommended Products" carousel in the future */}
-                {/* <RecommendedProductsCarousel restaurantId={restaurantId} /> */}
+                {/* 3. Recommended Products Carousel */}
+                {recommended.length > 0 && (
+                    <View style={[styles.section, { backgroundColor: c.surface, borderColor: c.border, paddingHorizontal: 0, paddingBottom: Spacing[4] }]}>
+                        <Text style={[styles.sectionTitle, { color: c.text, paddingHorizontal: Spacing[4] }]}>Recommended for you</Text>
+                        <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false} 
+                            contentContainerStyle={{ paddingHorizontal: Spacing[4], gap: Spacing[3] }}
+                        >
+                            {recommended.map(item => (
+                                <RecommendedCard
+                                    key={`rec-${item.id}`}
+                                    item={item}
+                                    onPress={() => setModalItem(item)}
+                                    stepperDismissRef={stepperDismissRef}
+                                />
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
             </ScrollView>
 
@@ -140,6 +241,13 @@ export default function CartScreen() {
                     </View>
                 </TouchableOpacity>
             </View>
+
+            {/* Modal for viewing recommended item details */}
+            <MenuItemModal
+                item={modalItem}
+                visible={modalItem !== null}
+                onClose={() => setModalItem(null)}
+            />
         </View>
     );
 }
@@ -153,15 +261,15 @@ const styles = StyleSheet.create({
     section: { padding: Spacing[4], borderRadius: 16, borderWidth: 1 },
     sectionTitle: { fontSize: Typography.base, fontWeight: '800', marginBottom: Spacing[3] },
     
-    iconRow: { flexDirection: 'row', alignItems: 'center' },
-    switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    
     itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing[3], gap: Spacing[3] },
     itemImg: { width: 56, height: 56, borderRadius: 8 },
     itemName: { fontSize: Typography.sm, fontWeight: '700', marginBottom: 2 },
     qtyControls: { flexDirection: 'row', alignItems: 'center', gap: Spacing[2] },
     qtyText: { fontSize: Typography.base, fontWeight: 'bold', width: 20, textAlign: 'center' },
     
+    disclaimerContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: Spacing[2], paddingTop: Spacing[3], borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#ccc' },
+    disclaimerText: { fontSize: Typography.xs },
+
     input: { borderWidth: 1, borderRadius: 8, padding: Spacing[3], fontSize: Typography.sm, minHeight: 44 },
     
     footer: { padding: Spacing[4], borderTopWidth: 1, paddingBottom: 34 },
