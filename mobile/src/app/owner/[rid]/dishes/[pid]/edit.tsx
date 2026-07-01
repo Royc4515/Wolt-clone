@@ -18,7 +18,7 @@ import { ThemeContext } from '../../../../../context/ThemeContext';
 import { useAuth } from '../../../../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../../../../constants/theme';
 import { getMenu, MEDIA_BASE, updateProduct } from '../../../../../services/api';
-import { Field } from '../../../_components/Field';
+import Field from '../../../_components/Field';
 
 function SectionDropdown({
     value, onChange, options, error, colors: c,

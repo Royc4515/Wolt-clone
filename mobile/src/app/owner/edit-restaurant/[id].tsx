@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -179,7 +179,7 @@ export default function EditRestaurantScreen() {
     const [saving, setSaving] = useState(false);
     
     // For location pulse
-    const pulseAnim = React.useRef(new Animated.Value(1)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         if (!lat && !lng) {
