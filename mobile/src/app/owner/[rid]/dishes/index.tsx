@@ -55,6 +55,8 @@ function DraggableRow({
     onEdit,
     onDelete,
     colors: c,
+    isFirst,
+    isLast,
 }: {
     dish: Product;
     idx: number;
@@ -330,7 +332,7 @@ function SortableSection({
                             hoverIdx={hoverIdx}
                             onDragStart={handleDragStart}
                             onDrop={handleDrop}
-                            onEdit={() => router.push(`/owner/${rid}/dishes/${dish.id}/edit`)}
+                            onEdit={() => router.push(`/owner/${rid}/dishes/${(dish as any)._id || dish.id}/edit`)}
                             onDelete={() => handleDelete(dish)}
                             colors={c}
                             isFirst={idx === 0}
@@ -360,6 +362,14 @@ export default function DishListScreen() {
     const [scrollEnabled, setScrollEnabled] = useState(true);
 
     const scrollY = useSharedValue(0);
+
+    const fabAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [
+            { scale: withTiming(scrollY.value > 50 ? 0.7 : 1, { duration: 200 }) },
+            { translateY: withTiming(scrollY.value > 50 ? 20 : 0, { duration: 200 }) }
+        ],
+        opacity: withTiming(scrollY.value > 50 ? 0.8 : 1, { duration: 200 })
+    }));
 
     const handleDragStateChange = useCallback((isDragging: boolean) => {
         setScrollEnabled(!isDragging);
@@ -418,23 +428,11 @@ export default function DishListScreen() {
         Promise.all(
             sections.flatMap((section, sIdx) =>
                 section.items.map((dish, dIdx) =>
-                    updateProduct(rid, dish.id, { sectionOrder: sIdx * 10000 + dIdx }, token)
+                    updateProduct(rid, (dish as any)._id || dish.id, { sectionOrder: sIdx * 10000 + dIdx }, token)
                 )
             )
         ).catch(() => load());
     }, [sections]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    if (!token || user?.role !== 'admin') return null;
-
-    const toggleSection = (sectionId: string) => {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        setCollapsed((prev) => {
-            const next = new Set(prev);
-            if (next.has(sectionId)) next.delete(sectionId);
-            else next.add(sectionId);
-            return next;
-        });
-    };
 
     const handleSectionReorder = useCallback(async (sectionId: string, newItems: Product[]) => {
         setSections((prev) =>
@@ -443,7 +441,7 @@ export default function DishListScreen() {
         try {
             await Promise.all(
                 newItems.map((item, idx) =>
-                    updateProduct(rid, item.id, { sectionOrder: idx }, token!)
+                    updateProduct(rid, (item as any)._id || item.id, { sectionOrder: idx }, token!)
                 )
             );
         } catch {
@@ -471,7 +469,7 @@ export default function DishListScreen() {
                                     style: 'destructive',
                                     onPress: async () => {
                                         try {
-                                            await deleteProduct(rid, dish.id, token!);
+                                            await deleteProduct(rid, (dish as any)._id || dish.id, token!);
                                             setSections((prev) =>
                                                 prev
                                                     .map((s) => ({ ...s, items: s.items.filter((x) => x.id !== dish.id) }))
@@ -490,6 +488,18 @@ export default function DishListScreen() {
             ]
         );
     }, [rid, token]);
+
+    if (!token || user?.role !== 'admin') return null;
+
+    const toggleSection = (sectionId: string) => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setCollapsed((prev) => {
+            const next = new Set(prev);
+            if (next.has(sectionId)) next.delete(sectionId);
+            else next.add(sectionId);
+            return next;
+        });
+    };
 
     const totalDishes = sections.reduce((sum, s) => sum + s.items.length, 0);
 
@@ -570,13 +580,7 @@ export default function DishListScreen() {
                 style={[
                     styles.fab, 
                     { backgroundColor: c.accent },
-                    useAnimatedStyle(() => ({
-                        transform: [
-                            { scale: withTiming(scrollY.value > 50 ? 0.7 : 1, { duration: 200 }) },
-                            { translateY: withTiming(scrollY.value > 50 ? 20 : 0, { duration: 200 }) }
-                        ],
-                        opacity: withTiming(scrollY.value > 50 ? 0.8 : 1, { duration: 200 })
-                    }))
+                    fabAnimatedStyle
                 ]}
                 onPress={() => router.push(`/owner/${rid}/dishes/new`)}
             >
