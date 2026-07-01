@@ -18,6 +18,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { getGuestLocation } from '../../services/authStorage';
 import { deleteUser } from '../../services/api';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function ProfileScreen() {
     const { isDark, toggleTheme } = useContext(ThemeContext);
@@ -101,34 +102,16 @@ export default function ProfileScreen() {
                 <Stack.Screen 
                     options={{
                         headerShown: true, 
-                        title: 'Profile', // כותרת אחידה
-                        headerStyle: { backgroundColor: c.background }, // רקע תואם למסך
+                        title: 'Profile',
+                        headerStyle: { backgroundColor: c.background },
                         headerShadowVisible: false,
-                        headerTintColor: c.text, // צבע טקסט תואם לעיצוב
+                        headerTintColor: c.text,
                         headerLeft: () => (
                             <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
                                 <Ionicons name="chevron-back" size={28} color={c.text} />
                             </Pressable>
                         ),
-                        headerRight: () => (
-                            <Pressable
-                              onPress={toggleTheme}
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: 18,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
-                              }}
-                            >
-                              <Ionicons 
-                                name={isDark ? 'sunny-outline' : 'moon-outline'} 
-                                size={18} 
-                                color={isDark ? '#fff' : '#1c1d2a'} 
-                              />
-                            </Pressable>
-                        ),
+                        headerRight: () => <ThemeToggleButton/>
                     }}
                 />
             
@@ -173,10 +156,10 @@ export default function ProfileScreen() {
             <Stack.Screen 
                 options={{
                     headerShown: true, 
-                    title: 'Profile', // כותרת אחידה
-                    headerStyle: { backgroundColor: c.background }, // רקע תואם למסך
+                    title: 'Profile',
+                    headerStyle: { backgroundColor: c.background },
                     headerShadowVisible: false,
-                    headerTintColor: c.text, // צבע טקסט תואם לעיצוב
+                    headerTintColor: c.text,
                     headerLeft: () => (
                         <Pressable onPress={() => router.back()} style={{ marginLeft: Platform.OS === 'ios' ? -8 : 0, paddingRight: 15 }}>
                             <Ionicons name="chevron-back" size={28} color={c.text} />
@@ -244,7 +227,10 @@ export default function ProfileScreen() {
                 )}
 
                 {/* General Menus */}
-                <Pressable style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}>
+                <Pressable 
+                    style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
+                    onPress={() => router.push('/order-history')}
+                >
                     <Ionicons name="receipt-outline" size={22} color={c.text} />
                     <Text style={[styles.menuLabel, { color: c.text }]}>Order History</Text>
                     <Ionicons name="chevron-forward" size={18} color={c.textMuted} />

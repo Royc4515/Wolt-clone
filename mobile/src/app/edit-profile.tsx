@@ -20,6 +20,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { Colors, Spacing, Typography } from '../constants/theme';
 import { updateUser } from '../services/api';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function EditProfileScreen() {
   const { isDark, toggleTheme } = useContext(ThemeContext);
@@ -171,25 +172,7 @@ export default function EditProfileScreen() {
             headerShadowVisible: false,
             headerTintColor: c.text,
             headerBackTitle: 'Profile',
-            headerRight: () => (
-                <Pressable
-                    onPress={toggleTheme}
-                    style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
-                        }}
-                    >
-                        <Ionicons 
-                            name={isDark ? 'sunny-outline' : 'moon-outline'} 
-                            size={18} 
-                            color={isDark ? '#fff' : '#1c1d2a'} 
-                        />
-                </Pressable>
-            ),
+            headerRight: () => <ThemeToggleButton/>
         }} 
       />
 

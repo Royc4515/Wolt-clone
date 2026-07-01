@@ -81,6 +81,26 @@ export interface AuthUser {
     profilePicture?: string;
 }
 
+export interface OrderItem {
+    productId: string;
+    name: string;
+    quantity: number;
+    price: number;
+}
+
+export interface Order {
+    id: string;
+    _id: string;
+    restaurantId: string;
+    items: OrderItem[];
+    mode: 'delivery' | 'pickup';
+    status: 'pending' | 'accepted' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
+    pricing: {
+        total: number;
+    };
+    createdAt: string;
+}
+
 // ── API calls ──────────────────────────────────────────────────────────────
 
 export const getRestaurants = (lat?: number, lng?: number) => {
@@ -173,4 +193,10 @@ export const createOrder = (data: any, token: string) =>
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
+    });
+
+export const getUserOrders = (token: string) =>
+    apiFetch<Order[]>('/orders', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
     });

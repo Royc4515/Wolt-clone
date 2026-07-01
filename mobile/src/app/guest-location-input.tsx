@@ -4,6 +4,7 @@ import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function GuestLocationInput() {
   const [lat, setLat] = useState('');
@@ -39,7 +40,10 @@ export default function GuestLocationInput() {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <Stack.Screen options={{ title: 'Set Location' }} />
+      <Stack.Screen options={{ 
+        title: 'Set Location',
+        headerRight: () => <ThemeToggleButton/>
+      }} />
       
       <Text style={[styles.title, { color: themeColors.text }]}>Where are you?</Text>
       {errorMsg ? <Text style={[styles.errorText, { color: themeColors.danger || 'red' }]}>{errorMsg}</Text> : null}
