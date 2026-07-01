@@ -19,6 +19,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { HeaderBackButton } from '../../components/HeaderBackButton';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { deleteRestaurant, getRestaurants, MEDIA_BASE, type Restaurant } from '../../services/api';
 
@@ -321,11 +322,7 @@ export default function OwnerDashboardScreen() {
                         />
                     ),
                     headerTitleStyle: { color: c.text },
-                    headerLeft: restaurants.length === 0 ? () => (
-                        <Pressable onPress={() => router.back()} style={{ padding: 8, marginLeft: 8 }}>
-                            <Ionicons name="arrow-back" size={24} color={c.text} />
-                        </Pressable>
-                    ) : undefined,
+                    headerLeft: () => <HeaderBackButton />,
                 }}
             />
             

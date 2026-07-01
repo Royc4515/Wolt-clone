@@ -2,6 +2,7 @@ import { Stack, Redirect } from 'expo-router';
 import { useContext } from 'react';
 import { Colors } from '../../constants/theme';
 import { ThemeToggleButton } from '../../components/ThemeToggleButton';
+import { HeaderBackButton } from '../../components/HeaderBackButton';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { AnimatedSplashOverlay } from '../../components/animated-icon';
@@ -21,6 +22,7 @@ export default function OwnerLayout() {
         headerStyle: { backgroundColor: c.surface },
         headerTintColor: c.text,
         headerShadowVisible: false,
+        headerLeft: () => <HeaderBackButton />,
         headerRight: () => <ThemeToggleButton />,
     };
 
