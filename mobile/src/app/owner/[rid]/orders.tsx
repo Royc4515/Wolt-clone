@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { AuthContext } from '../../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../../constants/theme';
-import { getRestaurantOrders, updateOrderStatus, type Order } from '../../../services/api';
+import { getRestaurantOrders, getUser, updateOrderStatus, type Order } from '../../../services/api';
 
 type OrderStatus = Order['status'];
 
@@ -44,10 +44,12 @@ function formatDate(iso: string) {
 
 function OrderCard({
     order,
+    customerName,
     onStatusChange,
     colors: c,
 }: {
     order: Order;
+    customerName?: string;
     onStatusChange: (id: string, status: OrderStatus) => void;
     colors: typeof Colors.light;
 }) {
@@ -103,7 +105,9 @@ function OrderCard({
                     
                     <View style={styles.expandedDetailRow}>
                         <Ionicons name="person-outline" size={14} color={c.textMuted} />
-                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>Customer ID: {order.userId}</Text>
+                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
+                            {customerName ?? order.userId}
+                        </Text>
                     </View>
 
                     {order.mode === 'delivery' && order.location && (
@@ -122,17 +126,15 @@ function OrderCard({
                         </Text>
                     </View>
 
-                    <View style={styles.expandedDetailRow}>
-                        <Ionicons name="time-outline" size={14} color={c.textMuted} />
-                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
-                            Placed: {formatDate(order.createdAt)}
-                        </Text>
-                    </View>
-                    <View style={styles.expandedDetailRow}>
-                        <Ionicons name="sync-outline" size={14} color={c.textMuted} />
-                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
-                            Last Updated: {formatDate(order.updatedAt)}
-                        </Text>
+                    <View style={[styles.timesRow, { borderTopColor: c.border }]}>
+                        <View style={styles.timeCell}>
+                            <Text style={[styles.timeCellLabel, { color: c.textMuted }]}>Placed</Text>
+                            <Text style={[styles.timeCellValue, { color: c.text }]}>{formatDate(order.createdAt)}</Text>
+                        </View>
+                        <View style={[styles.timeCell, styles.timeCellRight]}>
+                            <Text style={[styles.timeCellLabel, { color: c.textMuted, textAlign: 'right' }]}>Updated</Text>
+                            <Text style={[styles.timeCellValue, { color: c.text, textAlign: 'right' }]}>{formatDate(order.updatedAt)}</Text>
+                        </View>
                     </View>
 
                     <View style={[styles.pricingBreakdown, { borderTopColor: c.border }]}>
@@ -219,6 +221,7 @@ export default function RestaurantOrdersScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [userNames, setUserNames] = useState<Record<string, string>>({});
 
     const load = useCallback(async (isRefresh = false) => {
         if (!token || !rid) return;
@@ -235,7 +238,23 @@ export default function RestaurantOrdersScreen() {
         }
     }, [rid, token]);
 
-    useFocusEffect(useCallback(() => { load(); }, [load]));
+    useFocusEffect(useCallback(() => {
+        load();
+        const interval = setInterval(() => load(true), 15_000);
+        return () => clearInterval(interval);
+    }, [load]));
+
+    useEffect(() => {
+        if (orders.length === 0) return;
+        const uniqueIds = [...new Set(orders.map(o => o.userId))];
+        Promise.all(
+            uniqueIds.map(id =>
+                getUser(id)
+                    .then(u => [id, u.displayName] as [string, string])
+                    .catch(() => [id, id] as [string, string])
+            )
+        ).then(pairs => setUserNames(Object.fromEntries(pairs)));
+    }, [orders]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -327,6 +346,7 @@ export default function RestaurantOrdersScreen() {
                     <OrderCard
                         key={order.id || order._id}
                         order={order}
+                        customerName={userNames[order.userId]}
                         onStatusChange={handleStatusChange}
                         colors={c}
                     />
@@ -477,4 +497,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+
+    timesRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        marginTop: Spacing[1],
+        paddingTop: Spacing[2],
+    },
+    timeCell: { flex: 1, gap: 2 },
+    timeCellRight: { alignItems: 'flex-end' },
+    timeCellLabel: { fontSize: Typography.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+    timeCellValue: { fontSize: Typography.xs },
 });

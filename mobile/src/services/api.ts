@@ -218,3 +218,6 @@ export const updateOrderStatus = (orderId: string, status: Order['status'], toke
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
     });
+
+export const getUser = (id: string) =>
+    apiFetch<AuthUser>(`/users/${id}`);
