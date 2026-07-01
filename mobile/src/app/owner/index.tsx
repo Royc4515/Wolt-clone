@@ -10,7 +10,6 @@ import {
     RefreshControl,
     StyleSheet,
     Text,
-    TextInput,
     UIManager,
     View,
 } from 'react-native';
@@ -363,30 +362,28 @@ export default function OwnerDashboardScreen() {
                         </Pressable>
                     </View>
                 }
-                renderItem={({ item }) => {
-                    return (
-                        <RestaurantCard
-                            item={item}
-                            expanded={expandedId === item.id}
-                            onToggle={() => toggle(item.id)}
-                            onDelete={() => handleDelete(item)}
-                            colors={c}
-                            isDark={isDark}
-                        />
-                    );
-                }}
+                renderItem={({ item }) => (
+                    <RestaurantCard
+                        item={item}
+                        expanded={expandedId === item.id}
+                        onToggle={() => toggle(item.id)}
+                        onDelete={() => handleDelete(item)}
+                        colors={c}
+                        isDark={isDark}
+                    />
+                )}
             />
 
             {restaurants.length > 0 && (
-                <Animated.View style={[styles.fab, { backgroundColor: c.accent, width: fabWidth }]}>
-                    <Pressable 
-                        style={StyleSheet.absoluteFill} 
+                <Animated.View style={[styles.fab, { backgroundColor: c.accent, width: fabWidth, bottom: Spacing[6] + insets.bottom }]}>
+                    <Pressable
+                        style={StyleSheet.absoluteFill}
                         onPress={() => router.push('/owner/new-restaurant')}
                     >
                         <View style={styles.fabInner}>
                             <Ionicons name="add" size={28} color="#fff" />
-                            <Animated.Text 
-                                style={[styles.fabText, { opacity: textOpacity }]} 
+                            <Animated.Text
+                                style={[styles.fabText, { opacity: textOpacity }]}
                                 numberOfLines={1}
                             >
                                 Add Restaurant
@@ -404,30 +401,6 @@ const styles = StyleSheet.create({
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing[5] },
     list: { paddingHorizontal: Spacing[4], paddingBottom: 120 },
     listEmpty: { flex: 1, justifyContent: 'center', paddingBottom: 0 },
-
-    headerArea: {
-        marginBottom: Spacing[4],
-    },
-    searchBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderRadius: 12,
-        paddingHorizontal: Spacing[3],
-        paddingVertical: 10,
-        marginBottom: Spacing[3],
-    },
-    searchInput: {
-        flex: 1,
-        marginLeft: Spacing[2],
-        fontSize: Typography.base,
-    },
-    counter: {
-        fontSize: Typography.sm,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
-    },
 
     // ── Empty state ────────────────────────────────────────────────────────
     emptyState: {
@@ -548,7 +521,6 @@ const styles = StyleSheet.create({
     // FAB
     fab: {
         position: 'absolute',
-        bottom: Spacing[6],
         right: Spacing[5],
         height: 56,
         borderRadius: 28,

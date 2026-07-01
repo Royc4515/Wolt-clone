@@ -624,7 +624,7 @@ export default function HomeScreen() {
                             
                             {/* Only show the red badge if there is at least one active cart */}
                             {cartCount > 0 && (
-                                <View style={[styles.badge, { borderColor: c.surface }]}>
+                                <View style={[styles.badge, { backgroundColor: c.accent, borderColor: c.surface }]}>
                                     <Text style={styles.badgeText}>{cartCount}</Text>
                                 </View>
                             )}

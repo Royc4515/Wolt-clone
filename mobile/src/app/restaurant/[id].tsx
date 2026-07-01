@@ -433,7 +433,7 @@ export default function RestaurantScreen() {
                             { backgroundColor: isDark ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.75)' },
                             pressed && { opacity: 0.7 }
                         ]}
-                        onPress={() => Alert.alert('Coming Soon', 'Checkout will be available in the next update.')}
+                        onPress={() => router.push({ pathname: '/cart', params: { restaurantId: id } })}
                     >
                         <Ionicons name="cart-outline" size={20} color={isDark ? '#fff' : '#1c1d2a'} />
                         {cartQty > 0 && (
@@ -542,7 +542,7 @@ export default function RestaurantScreen() {
                     <View style={styles.cartPillWrap}>
                         <Pressable
                             style={[styles.cartBar, { backgroundColor: c.accent }]}
-                            onPress={() => Alert.alert('Coming Soon', 'Checkout will be available in the next update.')}
+                            onPress={() => router.push({ pathname: '/cart', params: { restaurantId: id } })}
                         >
                             <View style={[styles.cartBarBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.92)' }]}>
                                 <Text style={[styles.cartBarBadgeText, { color: isDark ? '#fff' : c.accent }]}>{cartQty}</Text>
