@@ -51,12 +51,16 @@ function OrderCard({
     onStatusChange: (id: string, status: OrderStatus) => void;
     colors: typeof Colors.light;
 }) {
+    const [expanded, setExpanded] = useState(false);
     const meta = STATUS_META[order.status];
     const actions = NEXT_ACTIONS[order.status] ?? [];
     const shortId = (order.id || order._id || '').slice(-6).toUpperCase();
 
     return (
-        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
+        <Pressable 
+            style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}
+            onPress={() => setExpanded(!expanded)}
+        >
             {/* Header row */}
             <View style={styles.cardHeader}>
                 <View style={styles.cardHeaderLeft}>
@@ -81,7 +85,7 @@ function OrderCard({
                 </Text>
             </View>
 
-            {/* Items */}
+            {/* Items (Always visible) */}
             <View style={[styles.itemsSection, { borderTopColor: c.border }]}>
                 {order.items.map((item, idx) => (
                     <View key={idx} style={styles.itemRow}>
@@ -92,7 +96,69 @@ function OrderCard({
                 ))}
             </View>
 
-            {/* Pricing */}
+            {/* Expanded Content */}
+            {expanded && (
+                <View style={[styles.expandedSection, { borderTopColor: c.border }]}>
+                    <Text style={[styles.expandedSectionTitle, { color: c.text }]}>Order Details</Text>
+                    
+                    <View style={styles.expandedDetailRow}>
+                        <Ionicons name="person-outline" size={14} color={c.textMuted} />
+                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>Customer ID: {order.userId}</Text>
+                    </View>
+
+                    {order.mode === 'delivery' && order.location && (
+                        <View style={styles.expandedDetailRow}>
+                            <Ionicons name="location-outline" size={14} color={c.textMuted} />
+                            <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
+                                Delivery to: {order.location.lat.toFixed(4)}, {order.location.lng.toFixed(4)}
+                            </Text>
+                        </View>
+                    )}
+
+                    <View style={styles.expandedDetailRow}>
+                        <Ionicons name="restaurant-outline" size={14} color={c.textMuted} />
+                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
+                            Cutlery: {order.cutlery > 0 ? `Yes (${order.cutlery})` : 'No'}
+                        </Text>
+                    </View>
+
+                    <View style={styles.expandedDetailRow}>
+                        <Ionicons name="time-outline" size={14} color={c.textMuted} />
+                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
+                            Placed: {formatDate(order.createdAt)}
+                        </Text>
+                    </View>
+                    <View style={styles.expandedDetailRow}>
+                        <Ionicons name="sync-outline" size={14} color={c.textMuted} />
+                        <Text style={[styles.expandedDetailText, { color: c.textMuted }]}>
+                            Last Updated: {formatDate(order.updatedAt)}
+                        </Text>
+                    </View>
+
+                    <View style={[styles.pricingBreakdown, { borderTopColor: c.border }]}>
+                        <View style={styles.pricingBreakdownRow}>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>Subtotal</Text>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>₪{order.pricing.subtotal.toFixed(2)}</Text>
+                        </View>
+                        <View style={styles.pricingBreakdownRow}>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>Service Fee</Text>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>₪{order.pricing.serviceFee.toFixed(2)}</Text>
+                        </View>
+                        <View style={styles.pricingBreakdownRow}>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>Delivery Fee</Text>
+                            <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>₪{order.pricing.deliveryFee.toFixed(2)}</Text>
+                        </View>
+                        {order.pricing.finalTip > 0 && (
+                            <View style={styles.pricingBreakdownRow}>
+                                <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>Tip</Text>
+                                <Text style={{ color: c.textMuted, fontSize: Typography.sm }}>₪{order.pricing.finalTip.toFixed(2)}</Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            )}
+
+            {/* Pricing (Always visible summary) */}
             <View style={[styles.pricingRow, { borderTopColor: c.border }]}>
                 <Text style={[styles.totalLabel, { color: c.textMuted }]}>Total</Text>
                 <Text style={[styles.totalAmount, { color: c.text }]}>₪{order.pricing.total.toFixed(2)}</Text>
@@ -102,7 +168,7 @@ function OrderCard({
             {!!order.notes && (
                 <View style={[styles.notesRow, { borderTopColor: c.border }]}>
                     <Ionicons name="chatbubble-ellipses-outline" size={14} color={c.textMuted} />
-                    <Text style={[styles.notesText, { color: c.textMuted }]} numberOfLines={2}>{order.notes}</Text>
+                    <Text style={[styles.notesText, { color: c.textMuted }]} numberOfLines={expanded ? undefined : 2}>{order.notes}</Text>
                 </View>
             )}
 
@@ -139,7 +205,7 @@ function OrderCard({
                     })}
                 </View>
             )}
-        </View>
+        </Pressable>
     );
 }
 
@@ -379,4 +445,36 @@ const styles = StyleSheet.create({
 
     retryBtn: { paddingHorizontal: Spacing[5], paddingVertical: Spacing[3], borderRadius: 12 },
     retryText: { color: '#fff', fontWeight: '700', fontSize: Typography.sm },
+
+    expandedSection: {
+        paddingHorizontal: Spacing[4],
+        paddingVertical: Spacing[3],
+        borderTopWidth: StyleSheet.hairlineWidth,
+        gap: Spacing[2],
+    },
+    expandedSectionTitle: {
+        fontSize: Typography.sm,
+        fontWeight: '700',
+        marginBottom: Spacing[1],
+    },
+    expandedDetailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing[2],
+    },
+    expandedDetailText: {
+        fontSize: Typography.xs,
+        flex: 1,
+    },
+    pricingBreakdown: {
+        marginTop: Spacing[2],
+        paddingTop: Spacing[2],
+        borderTopWidth: StyleSheet.hairlineWidth,
+        gap: Spacing[1],
+    },
+    pricingBreakdownRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
 });
