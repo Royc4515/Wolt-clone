@@ -2,10 +2,10 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../../../context/ThemeContext';
-import { Colors, Spacing, Typography } from '../../../constants/theme';
-import { CartContext } from '../../../context/CartContext';
-import { MEDIA_BASE, type Product } from '../../../services/api';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { CartContext } from '../../context/CartContext';
+import { MEDIA_BASE, type Product } from '../../services/api';
 
 const PALE_BLUE = '#DDF7FF';
 

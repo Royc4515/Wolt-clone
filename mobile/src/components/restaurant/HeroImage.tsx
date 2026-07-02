@@ -2,8 +2,8 @@ import { useContext, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../../../context/ThemeContext';
-import { Colors } from '../../../constants/theme';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme';
 import { HERO_H } from './constants';
 
 export default function HeroImage({ uri }: { uri?: string }) {

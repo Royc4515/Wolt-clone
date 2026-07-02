@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
-import { Colors, Spacing, Typography } from '../../../constants/theme';
+import { Colors, Spacing, Typography } from '../../constants/theme';
 
 export interface FieldProps {
     label: string;

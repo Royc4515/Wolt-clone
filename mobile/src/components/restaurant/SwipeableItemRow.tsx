@@ -1,10 +1,10 @@
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../../../context/ThemeContext';
-import { Colors, Spacing, Typography } from '../../../constants/theme';
-import { CartContext } from '../../../context/CartContext';
-import { MEDIA_BASE, type Product } from '../../../services/api';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { CartContext } from '../../context/CartContext';
+import { MEDIA_BASE, type Product } from '../../services/api';
 import ProductImage from './ProductImage';
 
 export default function SwipeableItemRow({

@@ -18,7 +18,7 @@ import { ThemeContext } from '../../../../context/ThemeContext';
 import { useAuth } from '../../../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../../../constants/theme';
 import { createProduct, getMenu } from '../../../../services/api';
-import Field from '../../_components/Field';
+import Field from '../../../../components/owner/Field';
 
 function SectionDropdown({
     value, onChange, options, error, colors: c,
@@ -122,7 +122,7 @@ export default function NewDishScreen() {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.3,
@@ -303,6 +303,9 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 200,
         position: 'relative',
+    },
+    imagePlaceholder: {
+        alignItems: 'center',
     },
     coverPlaceholderText: {
         marginTop: Spacing[2],

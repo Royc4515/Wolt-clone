@@ -3,10 +3,10 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemeContext } from '../../../context/ThemeContext';
-import { Colors, Spacing, Typography } from '../../../constants/theme';
-import { CartContext } from '../../../context/CartContext';
-import { MEDIA_BASE, type Product } from '../../../services/api';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { CartContext } from '../../context/CartContext';
+import { MEDIA_BASE, type Product } from '../../services/api';
 
 export default function MenuItemModal({
     item,

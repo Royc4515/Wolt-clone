@@ -26,11 +26,11 @@ import {
     type Restaurant,
 } from '../../services/api';
 import { CartContext } from '../../context/CartContext';
-import { HERO_H, HEADER_CONTENT_H, TABS_BAR_H } from './_components/constants';
-import HeroImage from './_components/HeroImage';
-import MenuItemModal from './_components/MenuItemModal';
-import RecommendedCard from './_components/RecommendedCard';
-import SwipeableItemRow from './_components/SwipeableItemRow';
+import { HERO_H, HEADER_CONTENT_H, TABS_BAR_H } from '../../components/restaurant/constants';
+import HeroImage from '../../components/restaurant/HeroImage';
+import MenuItemModal from '../../components/restaurant/MenuItemModal';
+import RecommendedCard from '../../components/restaurant/RecommendedCard';
+import SwipeableItemRow from '../../components/restaurant/SwipeableItemRow';
 
 export default function RestaurantScreen() {
     const params = useLocalSearchParams<{ id: string, openItem?: string }>();
