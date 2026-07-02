@@ -11,17 +11,17 @@ import {
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { CartContext } from '../context/CartContext';
-import { AuthContext } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { Colors, Spacing, Typography } from '../constants/theme';
-import { getRestaurant, getMenu, MEDIA_BASE, type Restaurant, type Product } from '../services/api';
+import { CartContext } from '../../context/CartContext';
+import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { getRestaurant, getMenu, MEDIA_BASE, type Restaurant, type Product } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { calcAerialDistance } from '@/utils/distance';
 
 // Reusing the components from the restaurant screen
-import RecommendedCard from './restaurant/_components/RecommendedCard';
-import MenuItemModal from './restaurant/_components/MenuItemModal';
+import RecommendedCard from '../restaurant/_components/RecommendedCard';
+import MenuItemModal from '../restaurant/_components/MenuItemModal';
 
 export default function CartScreen() {
     const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();
@@ -89,7 +89,7 @@ export default function CartScreen() {
                 "Please log in or create an account to proceed to checkout.",
                 [
                     { text: "Cancel", style: "cancel" },
-                    { text: "Log In", onPress: () => router.push('/login') }
+                    { text: "Log In", onPress: () => router.push('/user/login') }
                 ]
             );
             return;
@@ -114,7 +114,7 @@ export default function CartScreen() {
                         { 
                             text: "Proceed to Pickup", 
                             onPress: () => router.push({
-                                pathname: '/checkout',
+                                pathname: '/orders/checkout',
                                 params: { 
                                     restaurantId, 
                                     notes: orderNotes, 
@@ -130,7 +130,7 @@ export default function CartScreen() {
 
         // Go to checkout page
         router.push({
-            pathname: '/checkout',
+            pathname: '/orders/checkout',
             params: { 
                 restaurantId, 
                 notes: orderNotes 

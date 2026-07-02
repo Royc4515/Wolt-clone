@@ -2,11 +2,11 @@ import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { CartContext } from '../context/CartContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { Colors, Spacing, Typography } from '../constants/theme';
+import { CartContext } from '../../context/CartContext';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
 import { Image } from 'expo-image';
-import { getRestaurant, MEDIA_BASE, type Restaurant } from '../services/api';
+import { getRestaurant, MEDIA_BASE, type Restaurant } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function CartOverviewScreen() {
@@ -131,7 +131,7 @@ export default function CartOverviewScreen() {
                                 </TouchableOpacity>
                                 <TouchableOpacity 
                                     style={[styles.btn, styles.primaryBtn, { backgroundColor: c.accent }]}
-                                    onPress={() => router.push({ pathname: '/cart', params: { restaurantId } })}
+                                    onPress={() => router.push({ pathname: '/orders/cart', params: { restaurantId } })}
                                 >
                                     <Text style={{ color: '#fff', fontWeight: '600' }}>View order</Text>
                                 </TouchableOpacity>

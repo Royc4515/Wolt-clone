@@ -13,12 +13,13 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { AuthContext } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { CartContext } from '../context/CartContext';
-import { Colors, Spacing, Typography } from '../constants/theme';
-import { getUserOrders, getRestaurant, getMenu, type Order, type Product, MEDIA_BASE, type Restaurant } from '../services/api';
+import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
+import { CartContext } from '../../context/CartContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { getUserOrders, getRestaurant, getMenu, type Order, type Product, MEDIA_BASE, type Restaurant } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 // Helper to format ISO date to a readable string
@@ -58,22 +59,40 @@ export default function OrderHistoryScreen() {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isReordering, setIsReordering] = useState(false);
     const [restaurantDetails, setRestaurantDetails] = useState<Record<string, Restaurant>>({});
+    const [deletedRestaurants, setDeletedRestaurants] = useState<Record<string, boolean>>({});
 
-    // Fetch restaurant details for all orders
+    // Fetch restaurant details for all orders (with local caching)
     useEffect(() => {
         const fetchRestaurants = async () => {
             const uniqueIds = [...new Set(orders.map(o => o.restaurantId))];
             const details: Record<string, Restaurant> = {};
+            const deleted: Record<string, boolean> = {};
             
+            // Load local cache
+            const CACHE_KEY = '@restaurant_meta_cache';
+            const cachedStr = await AsyncStorage.getItem(CACHE_KEY);
+            const cachedMeta = cachedStr ? JSON.parse(cachedStr) : {};
+
             for (const id of uniqueIds) {
                 try {
                     const rest = await getRestaurant(id);
                     details[id] = rest;
+                    cachedMeta[id] = rest; // Update cache with fresh data
                 } catch (e) {
-                    console.error("Failed to fetch restaurant:", e);
+                    console.error(`Failed to fetch restaurant ${id}, looking in cache...`);
+                    // Fallback to cache if deleted from DB
+                    if (cachedMeta[id]) {
+                        details[id] = cachedMeta[id];
+                        deleted[id] = true; // Mark as deleted to disable reordering
+                    }
                 }
             }
+            
+            // Save updated cache
+            await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cachedMeta));
+            
             setRestaurantDetails(details);
+            setDeletedRestaurants(deleted);
         };
 
         if (orders.length > 0) {
@@ -103,7 +122,7 @@ export default function OrderHistoryScreen() {
         setIsReordering(true);
 
         try {
-            // 1. Verify if the restaurant still exists
+            // Verify if the restaurant still exists
             try {
                 await getRestaurant(order.restaurantId);
             } catch (err) {
@@ -112,7 +131,7 @@ export default function OrderHistoryScreen() {
                 return;
             }
 
-            // 2. Fetch current menu to verify real-time item availability
+            // Fetch current menu to verify real-time item availability
             const menu = await getMenu(order.restaurantId);
             
             // Map available products for quick lookup
@@ -125,7 +144,7 @@ export default function OrderHistoryScreen() {
                 });
             });
 
-            // 3. Match previous order items with currently available products
+            // Match previous order items with currently available products
             let addedCount = 0;
             let missingCount = 0;
 
@@ -142,7 +161,7 @@ export default function OrderHistoryScreen() {
                 }
             }
 
-            // 4. Provide feedback based on availability results
+            // Provide feedback based on availability results
             if (addedCount === 0) {
                 Alert.alert("Items Unavailable", "None of the items from this order are currently available.");
             } else if (missingCount > 0) {
@@ -151,12 +170,12 @@ export default function OrderHistoryScreen() {
                     "Some items are no longer available and were skipped. The available items have been added to your cart.",
                     [{ 
                         text: "View Cart", 
-                        onPress: () => router.push({ pathname: '/cart', params: { restaurantId: order.restaurantId } }) 
+                        onPress: () => router.push({ pathname: '/orders/cart', params: { restaurantId: order.restaurantId } }) 
                     }]
                 );
             } else {
                 // Everything was successfully added
-                router.push({ pathname: '/cart', params: { restaurantId: order.restaurantId } });
+                router.push({ pathname: '/orders/cart', params: { restaurantId: order.restaurantId } });
             }
 
         } catch (err) {
@@ -226,15 +245,28 @@ export default function OrderHistoryScreen() {
                         >
                             <Text style={[styles.actionBtnText, { color: c.text }]}>Details</Text>
                         </Pressable>
+                        {/* Check if restaurant is marked as deleted */}
                         <Pressable 
-                            style={({ pressed }) => [styles.actionBtn, { backgroundColor: c.accent, borderColor: c.accent }, pressed && { opacity: 0.7 }]}
+                            style={({ pressed }) => {
+                                const isDeleted = deletedRestaurants[item.restaurantId];
+                                return [
+                                    styles.actionBtn, 
+                                    { 
+                                        backgroundColor: isDeleted ? c.surface : c.accent, 
+                                        borderColor: isDeleted ? c.border : c.accent 
+                                    }, 
+                                    pressed && !isDeleted && { opacity: 0.7 }
+                                ];
+                            }}
                             onPress={() => handleReorder(item)}
-                            disabled={isReordering}
+                            disabled={isReordering || deletedRestaurants[item.restaurantId]}
                         >
                             {isReordering ? (
                                 <ActivityIndicator size="small" color="#fff" />
                             ) : (
-                                <Text style={[styles.actionBtnText, { color: '#fff' }]}>Order Again</Text>
+                                <Text style={[styles.actionBtnText, { color: deletedRestaurants[item.restaurantId] ? c.textMuted : '#fff' }]}>
+                                    {deletedRestaurants[item.restaurantId] ? 'Unavailable' : 'Order Again'}
+                                </Text>
                             )}
                         </Pressable>
                     </View>

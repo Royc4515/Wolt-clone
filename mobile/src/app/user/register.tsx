@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router'; 
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeContext } from '../context/ThemeContext';
-import { Colors } from '../constants/theme';
-import { register as apiRegister } from '../services/api';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme';
+import { register as apiRegister } from '../../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
@@ -122,7 +122,7 @@ export default function RegisterScreen() {
         role: role as 'customer' | 'admin'
       });
 
-      router.replace('/login');
+      router.replace('/user/login');
       
     } catch (error: any) {
       setErrorMsg(error.message || 'Registration failed. Please try again.');
@@ -286,7 +286,7 @@ export default function RegisterScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/login')} style={styles.linkButton}>
+        <TouchableOpacity onPress={() => router.push('/user/login')} style={styles.linkButton}>
           <Text style={[styles.linkText, { color: dynamicStyles.buttonBg }]}>Already have an account? Log in</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -16,10 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 
-import { ThemeContext } from '../context/ThemeContext';
-import { AuthContext } from '../context/AuthContext';
-import { Colors, Spacing, Typography } from '../constants/theme';
-import { updateUser } from '../services/api';
+import { ThemeContext } from '../../context/ThemeContext';
+import { AuthContext } from '../../context/AuthContext';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { updateUser } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function EditProfileScreen() {

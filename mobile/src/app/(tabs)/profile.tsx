@@ -57,7 +57,7 @@ export default function ProfileScreen() {
             await logout();
         }
         // Redirect to login modal after logging out
-        router.replace('/login');
+        router.replace('/user/login');
     };
 
     // Function to handle user deletion with a confirmation alert
@@ -75,14 +75,22 @@ export default function ProfileScreen() {
                         
                         try {
                             setIsDeleting(true);
+                            
+                            // Safely extract the MongoDB ID
+                            const userId = user.id || (user as any)._id;
+                            
+                            if (!userId) {
+                                throw new Error("User ID is missing.");
+                            }
+
                             // Call the API to delete the user
-                            await deleteUser(user.id, token);
+                            await deleteUser(userId, token);
                             
                             // Log the user out of the app locally
                             if (logout) await logout();
                             
                             // Redirect to login screen
-                            router.replace('/login');
+                            router.replace('/user/login');
                         } catch (error: any) {
                             Alert.alert("Error", error.message || "Could not delete account.");
                             setIsDeleting(false);
@@ -134,7 +142,7 @@ export default function ProfileScreen() {
 
                     <Pressable
                         style={[styles.btn, { backgroundColor: c.accent }]}
-                        onPress={() => router.replace('/login')}
+                        onPress={() => router.replace('/user/login')}
                     >
                         <Text style={styles.btnText}>Log In / Sign Up</Text>
                     </Pressable>
@@ -204,7 +212,7 @@ export default function ProfileScreen() {
                 {/* General Menus */}
                 <Pressable 
                     style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
-                    onPress={() => router.push('/order-history')}
+                    onPress={() => router.push('/orders/order-history')}
                 >
                     <Ionicons name="receipt-outline" size={22} color={c.text} />
                     <Text style={[styles.menuLabel, { color: c.text }]}>Order History</Text>
@@ -214,7 +222,7 @@ export default function ProfileScreen() {
                 {/* Edit Profile Button */}
                 <Pressable 
                     style={[styles.menuRow, { backgroundColor: c.surface, borderColor: c.border }]}
-                    onPress={() => router.push('/edit-profile')}
+                    onPress={() => router.push('/user/edit-profile')}
                 >
                     <Ionicons name="person-outline" size={22} color={c.text} />
                     <Text style={[styles.menuLabel, { color: c.text }]}>Edit Profile</Text>

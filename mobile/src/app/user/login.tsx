@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
-import { Colors } from '../constants/theme'; 
-import { login as apiLogin } from '../services/api';
+import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme'; 
+import { login as apiLogin } from '../../services/api';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function LoginScreen() {
@@ -125,11 +125,11 @@ export default function LoginScreen() {
         {/* Added "Continue as guest" button */}
         <TouchableOpacity 
             style={[styles.guestButton, { borderColor: dynamicStyles.buttonBg }]} 
-            onPress={() => router.push('/guest-location-input')}>
+            onPress={() => router.push('/user/guest-location-input')}>
                 <Text style={[styles.guestButtonText, { color: dynamicStyles.buttonBg }]}>Continue as a guest</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/register')} style={styles.linkButton}>
+        <TouchableOpacity onPress={() => router.push('/user/register')} style={styles.linkButton}>
             <Text style={[styles.linkText, { color: dynamicStyles.buttonBg }]}>Don't have an account? Sign up</Text>
         </TouchableOpacity>
     </View>
