@@ -75,8 +75,16 @@ export default function ProfileScreen() {
                         
                         try {
                             setIsDeleting(true);
+                            
+                            // Safely extract the MongoDB ID
+                            const userId = user.id || (user as any)._id;
+                            
+                            if (!userId) {
+                                throw new Error("User ID is missing.");
+                            }
+
                             // Call the API to delete the user
-                            await deleteUser(user.id, token);
+                            await deleteUser(userId, token);
                             
                             // Log the user out of the app locally
                             if (logout) await logout();

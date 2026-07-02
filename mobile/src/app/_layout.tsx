@@ -28,7 +28,7 @@ function RootLayoutNav() {
 
     useEffect(() => {
         async function checkGuest() {
-            const loc = await getGuestLocation(); // Using the utility function
+            const loc = await getGuestLocation();
             if (loc) setIsGuest(true);
             setChecking(false);
         }
@@ -39,10 +39,10 @@ function RootLayoutNav() {
 
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-            <Stack initialRouteName={(!token && !isGuest) ? "login" : "(tabs)"}>
-                <Stack.Screen name="login" options={{ headerShown: false }} />
-                <Stack.Screen name="register" options={{ headerShown: false }} />
-                <Stack.Screen name="guest-location-input" options={{ title: 'Set Location' }} />
+            <Stack initialRouteName={(!token && !isGuest) ? "user/login" : "(tabs)"}>
+                <Stack.Screen name="user/login" options={{ headerShown: false }} />
+                <Stack.Screen name="user/register" options={{ headerShown: false }} />
+                <Stack.Screen name="user/guest-location-input" options={{ title: 'Set Location' }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen
                     name="promoted"
