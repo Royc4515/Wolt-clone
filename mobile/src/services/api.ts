@@ -207,6 +207,11 @@ export const createOrder = (data: any, token: string) =>
         body: JSON.stringify(data),
     });
 
+export const getUserOrders = (token: string) =>
+    apiFetch<Order[]>('/orders', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+    });
 export const getRestaurantOrders = (restaurantId: string, token: string) =>
     apiFetch<Order[]>(`/orders/restaurant/${restaurantId}`, {
         headers: { Authorization: `Bearer ${token}` },

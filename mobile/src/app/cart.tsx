@@ -166,10 +166,17 @@ export default function CartScreen() {
                     <Text style={[styles.sectionTitle, { color: c.text }]}>Your items</Text>
                     {items.map(({ item, qty }) => (
                         <View key={item.id} style={styles.itemRow}>
-                            <Image 
-                                source={{ uri: item.image?.startsWith('http') ? item.image : `${MEDIA_BASE}${item.image}` }} 
-                                style={[styles.itemImg, { backgroundColor: c.background }]} 
-                            />
+                            {item.image ? (
+                                <Image 
+                                    source={{ uri: item.image.startsWith('http') || item.image.startsWith('data:') ? item.image : `${MEDIA_BASE}${item.image}` }} 
+                                    style={[styles.itemImg, { backgroundColor: c.background }]} 
+                                />
+                            ) : (
+                                /* Fallback for missing product image */
+                                <View style={[styles.itemImg, { backgroundColor: c.border, alignItems: 'center', justifyContent: 'center' }]}>
+                                    <Ionicons name="fast-food-outline" size={24} color={c.textMuted} />
+                                </View>
+                            )}
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.itemName, { color: c.text }]} numberOfLines={2}>{item.name}</Text>
                                 <Text style={{ color: c.textMuted }}>₪{(item.price * qty).toFixed(2)}</Text>

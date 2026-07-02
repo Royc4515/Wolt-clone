@@ -18,6 +18,7 @@ import { Colors } from '../constants/theme';
 import { register as apiRegister } from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
@@ -143,25 +144,7 @@ export default function RegisterScreen() {
           headerShadowVisible: false,
           headerTintColor: dynamicStyles.textColor,
           headerBackTitle: 'Back',
-          headerRight: () => (
-            <Pressable
-                onPress={toggleTheme}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
-                }}
-            >
-                <Ionicons 
-                  name={isDark ? 'sunny-outline' : 'moon-outline'} 
-                  size={18} 
-                  color={isDark ? '#fff' : '#1c1d2a'} 
-                />
-            </Pressable>
-          ),
+          headerRight: () => <ThemeToggleButton/>
         }} 
       />
 

@@ -37,7 +37,7 @@ export default function CartOverviewScreen() {
         <View style={[styles.fill, { backgroundColor: c.background }]}>
             <Stack.Screen options={{
                 headerShown: true,
-                title: 'Your Orders',
+                title: 'Your Carts',
                 headerStyle: { backgroundColor: dynamicStyles.containerBg },
                 headerShadowVisible: false,
                 headerTintColor: dynamicStyles.textColor,
@@ -48,35 +48,47 @@ export default function CartOverviewScreen() {
             <FlatList
                 data={Object.entries(carts)}
                 keyExtractor={([rid]) => rid}
-                contentContainerStyle={styles.list}
+                contentContainerStyle={Object.keys(carts).length === 0 ? styles.emptyListContent : styles.list}
+                // Empty cart state
+                ListEmptyComponent={
+                    <View style={styles.emptyContainer}>
+                        <View style={[styles.emptyIconCircle, { backgroundColor: c.accent + '15' }]}>
+                            <Ionicons name="cart-outline" size={64} color={c.accent} />
+                        </View>
+                        <Text style={[styles.emptyTitle, { color: c.text }]}>No active carts</Text>
+                        <Text style={[styles.emptySub, { color: c.textMuted }]}>
+                            Your active carts will appear here. Start browsing restaurants to add items!
+                        </Text>
+                    </View>
+                }
                 renderItem={({ item: [restaurantId, items] }) => {
                     const rest = restaurants[restaurantId];
                     const subtotal = items.reduce((s, i) => s + (i.item.price * i.qty), 0);
+
+                    // Restaurant image logic.
+                    const restImgUri = rest?.image 
+                        ? (rest.image.startsWith('http') || rest.image.startsWith('data:') ? rest.image : `${MEDIA_BASE}${rest.image}`) 
+                        : undefined;
 
                     return (
                         <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border }]}>
                             {/* Header: Restaurant Image + Name + Trash Icon */}
                             <View style={styles.header}>
                                 <View style={styles.restInfo}>
-                                    {/* Checking image existence */}
-                                    {rest?.image ? (
-                                        <Image 
-                                            source={{ uri: `${MEDIA_BASE}${rest.image}` }}
-                                            style={styles.avatar} 
-                                        />
+                                    {restImgUri ? (
+                                        <Image source={{ uri: restImgUri }} style={styles.avatar} />
                                     ) : (
-                                        /* Present generic Avatar if there's no image */
-                                        <View style={[styles.avatar, { backgroundColor: c.border }]} />
+                                        /* Fallback for missing restaurant image */
+                                        <View style={[styles.avatar, { backgroundColor: c.border, alignItems: 'center', justifyContent: 'center' }]}>
+                                            <Ionicons name="storefront-outline" size={24} color={c.textMuted} />
+                                        </View>
                                     )}
                                     <View>
                                         <Text style={[styles.name, { color: c.text }]}>{rest?.name || "Loading..."}</Text>
                                     </View>
                                 </View>
 
-                                <TouchableOpacity 
-                                    onPress={() => clearCart(restaurantId)} 
-                                    hitSlop={8} // Makes the hit area slightly larger for easier tapping
-                                >
+                                <TouchableOpacity onPress={() => clearCart(restaurantId)} hitSlop={8}>
                                     <Ionicons name="trash-outline" size={20} color={dynamicStyles.errorColor} />
                                 </TouchableOpacity>
                             </View>
@@ -87,15 +99,22 @@ export default function CartOverviewScreen() {
                             {/* Items Preview using product images */}
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.itemsScroll}>
                                 {items.map((cartItem, idx) => {
-                                    const imgUri = cartItem.item.image 
-                                        ? `${MEDIA_BASE}${cartItem.item.image}` 
+                                    const itemImg = cartItem.item.image;
+                                    const itemImgUri = itemImg 
+                                        ? (itemImg.startsWith('http') || itemImg.startsWith('data:') ? itemImg : `${MEDIA_BASE}${itemImg}`) 
                                         : undefined;
-                                    return (
+
+                                    return itemImgUri ? (
                                         <Image 
                                             key={idx} 
-                                            source={imgUri ? { uri: imgUri } : undefined} 
+                                            source={{ uri: itemImgUri }} 
                                             style={[styles.itemThumb, { backgroundColor: c.background }]} 
                                         />
+                                    ) : (
+                                        /* Fallback for missing product image */
+                                        <View key={idx} style={[styles.itemThumb, { backgroundColor: c.border, alignItems: 'center', justifyContent: 'center' }]}>
+                                            <Ionicons name="fast-food-outline" size={24} color={c.textMuted} />
+                                        </View>
                                     );
                                 })}
                             </ScrollView>
@@ -138,6 +157,35 @@ const styles = StyleSheet.create({
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         marginBottom: Spacing[3] 
+    },
+    emptyListContent: { 
+        flexGrow: 1, 
+        justifyContent: 'center' 
+    },
+    emptyContainer: { 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        padding: Spacing[6], 
+        marginTop: -50 
+    },
+    emptyIconCircle: { 
+        width: 120, 
+        height: 120, 
+        borderRadius: 60, 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        marginBottom: Spacing[4] 
+    },
+    emptyTitle: { 
+        fontSize: Typography.h3, 
+        fontWeight: '800', 
+        textAlign: 'center', 
+        marginBottom: Spacing[2] 
+    },
+    emptySub: { 
+        fontSize: Typography.base, 
+        textAlign: 'center', 
+        lineHeight: 22 
     },
     restInfo: { 
         flexDirection: 'row', 

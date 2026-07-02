@@ -14,6 +14,7 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
 import { Colors } from '../constants/theme'; 
 import { login as apiLogin } from '../services/api';
+import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -72,26 +73,7 @@ export default function LoginScreen() {
               headerShadowVisible: false,
               headerTintColor: dynamicStyles.textColor,
               headerLeft: () => null,
-              headerRight: () => (
-                  // Replaced text emojis with the exact Pressable and Ionicons styling from index.tsx
-                  <Pressable
-                      onPress={toggleTheme}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.07)'
-                      }}
-                  >
-                      <Ionicons 
-                        name={isDark ? 'sunny-outline' : 'moon-outline'} 
-                        size={18} 
-                        color={isDark ? '#fff' : '#1c1d2a'} 
-                      />
-                  </Pressable>
-              ),
+              headerRight: () => <ThemeToggleButton/>
             }} 
         />
 
