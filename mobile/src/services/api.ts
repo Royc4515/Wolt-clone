@@ -25,7 +25,14 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
         headers: { 'Content-Type': 'application/json', ...callerHeaders },
     });
     const text = await res.text();
-    const json: unknown = text ? JSON.parse(text) : null;
+    let json: unknown = null;
+    if (text) {
+        try {
+            json = JSON.parse(text);
+        } catch {
+            throw new Error(`Server error (HTTP ${res.status})`);
+        }
+    }
     if (!res.ok) throw new Error((json as { error?: string } | null)?.error ?? `HTTP ${res.status}`);
     return json as T;
 }

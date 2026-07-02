@@ -264,7 +264,7 @@ export default function EditRestaurantScreen() {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [16, 9],
-            quality: 0.4,
+            quality: 0.25,
             base64: true,
         });
         if (!result.canceled && result.assets[0]?.base64) {
@@ -379,7 +379,7 @@ export default function EditRestaurantScreen() {
             </Pressable>
 
             {/* ── Basic Info ──────────────────────────────────────────────── */}
-            <View style={{ marginTop: Spacing[5] }}>
+            <View style={{ marginTop: Spacing[5], zIndex: 10, elevation: 10 }}>
                 <SectionHeader title="Basic Info" colors={c} />
                 <View style={[styles.sectionCard, { backgroundColor: c.surface }]}>
                     <Field
