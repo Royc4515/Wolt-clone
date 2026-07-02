@@ -284,21 +284,33 @@ export default function SearchScreen() {
         return map;
     }, [products]);
 
+    // All matched restaurants (direct name/description/category matches + ones pulled in via product matches).
+    const allRestsMap = useMemo(() => {
+        const map = new Map<string, Restaurant>();
+        for (const r of restaurants) map.set(r.id, r);
+        for (const [id, r] of Object.entries(fetchedRestaurants)) map.set(id, r);
+        return map;
+    }, [restaurants, fetchedRestaurants]);
+
+    // Per-restaurant items: prefer products that actually matched the search text, falling back to the
+    // restaurant's recommended menu when it matched by name/description/category alone (no product matches).
+    const effectiveItemsByRestaurant = useMemo(() => {
+        const map = new Map<string, Product[]>();
+        for (const [id] of allRestsMap) {
+            map.set(id, productsByRestaurant.get(id) ?? restaurantMenus[id] ?? []);
+        }
+        return map;
+    }, [allRestsMap, productsByRestaurant, restaurantMenus]);
+
     const listRows = useMemo((): SearchRow[] => {
         const rows: SearchRow[] = [];
 
         if (filterMode === 'items') {
-            if (products.length > 0) {
-                const allRestsMap = new Map<string, Restaurant>();
-                for (const r of restaurants) allRestsMap.set(r.id, r);
-                for (const [id, r] of Object.entries(fetchedRestaurants)) allRestsMap.set(id, r);
-
-                rows.push(...products.map(p => ({ 
-                    _type: 'dish-search-row' as const, 
-                    item: p, 
-                    restaurant: allRestsMap.get(p.restaurantId),
-                    key: `search-row-${p.id}` 
-                })));
+            for (const [restId, items] of effectiveItemsByRestaurant.entries()) {
+                const r = allRestsMap.get(restId);
+                for (const item of items) {
+                    rows.push({ _type: 'dish-search-row', item, restaurant: r, key: `search-row-${item.id}` });
+                }
             }
             return rows;
         }
@@ -308,7 +320,7 @@ export default function SearchScreen() {
                 const r = filteredRestaurants[i];
                 if (i > 0) rows.push({ _type: 'separator', key: `sep-${i}` });
                 rows.push({ _type: 'rest-row', restaurant: r, key: `rest-${r.id}` });
-                
+
                 const recommended = restaurantMenus[r.id] ?? [];
                 if (recommended.length > 0) {
                     rows.push({ _type: 'dish-slider', items: recommended, key: `slider-${r.id}` });
@@ -318,12 +330,8 @@ export default function SearchScreen() {
         }
 
         if (filterMode === 'all') {
-            const allRestsMap = new Map<string, Restaurant>();
-            for (const r of restaurants) allRestsMap.set(r.id, r);
-            for (const [id, r] of Object.entries(fetchedRestaurants)) allRestsMap.set(id, r);
-
             const relevantRests = [];
-            for (const [restId, items] of productsByRestaurant.entries()) {
+            for (const [restId, items] of effectiveItemsByRestaurant.entries()) {
                 const r = allRestsMap.get(restId);
                 if (r) {
                     if (freeDelivery && r.deliveryFee !== 0) continue;
@@ -341,13 +349,13 @@ export default function SearchScreen() {
                 const { r, items } = relevantRests[i];
                 if (i > 0) rows.push({ _type: 'separator', key: `sep-${i}` });
                 rows.push({ _type: 'rest-row', restaurant: r, key: `rest-${r.id}` });
-                rows.push({ _type: 'dish-slider', items: items, key: `slider-${r.id}` });
+                if (items.length > 0) rows.push({ _type: 'dish-slider', items: items, key: `slider-${r.id}` });
             }
             return rows;
         }
 
         return rows;
-    }, [filterMode, filteredRestaurants, products, productsByRestaurant, fetchedRestaurants, restaurantMenus, freeDelivery, minRating, maxDelivery, sortBy]);
+    }, [filterMode, filteredRestaurants, allRestsMap, effectiveItemsByRestaurant, restaurantMenus, freeDelivery, minRating, maxDelivery, sortBy]);
 
     const hasResults = listRows.length > 0;
     const showEmpty  = !loading && !searchError && query.trim().length > 0 && !hasResults;
