@@ -20,8 +20,8 @@ import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { calcAerialDistance } from '@/utils/distance';
 
 // Reusing the components from the restaurant screen
-import RecommendedCard from '../restaurant/_components/RecommendedCard';
-import MenuItemModal from '../restaurant/_components/MenuItemModal';
+import RecommendedCard from '../../components/restaurant/RecommendedCard';
+import MenuItemModal from '../../components/restaurant/MenuItemModal';
 
 export default function CartScreen() {
     const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>();

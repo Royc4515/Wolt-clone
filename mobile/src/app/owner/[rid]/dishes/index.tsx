@@ -4,13 +4,11 @@ import {
     ActivityIndicator,
     Alert,
     LayoutAnimation,
-    Platform,
     Pressable,
     RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
-    UIManager,
     View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -34,10 +32,6 @@ import {
     type MenuSection,
     type Product,
 } from '../../../../services/api';
-
-if (Platform.OS === 'android') {
-    UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
 
 const CARD_HEIGHT = 100; // used for drag position math — cards size naturally
 

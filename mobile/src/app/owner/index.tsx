@@ -10,7 +10,6 @@ import {
     RefreshControl,
     StyleSheet,
     Text,
-    UIManager,
     View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -22,10 +21,6 @@ import { useAuth } from '../../context/AuthContext';
 import { HeaderBackButton } from '../../components/HeaderBackButton';
 import { Colors, Spacing, Typography } from '../../constants/theme';
 import { deleteRestaurant, getRestaurants, MEDIA_BASE, type Restaurant } from '../../services/api';
-
-if (Platform.OS === 'android') {
-    UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
 
 function RestaurantCard({
     item,

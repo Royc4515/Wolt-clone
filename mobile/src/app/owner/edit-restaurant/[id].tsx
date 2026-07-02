@@ -18,7 +18,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { Colors, Spacing, Typography } from '../../../constants/theme';
 import { getRestaurant, getRestaurants, updateRestaurant, MEDIA_BASE } from '../../../services/api';
-import Field from '../_components/Field';
+import Field from '../../../components/owner/Field';
 
 function CategoryDropdown({
     value, onChange, options, error, colors: c,
@@ -261,7 +261,7 @@ export default function EditRestaurantScreen() {
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [16, 9],
             quality: 0.25,
