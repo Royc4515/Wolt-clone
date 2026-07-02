@@ -2,8 +2,8 @@ import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ThemeContext } from '../context/ThemeContext';
-import { Colors } from '../constants/theme';
+import { ThemeContext } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
 import { HeaderBackButton } from '@/components/HeaderBackButton';
 

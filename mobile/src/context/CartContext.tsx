@@ -48,23 +48,38 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userId = user?.id || (user as any)?._id;
     const storageKey = userId ? `@carts_${userId}` : '@carts_guest';
 
-    // Carts are loaded upon login using user's specific key.
+    // Carts are loaded upon login using the strictly user-specific key
     useEffect(() => {
         let isMounted = true;
         isLoadedRef.current = false;
 
         const loadCarts = async () => {
             try {
-                const savedCarts = await AsyncStorage.getItem(storageKey);
+                // 1. Fetch guest cart
+                const guestCartsStr = await AsyncStorage.getItem('@carts_guest');
+                const guestCarts = guestCartsStr ? JSON.parse(guestCartsStr) : {};
+                const hasGuestCarts = Object.keys(guestCarts).length > 0;
+
+                // 2. Fetch logged-in user cart
+                const savedCartsStr = await AsyncStorage.getItem(storageKey);
+                let finalCarts = savedCartsStr ? JSON.parse(savedCartsStr) : {};
+
+                // 3. MIGRATION: Merge guest cart into user cart if logging in
+                if (storageKey !== '@carts_guest' && hasGuestCarts) {
+                    // Combine old user carts with the new guest carts
+                    finalCarts = { ...finalCarts, ...guestCarts };
+                    
+                    // CLEAR the guest cart immediately to prevent leakage to other users
+                    await AsyncStorage.removeItem('@carts_guest');
+                    
+                    // Save the merged cart immediately
+                    await AsyncStorage.setItem(storageKey, JSON.stringify(finalCarts));
+                }
+
                 if (isMounted) {
-                    if (savedCarts) {
-                        setCarts(JSON.parse(savedCarts));
-                    } else {
-                        setCarts({});
-                    }
-                    // Mark that the current 'carts' state firmly belongs to this specific user key
+                    setCarts(finalCarts);
                     loadedKeyRef.current = storageKey;
-                    isLoadedRef.current = true; // Allow saving again
+                    isLoadedRef.current = true; 
                 }
             } catch (e) {
                 console.error("Failed to load carts", e);

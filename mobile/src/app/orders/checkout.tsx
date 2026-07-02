@@ -14,12 +14,12 @@ import {
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { CartContext } from '../context/CartContext';
-import { AuthContext } from '../context/AuthContext';
-import { ThemeContext } from '../context/ThemeContext';
+import { CartContext } from '../../context/CartContext';
+import { AuthContext } from '../../context/AuthContext';
+import { ThemeContext } from '../../context/ThemeContext';
 import { ThemeToggleButton } from '@/components/ThemeToggleButton';
-import { Colors, Spacing, Typography } from '../constants/theme';
-import { createOrder, getRestaurant, type Restaurant } from '../services/api';
+import { Colors, Spacing, Typography } from '../../constants/theme';
+import { createOrder, getRestaurant, type Restaurant } from '../../services/api';
 import { calcAerialDistance } from '@/utils/distance';
 
 // Helper function to format location as readable text
