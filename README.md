@@ -18,11 +18,13 @@
 
 ---
 
-A **Wolt-style food-delivery application**. The UI is a **React single-page app** that talks to our **Node.js + Express** server (Ex3), which in turn bridges to the legacy **Ex2 C++ recommendation server** for personalized recommendations. The whole stack runs together with one command.
+A **Wolt-style food-delivery application** with two clients: a **React single-page web app** and a **React Native (Expo) mobile app**. Both talk to one **Node.js + Express** API backed by **MongoDB**, which in turn bridges to the legacy **Ex2 C++ recommendation server** for personalized recommendations. The whole server stack runs together with one command.
 
 Everything the UI shows — restaurants, menus, orders, search results, recommendations — is **fetched live from the server**; nothing is hard-coded in the client. Registering a user, creating a restaurant, or placing an order all go through the API.
 
 > [!NOTE]
+> **Full walkthrough:** the [project wiki](wiki/README.md) covers every screen, the mobile app and the MongoDB data model.
+>
 > **Project history:** [Ex3 — Node/Express API server (MVC)](Ex3_README.md) — this app's backend, sources in `src/` · [Ex2 — C++ server + Python client](Ex2_README.md) · [Ex1 — CLI recommender](Ex1_README.md).
 
 ### Team
@@ -68,7 +70,7 @@ Everything the UI shows — restaurants, menus, orders, search results, recommen
 
 ## Architecture
 
-The app runs as **three containers** on a private Docker network. Only the frontend is published to your machine — it is the **single entry point** and reverse-proxies API and image traffic to the backend internally.
+The app runs as **four containers** on a private Docker network. The frontend is the only one the app is reached through — it is the **single entry point** and reverse-proxies API and image traffic to the backend internally.
 
 ```mermaid
 flowchart TD
@@ -78,12 +80,16 @@ flowchart TD
         nginx["frontend · nginx :80<br/>(single entry point)"]
         web["web · Express API :3000"]
         cpp["ex2-server · C++ recommender :8080"]
+        mongo[("mongo · MongoDB :27017")]
     end
+
+    Mobile["📱 Mobile app (Expo)"] -->|"/api"| web
 
     nginx -->|"/ (static)"| spa["React SPA bundle"]
     nginx -->|"/api/*"| web
     nginx -->|"/images/*"| web
     web -->|"TCP bridge"| cpp
+    web -->|"Mongoose"| mongo
 ```
 
 | Container | Role | Listens (internal) | Published to host |
@@ -91,8 +97,9 @@ flowchart TD
 | `frontend` | React build served by **nginx** (single entry point) | `80` | **`3000` → `80`** |
 | `web` | **Node.js + Express** API server (Ex3) | `3000` | — (internal) |
 | `ex2-server` | Legacy **Ex2 C++** recommendation server (TCP) | `8080` | — (internal) |
+| `mongo` | **MongoDB** database (persistent `mongo-data` volume) | `27017` | `27017` (for inspecting the DB, e.g. with Compass) |
 
-Because the React client uses **relative URLs** (`/api/...`), the whole app is **single-origin** at `http://localhost:3000`: the home page returns the React app, and the API lives behind it at `/api`. nginx forwards `/api` and `/images` to `web`, and `web` reaches the C++ server as host `ex2-server`.
+Because the React client uses **relative URLs** (`/api/...`), the whole app is **single-origin** at `http://localhost:3000`: the home page returns the React app, and the API lives behind it at `/api`. nginx forwards `/api` and `/images` to `web`, and `web` reaches the C++ server as host `ex2-server` and the database as host `mongo`. The mobile app is not containerized: it calls the same `web` API directly (see [Environment Setup](wiki/01-Environment-Setup.md#4-run-the-mobile-app-against-the-stack)).
 
 <details>
 <summary><b>Request lifecycle — login then a protected call (sequence diagram)</b></summary>
@@ -121,7 +128,8 @@ sequenceDiagram
 ## Tech Stack
 
 - **Frontend:** React 19, React Router 7, Bootstrap 5, Create-React-App build.
-- **Backend:** Node.js + Express (MVC), JSON Web Tokens, in-memory data store.
+- **Mobile:** React Native 0.85 with Expo 56 (Expo Router), TypeScript.
+- **Backend:** Node.js + Express (MVC), JSON Web Tokens, MongoDB via Mongoose.
 - **Recommender:** C++ TCP server (Ex2), reached over a `node:net` bridge.
 - **Serving / orchestration:** nginx (static + reverse proxy), Docker Compose.
 
@@ -134,7 +142,7 @@ sequenceDiagram
 
 ```text
 .
-├── docker-compose.yml         # Orchestrates all three containers (Ex4 entry point)
+├── docker-compose.yml         # Orchestrates all four containers (Ex5 entry point)
 ├── Dockerfile.web             # Node/Express API image
 ├── Dockerfile.server          # Ex2 C++ server image
 ├── frontend/                  # React single-page app
@@ -148,13 +156,16 @@ sequenceDiagram
 │       ├── api/               #   fetch wrappers (apiFetch attaches the JWT)
 │       ├── hooks/ utils/      #   theme, cart storage, auth helpers, …
 │       └── styles/ assets/
+├── mobile/                    # React Native (Expo) app, run separately
+├── wiki/                      # Project wiki: screens, flows, backend
 └── src/                       # Ex3 Node/Express server (backend)
     ├── app.js / server.js     #   Express app + bootstrap
     ├── routes/ controllers/   #   REST endpoints (users, tokens, restaurants,
     │                          #     products, orders, search)
     ├── middleware/auth.js     #   requireAuth / requireAdmin (JWT)
-    ├── services/              #   in-memory repositories + TCP bridge to Ex2
-    └── seed.js                #   seeds 8 restaurants with full menus on startup
+    ├── models/                #   Mongoose schemas (User, Restaurant, Product, Order)
+    ├── services/              #   MongoDB repositories + TCP bridge to Ex2
+    └── seed.js                #   seeds 8 restaurants with full menus into an empty DB
 ```
 
 The **Ex2 C++ server** sources live in the same repo (`src/Server`, `src/Logic`, …, `cpp-tests/`) and are documented in **[Ex2_README.md](Ex2_README.md)**.
@@ -205,10 +216,11 @@ docker compose ps
 NAME                          SERVICE      STATUS                       PORTS
 wolt-clone-ex2-ex2-server-1   ex2-server   Up (healthy)                 8080/tcp
 wolt-clone-ex2-frontend-1     frontend     Up                           0.0.0.0:3000->80/tcp
+wolt-clone-ex2-mongo-1        mongo        Up                           0.0.0.0:27017->27017/tcp
 wolt-clone-ex2-web-1          web          Up                           3000/tcp
 ```
 
-Only `frontend` is published to the host; `web` and `ex2-server` are reachable only inside the Docker network. Quick endpoint checks:
+The app is reached only through `frontend`; `web` and `ex2-server` are reachable only inside the Docker network (`mongo` is also mapped to the host, for debugging). Quick endpoint checks:
 
 ```bash
 curl -i http://localhost:3000/                       # 200 → the React app (index.html)
@@ -388,7 +400,7 @@ Required fields, password rules, profile picture and location, with clear inline
 ## Running Without Docker
 
 <details>
-<summary>Development workflow (three processes)</summary>
+<summary>Development workflow (four processes)</summary>
 
 Useful for fast iteration on the frontend.
 
@@ -396,13 +408,16 @@ Useful for fast iteration on the frontend.
 # 1) Ex2 C++ server (build once with CMake — see Ex2_README.md)
 mkdir build && cd build && cmake .. && make && ./WoltClone 8080
 
-# 2) Node/Express API (point it at the local C++ server)
-#    Linux/macOS:
-EX2_HOST=127.0.0.1 EX2_PORT=8080 PORT=3000 JWT_SECRET=dev-secret npm start
-#    Windows PowerShell:
-#    $env:EX2_HOST='127.0.0.1'; $env:EX2_PORT=8080; $env:PORT=3000; $env:JWT_SECRET='dev-secret'; npm start
+# 2) MongoDB (a local mongod, or just the DB container)
+docker compose up -d mongo
 
-# 3) React dev server (proxies /api to :3000 — see frontend/package.json "proxy")
+# 3) Node/Express API (point it at the local C++ server and MongoDB)
+#    Linux/macOS:
+EX2_HOST=127.0.0.1 EX2_PORT=8080 PORT=3000 JWT_SECRET=dev-secret MONGO_URI=mongodb://localhost:27017/wolt_db npm start
+#    Windows PowerShell:
+#    $env:EX2_HOST='127.0.0.1'; $env:EX2_PORT=8080; $env:PORT=3000; $env:JWT_SECRET='dev-secret'; $env:MONGO_URI='mongodb://localhost:27017/wolt_db'; npm start
+
+# 4) React dev server (proxies /api to :3000 — see frontend/package.json "proxy")
 cd frontend && npm install && npm start
 ```
 
@@ -434,7 +449,7 @@ Developed with **Agile Scrum**, tracked in **JIRA**:
 - **Status meetings** are held through the sprint and their decisions recorded in JIRA.
 - **Test-driven where it applies** — the data layer, the TCP bridge and many React components ship with tests.
 
-This Ex4 sprint ("UI for Wolt App") added the React frontend on top of the Ex3 API and containerized the whole stack.
+The Ex4 sprint ("UI for Wolt App") added the React frontend on top of the Ex3 API and containerized the whole stack. Ex5 moved the data layer to MongoDB and added the React Native mobile app.
 
 <p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 
@@ -443,12 +458,12 @@ This Ex4 sprint ("UI for Wolt App") added the React frontend on top of the Ex3 A
 ## Notes & Limitations
 
 > [!NOTE]
-> **In-memory store:** all data is volatile and resets when the `web` container restarts. On startup the server **seeds 8 restaurants with full menus** so the app is populated immediately.
+> **Persistent data:** everything is stored in MongoDB on the `mongo-data` volume, so it survives restarts. On startup, if the database has no restaurants, the server **seeds 8 restaurants with full menus** so the app is populated immediately. Run `docker compose down -v` to wipe the data and reseed.
 
 > [!WARNING]
 > **No secrets:** this is a teaching exercise — do not store or send real passwords, cards, tokens or keys. `JWT_SECRET` is a throwaway demo value.
 
-**Allowed tooling only:** React/JS/CSS/Bootstrap on the client, Node.js + Express on the server, plus standard infrastructure (nginx, Docker).
+**Allowed tooling only:** React/JS/CSS/Bootstrap on the web client, React Native (Expo) on mobile, Node.js + Express + MongoDB on the server, plus standard infrastructure (nginx, Docker).
 
 <p align="right"><a href="#table-of-contents">Back to top ↑</a></p>
 </content>
