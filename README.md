@@ -31,6 +31,12 @@ Everything the UI shows — restaurants, menus, orders, search results, recommen
 
 | Dana Sela | Roy Carmelli |
 | :---: | :---: |
+| - | [Portfolio](https://roy-carmelli-portfolio.vercel.app/) · [LinkedIn](https://www.linkedin.com/in/roy-carmelli) · [GitHub](https://github.com/Royc4515) |
+
+**Who built what:**
+
+- **Dana Sela:** authentication and orders.
+- **Roy Carmelli:** the React web client, the Express server skeleton and the MongoDB storage for restaurants, products and search; co-wrote the Node client for the C++ recommender.
 
 ---
 
