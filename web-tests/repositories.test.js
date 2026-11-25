@@ -179,29 +179,61 @@ test('restaurants/products/orders repositories export instances', () => {
 
 // ----- Cascade behavior at the service layer ----------------------------
 
-test('restaurantsService.remove cascades to all products of that restaurant', () => {
-  const restaurantsRepo = loadRestaurantsRepo();
-  const productsRepo = loadProductsRepo();
+// restaurantsService persists through the Mongoose models (SCRUM-416/417),
+// so these tests stub the model statics it calls with a small in-memory
+// store via node:test's `t.mock`. No database connection is needed, and the
+// real service code runs unchanged.
+function mockRestaurantModels(t, { restaurants = [], products = [] } = {}) {
+  const Restaurant = require('../src/models/Restaurant');
+  const Product = require('../src/models/Product');
+  const store = {
+    restaurants: new Map(restaurants.map((r) => [r.id, { ...r }])),
+    products: new Map(products.map((p) => [p.id, { ...p }])),
+  };
+
+  t.mock.method(Restaurant, 'findById', async (id) => store.restaurants.get(id) || null);
+  t.mock.method(Restaurant, 'findByIdAndDelete', async (id) => {
+    const doc = store.restaurants.get(id) || null;
+    store.restaurants.delete(id);
+    return doc;
+  });
+  t.mock.method(Product, 'deleteMany', async ({ restaurantId }) => {
+    let deletedCount = 0;
+    for (const [id, p] of store.products) {
+      if (p.restaurantId === restaurantId) {
+        store.products.delete(id);
+        deletedCount += 1;
+      }
+    }
+    return { deletedCount };
+  });
+
+  return store;
+}
+
+test('restaurantsService.remove cascades to all products of that restaurant', async (t) => {
+  const store = mockRestaurantModels(t, {
+    restaurants: [
+      { id: 'r1', name: 'Burger Place' },
+      { id: 'r2', name: 'Sushi Master' },
+    ],
+    products: [
+      { id: 'p1', name: 'Cheeseburger', restaurantId: 'r1' },
+      { id: 'p2', name: 'Fries', restaurantId: 'r1' },
+      { id: 'p3', name: 'Salmon Roll', restaurantId: 'r2' },
+    ],
+  });
   const service = loadRestaurantsService();
 
-  const restaurant = restaurantsRepo.create({ name: 'Burger Place' });
-  const otherRestaurant = restaurantsRepo.create({ name: 'Sushi Master' });
-  const p1 = productsRepo.create({ name: 'Cheeseburger', restaurantId: restaurant.id });
-  const p2 = productsRepo.create({ name: 'Fries', restaurantId: restaurant.id });
-  const p3 = productsRepo.create({ name: 'Salmon Roll', restaurantId: otherRestaurant.id });
-
-  const removed = service.remove(restaurant.id);
+  const removed = await service.remove('r1');
   assert.equal(removed, true);
 
-  assert.equal(restaurantsRepo.findById(restaurant.id), undefined);
-  assert.equal(productsRepo.findById(p1.id), undefined);
-  assert.equal(productsRepo.findById(p2.id), undefined);
-  // Other restaurant's product survives.
-  assert.equal(productsRepo.findById(p3.id).name, 'Salmon Roll');
-
-  // Cleanup so other tests start from a known state.
-  restaurantsRepo.remove(otherRestaurant.id);
-  productsRepo.remove(p3.id);
+  assert.equal(store.restaurants.has('r1'), false);
+  assert.equal(store.products.has('p1'), false);
+  assert.equal(store.products.has('p2'), false);
+  // Other restaurant and its product survive.
+  assert.equal(store.restaurants.get('r2').name, 'Sushi Master');
+  assert.equal(store.products.get('p3').name, 'Salmon Roll');
 });
 
 test('usersService.remove does NOT cascade to orders (orders are history)', () => {
@@ -229,31 +261,36 @@ test('usersService.remove does NOT cascade to orders (orders are history)', () =
   ordersRepo.remove(otherUserOrder.id);
 });
 
-test('restaurantsService.remove on a restaurant with zero products succeeds', () => {
-  const restaurantsRepo = loadRestaurantsRepo();
-  const productsRepo = loadProductsRepo();
+test('restaurantsService.remove on a restaurant with zero products succeeds', async (t) => {
+  const store = mockRestaurantModels(t, {
+    restaurants: [{ id: 'r-empty', name: 'Empty Diner' }],
+    products: [{ id: 'p-other', name: 'Salad', restaurantId: 'r-other' }],
+  });
   const service = loadRestaurantsService();
+  const productsBefore = store.products.size;
 
-  const restaurant = restaurantsRepo.create({ name: 'Empty Diner' });
-  const productsBefore = productsRepo.findAll().length;
-
-  const removed = service.remove(restaurant.id);
+  const removed = await service.remove('r-empty');
   assert.equal(removed, true);
-  assert.equal(restaurantsRepo.findById(restaurant.id), undefined);
-  assert.equal(productsRepo.findAll().length, productsBefore,
+  assert.equal(store.restaurants.has('r-empty'), false);
+  assert.equal(store.products.size, productsBefore,
     'products store must be untouched when restaurant has no products');
 });
 
-test('restaurantsService.remove on unknown id returns false and mutates nothing', () => {
-  const productsRepo = loadProductsRepo();
+test('restaurantsService.remove on unknown id returns false and mutates nothing', async (t) => {
+  const store = mockRestaurantModels(t, {
+    restaurants: [{ id: 'r1', name: 'Burger Place' }],
+    products: [{ id: 'p1', name: 'Cheeseburger', restaurantId: 'r1' }],
+  });
+  const Product = require('../src/models/Product');
   const service = loadRestaurantsService();
 
-  // Snapshot products state before.
-  const before = JSON.stringify(productsRepo.findAll());
+  const before = JSON.stringify([...store.restaurants, ...store.products]);
 
-  const removed = service.remove('definitely-not-a-real-restaurant-id');
+  const removed = await service.remove('definitely-not-a-real-restaurant-id');
   assert.equal(removed, false);
 
-  const after = JSON.stringify(productsRepo.findAll());
-  assert.equal(after, before, 'productsRepo must be byte-identical after a no-op remove');
+  const after = JSON.stringify([...store.restaurants, ...store.products]);
+  assert.equal(after, before, 'stores must be identical after a no-op remove');
+  assert.equal(Product.deleteMany.mock.callCount(), 0,
+    'no product delete may be issued for an unknown restaurant');
 });
